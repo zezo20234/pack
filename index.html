@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>Pack Opening Game with Mutations</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://cdnjs.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js">
 <!-- App Icon -->
 <link rel="apple-touch-icon" href="foot.jpeg">
 
@@ -77,6 +76,19 @@
     padding: 2px 6px;
     border-radius: 8px;
     font-size: 0.75rem;
+  }
+  /* NEW: quantity badge (top-right) */
+  .quantity-label {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #111;
+    padding: 4px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
   }
   .mutation-list {
     margin-top: 10px;
@@ -456,8 +468,11 @@ function showCardDetails(cardId) {
        </div>`
     : `<p>This card has no mutations yet.</p>`;
 
+  const qty = getCardQuantity(card.name);
+
   const cardHtml = `
     <div class="card ${getCardType(card.name)}-card" data-card-id="${cardId}">
+      <span class="quantity-label">x${qty}</span>
       <h3>${card.name}</h3>
       <p>Base Value: $${getBaseCardPrice(card.name)}</p>
       <p>Current Value: $${card.currentPrice}</p>
@@ -673,9 +688,9 @@ function showMyCollection() {
     document.getElementById("otherUserHeader").style.display = 'none';
 }
 
-function renderCollection(cardCollection, lockedCards, isMyCollection = false, victimId = null) {
+function renderCollection(cardCollection, lockedCardsObj, isMyCollection = false, victimId = null) {
   let collHTML = "";
-  const allCards = { ...cardCollection, ...lockedCards };
+  const allCards = { ...cardCollection, ...lockedCardsObj };
 
   if (Object.keys(allCards).length === 0) {
     return "This user has no cards yet.";
@@ -685,10 +700,12 @@ function renderCollection(cardCollection, lockedCards, isMyCollection = false, v
     const card = allCards[cardId];
     if (card) {
       const cardType = getCardType(card.name);
-      const isLocked = !!lockedCards[cardId];
+      const isLocked = !!lockedCardsObj[cardId];
       const cardClass = isLocked ? 'locked-card' : '';
       const mutationsCount = (card.mutations && card.mutations.length) || 0;
       const mutationLabel = mutationsCount > 0 ? `<span class="mutation-label">${mutationsCount}x Mutated</span>` : '';
+      const qty = getCardQuantity(card.name);
+      const quantityLabelHtml = `<span class="quantity-label">x${qty}</span>`;
       
       let buttonsHtml = '';
       if (isMyCollection) {
@@ -705,6 +722,7 @@ function renderCollection(cardCollection, lockedCards, isMyCollection = false, v
       collHTML += `
       <div class="card ${cardType}-card ${cardClass}" onclick="showCardDetails('${cardId}')">
         ${mutationLabel}
+        ${quantityLabelHtml}
         <h3>${card.name}</h3>
         <p>Value: $${card.currentPrice}</p>
         <div class="card-buttons">
@@ -853,8 +871,11 @@ function openPack(type) {
   saveCardQuantities();
   updateUI();
   
+  const qtyAfter = getCardQuantity(newCard.name);
+
   document.getElementById("openedCard").innerHTML = `
     <div class="card ${getCardType(newCard.name)}-card">
+      <span class="quantity-label">x${qtyAfter}</span>
       <h3>${newCard.name}</h3>
       <p>Value: $${newCard.currentPrice}</p>
       <p>Added to your collection!</p>
