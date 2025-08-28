@@ -208,7 +208,6 @@
 </style>
 </head>
 <body>
-
 <div class="login-box" id="loginBox">
   <h2>Login</h2>
   <input id="username" placeholder="Username" style="padding:10px; border-radius:8px; border:1px solid #ccc; width:80%;"><br><br>
@@ -289,9 +288,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// --- Simulation timings (1 hour -> 1 minute, 7 minutes -> 7 seconds) ---
-const MUTATION_INTERVAL_MS = 1000 * 60;    // 1 minute (simulated "hour")
-const DISTRIBUTION_INTERVAL_MS = 1000 * 7; // 7 seconds (simulated "7 minutes")
+// --- Timing Constants (editable) ---
+const MUTATION_INTERVAL_MS = 1000 * 60 * 30; // 30 minutes for new global mutation
+const DISTRIBUTION_INTERVAL_MS = 1000 * 60 * 7; // 7 minutes to distribute the mutation
+const PRESENCE_HEARTBEAT_MS = 1000 * 30; // presence update interval
+const PRESENCE_ONLINE_THRESHOLD_MS = 1000 * 60 * 10; // consider users online if seen in last 10 minutes
 
 // --- Game Data ---
 const accounts = {
@@ -382,6 +383,13 @@ let lockedCards = {};
 let currentHourlyMutation = null;
 let stealData = {};
 let stealTimerInterval = null;
+let lastSeenMutationTimestamp = 0;
+let presenceInterval = null;
+
+// --- Firebase refs for mutation/distribution/presence ---
+const mutationRef = db.ref("game/currentMutation");
+const distributionRef = db.ref("game/lastDistribution");
+const presenceRefRoot = db.ref("presence");
 
 // --- Utility Functions ---
 function generateCardId() {
@@ -427,7 +435,7 @@ function showCardDetails(cardId) {
     ? `<div class="mutation-list">
          <h4>Mutations:</h4>
          <ul>
-           ${card.mutations.map(m => `<li>${m.name} (+${m.priceIncrease || ''})</li>`).join('')}
+           ${card.mutations.map(m => `<li>${m.name} (+${m.priceIncrease || m.priceIncrease === 0 ? m.priceIncrease : ''})</li>`).join('')}
          </ul>
        </div>`
     : `<p>This card has no mutations yet.</p>`;
@@ -463,13 +471,30 @@ window.onload = function() {
     }
   }
 
-  // Start the mutation selection cycle (simulated: every 1 minute)
-  setInterval(applyMutations, MUTATION_INTERVAL_MS);
-  applyMutations(); // attempt now
+  // Ensure there's a current mutation (reads, and if expired, updates it) but DO NOT distribute immediately on page load.
+  ensureCurrentMutation().then(mut => {
+    currentHourlyMutation = mut;
+    if (currentHourlyMutation && currentHourlyMutation.timestamp) lastSeenMutationTimestamp = currentHourlyMutation.timestamp;
+    console.log("Initial mutation (ensured):", currentHourlyMutation);
+    // NOTE: we intentionally DO NOT call distributeMutation() here so refresh/open doesn't trigger a distribution.
+  }).catch(err => console.error("Error ensuring mutation on load:", err));
 
-  // Start the distribution cycle (simulated: every 7 seconds)
-  setInterval(distributeMutation, DISTRIBUTION_INTERVAL_MS);
-  distributeMutation(); // attempt now (will skip if no mutation)
+  // Periodically ensure mutation exists & is fresh (every MUTATION_INTERVAL_MS)
+  setInterval(() => {
+    ensureCurrentMutation().then(mut => {
+      currentHourlyMutation = mut;
+      if (currentHourlyMutation && currentHourlyMutation.timestamp && currentUser && currentHourlyMutation.timestamp > lastSeenMutationTimestamp) {
+        lastSeenMutationTimestamp = currentHourlyMutation.timestamp;
+        showMessage(`New mutation is active: ${currentHourlyMutation.name}`);
+        updateUI();
+      }
+    }).catch(err => console.error("Error in scheduled ensureCurrentMutation:", err));
+  }, MUTATION_INTERVAL_MS);
+
+  // Distribution cycle: attempt to claim the distribution slot every DISTRIBUTION_INTERVAL_MS.
+  setInterval(() => {
+    tryClaimAndDistribute();
+  }, DISTRIBUTION_INTERVAL_MS);
 };
 
 function login() {
@@ -490,12 +515,14 @@ function login() {
     document.getElementById("gameBox").style.display = "block";
     document.getElementById("userName").innerText = u;
     loadUserData();
+    startPresence(); // mark user online
   } else {
     document.getElementById("loginStatus").innerText = "Invalid credentials!";
   }
 }
 
 function logout() {
+    stopPresence();
     currentUser = null;
     balance = 0;
     collection = {};
@@ -509,6 +536,29 @@ function logout() {
     document.getElementById("loginStatus").innerText = "";
     document.getElementById("keepSignedIn").checked = false;
     updateUI();
+}
+
+function startPresence() {
+  if (!currentUser) return;
+  const pRef = db.ref(`presence/${currentUser}`);
+  pRef.set({ lastSeen: Date.now() }).catch(err => console.error('presence set err', err));
+  presenceInterval = setInterval(() => {
+    pRef.update({ lastSeen: Date.now() }).catch(err => console.error('presence update err', err));
+  }, PRESENCE_HEARTBEAT_MS);
+  // try to remove presence on unload
+  window.addEventListener('beforeunload', () => {
+    try { pRef.remove(); } catch (e) {}
+  });
+}
+
+function stopPresence() {
+  if (!currentUser) return;
+  const pRef = db.ref(`presence/${currentUser}`);
+  pRef.remove().catch(err => console.error('presence remove err', err));
+  if (presenceInterval) {
+    clearInterval(presenceInterval);
+    presenceInterval = null;
+  }
 }
 
 function loadUserData() {
@@ -549,7 +599,6 @@ function loadCardQuantities() {
 }
 
 function saveUser() {
-  // return the promise so callers can await it
   return db.ref("users/" + currentUser).set({
     balance: balance,
     collection: collection,
@@ -575,19 +624,15 @@ function checkNotifications() {
       for (const key in notifications) {
         showMessage(notifications[key]);
       }
-      // Clear notifications after showing them
       notificationsRef.remove();
     }
   });
 }
 
-
 // --- Core Game Logic ---
 function updateUI() {
   document.getElementById("balance").innerText = balance;
   document.getElementById("collection").innerHTML = renderCollection(collection, lockedCards, true);
-  
-  // Hide other user's collection when back to base
   document.getElementById("otherUserCollection").style.display = 'none';
   document.getElementById("otherUserHeader").style.display = 'none';
 }
@@ -652,7 +697,6 @@ function showUserCollection(targetUser) {
     document.getElementById("otherUserHeader").innerText = targetUser;
     document.getElementById("otherUserHeader").style.display = 'block';
     
-    // Check if user is "online" (has a profile in the database)
     db.ref("users/" + targetUser).once("value").then(snap => {
         if (!snap.exists()) {
             document.getElementById("otherUserCollection").innerHTML = `<p>${targetUser} isn't playing this game!</p>`;
@@ -818,21 +862,14 @@ function updatePackChances() {
 }
 
 // --- MUTATION / FIREBASE SYNC ---
-// canonical mutation path in the database
-const mutationRef = db.ref("game/currentMutation");
-let lastSeenMutationTimestamp = 0;
-
-// Listen for mutation changes in real-time so ALL clients get the same mutation
+// listen for realtime updates (keeps clients synced and can notify logged-in users)
 mutationRef.on("value", snap => {
   const m = snap.val();
   if (!m) return;
   currentHourlyMutation = { name: m.name, priceIncrease: m.priceIncrease, timestamp: m.timestamp || 0 };
-  console.log("Mutation updated from Firebase:", currentHourlyMutation);
-
-  // If this client hasn't seen this mutation yet, notify the user and refresh UI
+  console.log("Mutation updated from Firebase (on value):", currentHourlyMutation);
   if (currentHourlyMutation.timestamp > lastSeenMutationTimestamp) {
     lastSeenMutationTimestamp = currentHourlyMutation.timestamp;
-    // Only show the popup if a user is logged in
     if (currentUser) {
       showMessage(`New mutation is active: ${currentHourlyMutation.name}`);
       updateUI();
@@ -840,41 +877,72 @@ mutationRef.on("value", snap => {
   }
 });
 
-// Try to create a new mutation in Firebase only if none exists or the stored mutation is stale.
-// We use a transaction so multiple clients won't overwrite each other.
-function applyMutations() {
-  console.log("Attempting to set a new hourly mutation in Firebase (transaction).");
+// Ensure there is a current mutation; if missing or expired, create one then return the (new) current mutation.
+function ensureCurrentMutation() {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const snap = await mutationRef.once('value');
+      const now = Date.now();
+      const current = snap.val();
 
-  mutationRef.transaction(current => {
-    const now = Date.now();
-    // If no current mutation or it's older than the mutation interval, create a new one.
-    if (!current || (now - (current.timestamp || 0)) > MUTATION_INTERVAL_MS) {
-      const newMut = getRandomMutation();
-      return {
-        name: newMut.name,
-        priceIncrease: newMut.priceIncrease,
-        timestamp: now
-      };
-    }
-    // Otherwise, do not change (another client already set it recently)
-    return;
-  }, (error, committed, snapshot) => {
-    if (error) {
-      console.error("applyMutations transaction error:", error);
-      return;
-    }
-    if (committed) {
-      console.log("A new mutation was set in Firebase:", snapshot.val());
-      // the on('value') listener will pick this up and notify users
-    } else {
-      // no-op; current mutation still valid
+      // If no mutation or it's stale -> transaction to try set a new one
+      if (!current || (now - (current.timestamp || 0)) > MUTATION_INTERVAL_MS) {
+        mutationRef.transaction(curr => {
+          const then = Date.now();
+          if (!curr || (then - (curr.timestamp || 0)) > MUTATION_INTERVAL_MS) {
+            const newMut = getRandomMutation();
+            return { name: newMut.name, priceIncrease: newMut.priceIncrease, timestamp: then };
+          }
+          return; // someone else already set a fresh mutation
+        }, async (error, committed, snapshot) => {
+          if (error) {
+            console.error('Transaction error ensuring mutation:', error);
+            return reject(error);
+          }
+          try {
+            const finalSnap = await mutationRef.once('value');
+            const finalVal = finalSnap.val();
+            resolve(finalVal);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      } else {
+        // current exists and is fresh
+        resolve(current);
+      }
+    } catch (err) {
+      reject(err);
     }
   });
 }
 
+// Attempt to claim the distribution slot with a transaction. Only the client that succeeds will call distributeMutation().
+function tryClaimAndDistribute() {
+  const now = Date.now();
+  distributionRef.transaction(curr => {
+    if (!curr || (now - (curr.timestamp || 0)) > DISTRIBUTION_INTERVAL_MS) {
+      // claim this distribution slot
+      return { timestamp: now, by: currentUser || 'anonymous' };
+    }
+    return; // someone else already claimed within the interval
+  }, async (error, committed, snapshot) => {
+    if (error) {
+      console.error('Distribution claim transaction error:', error);
+      return;
+    }
+    if (!committed) {
+      console.log('Distribution slot already claimed by another client. Skipping.');
+      return;
+    }
+    // we successfully claimed the slot; now apply the mutation once
+    console.log('Distribution slot claimed — proceeding to mutate one locked card from online users.');
+    await distributeMutation();
+  });
+}
+
 // Distribution will *read* the canonical mutation from Firebase before mutating cards.
-// This ensures every distribution uses the same mutation for everyone.
-// IMPORTANT CHANGE: we now ensure a card cannot receive the SAME mutation name twice.
+// It will only mutate ONE locked card across all online users.
 async function distributeMutation() {
   try {
     const mutSnap = await mutationRef.once("value");
@@ -884,9 +952,13 @@ async function distributeMutation() {
       return;
     }
 
-    const mutationName = mutObj.name;
-    const mutationPriceIncrease = mutObj.priceIncrease;
-    const mutationToApply = { name: mutationName, priceIncrease: mutationPriceIncrease, appliedAt: Date.now() };
+    // Build the mutation object we'll append to cards
+    const mutationToApply = { name: mutObj.name, priceIncrease: mutObj.priceIncrease, appliedAt: Date.now() };
+
+    // Read presence to filter online users only
+    const presenceSnap = await presenceRefRoot.once('value');
+    const presenceData = presenceSnap.val() || {};
+    const now = Date.now();
 
     const allUsersSnapshot = await db.ref("users").once("value");
     const allUsersData = allUsersSnapshot.val();
@@ -895,44 +967,35 @@ async function distributeMutation() {
       return;
     }
 
-    let allLockedCards = [];
+    let candidateLockedCards = [];
     for (const userId in allUsersData) {
+      // skip users that are not "online" according to presence
+      const pres = presenceData[userId];
+      if (!pres) continue;
+      if ((now - pres.lastSeen) > PRESENCE_ONLINE_THRESHOLD_MS) continue; // not online recently
+
       const userData = allUsersData[userId];
       const lockedCardsForUser = userData.lockedCards || {};
       for (const cardId in lockedCardsForUser) {
         const card = lockedCardsForUser[cardId];
-        // only consider cards with less than 5 mutations
         if ((card.mutations || []).length < 5) {
-          allLockedCards.push({ userId, cardId, card });
+          candidateLockedCards.push({ userId, cardId, card });
         }
       }
     }
 
-    if (allLockedCards.length === 0) {
-      console.log("No locked cards available to mutate.");
+    if (candidateLockedCards.length === 0) {
+      console.log("No locked cards from online users available to mutate.");
       return;
     }
 
-    // Filter out cards that already HAVE this mutation name (prevent duplicates)
-    const eligibleLockedCards = allLockedCards.filter(entry => {
-      const card = entry.card;
-      const existingNames = (card.mutations || []).map(m => m.name);
-      return !existingNames.includes(mutationName);
-    });
+    // Randomly pick one locked card to mutate among online users
+    const randomIndex = Math.floor(Math.random() * candidateLockedCards.length);
+    const cardToMutate = candidateLockedCards[randomIndex];
+    const { userId, cardId, card } = cardToMutate;
 
-    if (eligibleLockedCards.length === 0) {
-      console.log(`All locked cards already have the "${mutationName}" mutation — skipping distribution this cycle.`);
-      return;
-    }
-
-    // Randomly pick one eligible locked card to mutate
-    const randomIndex = Math.floor(Math.random() * eligibleLockedCards.length);
-    const cardToMutateEntry = eligibleLockedCards[randomIndex];
-    const { userId, cardId, card } = cardToMutateEntry;
-
-    // Apply mutation (now duplicates of same name are prevented)
     card.mutations = card.mutations || [];
-    card.mutations.push(mutationToApply); // unique because we filtered above
+    card.mutations.push(mutationToApply);
     card.currentPrice = (card.currentPrice || card.basePrice || 0) + mutationToApply.priceIncrease;
     card.lastMutationTime = Date.now();
 
@@ -941,7 +1004,6 @@ async function distributeMutation() {
 
     console.log(`Successfully applied mutation "${mutationToApply.name}" to card "${card.name}" for user "${userId}".`);
 
-    // If it affected the current logged-in user, update local state and UI
     if (userId === currentUser) {
       lockedCards[cardId] = card;
       updateUI();
@@ -974,18 +1036,14 @@ function getRandomMutation() {
     }
   }
 
-  // fallback
   return { name: 'bloom', priceIncrease: 300 };
 }
 
-
-// --- Steal Logic ---
+// --- Steal Logic (unchanged) ---
 async function startStealAttempt(cardId, victimId) {
-    // Hide all other boxes
     document.getElementById('cardDetailsBox').style.display = 'none';
     document.getElementById('messageBox').style.display = 'none';
     
-    // Check if the card still exists
     const victimRef = db.ref(`users/${victimId}`);
     const victimSnapshot = await victimRef.once('value');
     if (!victimSnapshot.exists()) {
@@ -1003,14 +1061,12 @@ async function startStealAttempt(cardId, victimId) {
         return;
     }
 
-    // Generate a simple math question
     const num1 = Math.floor(Math.random() * 10) + 1;
     const num2 = Math.floor(Math.random() * 10) + 1;
     const operator = Math.random() < 0.5 ? '+' : '-';
     const question = `${num1} ${operator} ${num2}`;
     const answer = operator === '+' ? num1 + num2 : num1 - num2;
 
-    // Store steal data for the checkAnswer function
     stealData = {
         cardToSteal: cardToSteal,
         cardId: cardId,
@@ -1019,7 +1075,6 @@ async function startStealAttempt(cardId, victimId) {
         startTime: Date.now()
     };
 
-    // Show the steal modal and start the timer
     document.getElementById('mathQuestion').innerText = question;
     document.getElementById('mathAnswer').value = '';
     document.getElementById('stealMessageBox').style.display = 'block';
@@ -1027,7 +1082,6 @@ async function startStealAttempt(cardId, victimId) {
     let timeRemaining = 5;
     document.getElementById('stealTimer').innerText = timeRemaining;
     
-    // Clear any existing timer
     if (stealTimerInterval) {
         clearInterval(stealTimerInterval);
     }
@@ -1051,7 +1105,6 @@ async function checkStealAnswer() {
         return;
     }
 
-    // Stop the timer
     clearInterval(stealTimerInterval);
     document.getElementById('stealMessageBox').style.display = 'none';
     
@@ -1067,7 +1120,6 @@ async function finalizeSteal(cardId, victimId, cardToSteal) {
         const victimRef = db.ref(`users/${victimId}`);
         const thiefRef = db.ref(`users/${currentUser}`);
 
-        // Fetch victim's data
         const victimSnapshot = await victimRef.once('value');
         if (!victimSnapshot.exists()) {
             showMessage("The victim's account no longer exists!");
@@ -1075,7 +1127,6 @@ async function finalizeSteal(cardId, victimId, cardToSteal) {
         }
         const victimData = victimSnapshot.val();
 
-        // Check if card is in victim's collection or locked cards and remove it
         let cardFound = false;
         if (victimData.collection && victimData.collection[cardId]) {
             delete victimData.collection[cardId];
@@ -1090,17 +1141,14 @@ async function finalizeSteal(cardId, victimId, cardToSteal) {
             return;
         }
 
-        // Add the card to the thief's collection
         cardToSteal.isLocked = false;
         cardToSteal.lockTime = 0;
         collection[cardId] = cardToSteal;
 
-        // Save changes for both users
         await victimRef.child('collection').set(victimData.collection || {});
         await victimRef.child('lockedCards').set(victimData.lockedCards || {});
-        await saveUser(); // Saves the thief's updated collection
+        await saveUser();
 
-        // Send a notification to the victim
         await db.ref(`notifications/${victimId}`).push().set(`Your card "${cardToSteal.name}" was stolen by ${currentUser}!`);
         
         showMessage(`Success! You have stolen ${cardToSteal.name} from ${victimId}!`);
