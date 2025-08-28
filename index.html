@@ -317,42 +317,45 @@ let cardPools = {
     { name: "asser sleep", quantity: 50, chance: 0.10, price: 130 }
   ],
   rare: [
-    { name: "Blue Asser", quantity: 30, chance: 0.30, price: 250 },
-    { name: "Asser Dragon", quantity: 20, chance: 0.25, price: 280 },
-    { name: "Asser Galaxy", quantity: 15, chance: 0.20, price: 300 },
+    { name: "Blue Asser", quantity: 40, chance: 0.30, price: 250 },
+    { name: "Asser Dragon", quantity: 40, chance: 0.25, price: 280 },
+    { name: "Asser Galaxy", quantity: 35, chance: 0.20, price: 300 },
     { name: "Asser Legend", quantity: 10, chance: 0.15, price: 350 },
-    { name: "Asser Mythic", quantity: 5, chance: 0.10, price: 400 }
+    { name: "Asser Mythic", quantity: 15, chance: 0.10, price: 400 }
   ],
   epic: [
-    { name: "lilly eat", quantity: 50, chance: 0.15, price: 220 },
-    { name: "lilly angry", quantity: 50, chance: 0.15, price: 230 },
-    { name: "lilly sad", quantity: 50, chance: 0.10, price: 240 },
-    { name: "lilly happy", quantity: 50, chance: 0.15, price: 230 },
-    { name: "lilly sleep", quantity: 50, chance: 0.10, price: 230 },
-    { name: "lilly", quantity: 50, chance: 0.25, price: 210 },
-    { name: "Lilly Bomba", quantity: 10, chance: 0.10, price: 500 }
+    { name: "lilly eat", quantity: 50, chance: 0.15, price: 320 },
+    { name: "lilly angry", quantity: 50, chance: 0.15, price: 325 },
+    { name: "lilly sad", quantity: 50, chance: 0.10, price: 340 },
+    { name: "lilly happy", quantity: 50, chance: 0.15, price: 320 },
+    { name: "lilly sleep", quantity: 50, chance: 0.10, price: 350 },
+    { name: "lilly", quantity: 50, chance: 0.25, price: 315 },
+    { name: "Lilly Bomba", quantity: 10, chance: 0.10, price: 550 }
   ],
   legendary: [
-      { name: "Lilly laugh", quantity: 5, chance: 0.40, price: 550 },
-      { name: "Lilly Queen", quantity: 5, chance: 0.40, price: 550 },
-      { name: "Lilly Dragon", quantity: 3, chance: 0.10, price: 700 },
-      { name: "Lilly Hero", quantity: 1, chance: 0.10, price: 1000 }
+      { name: "Lilly laugh", quantity: 10, chance: 0.40, price: 550 },
+      { name: "Lilly Queen", quantity: 10, chance: 0.40, price: 550 },
+      { name: "Lilly Dragon", quantity: 7, chance: 0.10, price: 700 },
+      { name: "Lilly Hero", quantity: 4, chance: 0.10, price: 1000 }
   ],
   divine: [
-      { name: "Zezo laugh", quantity: 2, chance: 0.10, price: 600 },
-      { name: "Zezo sad", quantity: 2, chance: 0.10, price: 650 },
-      { name: "Zezo angry", quantity: 1, chance: 0.10, price: 800 },
-      { name: "Zezo ps5", quantity: 2, chance: 0.20, price: 700 },
-      { name: "Zezo happy", quantity: 2, chance: 0.10, price: 600 },
-      { name: "Zezo smile", quantity: 2, chance: 0.10, price: 620 },
-      { name: "Zezo roblox", quantity: 2, chance: 0.10, price: 750 },
-      { name: "Zezo fart", quantity: 2, chance: 0.05, price: 1000 },
-      { name: "normal zezo full", quantity: 1, chance: 0.15, price: 850 }
+      { name: "Zezo laugh", quantity: 15, chance: 0.10, price: 600 },
+      { name: "Zezo sad", quantity: 15, chance: 0.10, price: 650 },
+      { name: "Zezo angry", quantity: 10, chance: 0.10, price: 800 },
+      { name: "Zezo ps5", quantity: 10, chance: 0.20, price: 700 },
+      { name: "Zezo happy", quantity: 15, chance: 0.10, price: 600 },
+      { name: "Zezo smile", quantity: 5, chance: 0.10, price: 620 },
+      { name: "Zezo roblox", quantity: 5, chance: 0.10, price: 750 },
+      { name: "Zezo fart", quantity: 6, chance: 0.05, price: 1000 },
+      { name: "normal zezo full", quantity: 3, chance: 0.15, price: 850 }
   ],
   pristimatic: [
-      { name: "Zezo Prismatic", quantity: 1, chance: 0.40, price: 900 },
-      { name: "Zezo Rainbow", quantity: 1, chance: 0.40, price: 1200 },
-      { name: "Zezo shower", quantity: 1, chance: 0.20, price: 1500 }
+      { name: "Zezo Prismatic", quantity: 2, chance: 0.40, price: 900 },
+      { name: "Zezo Rainbow", quantity: 2, chance: 0.40, price: 1200 },
+      { name: "Asser colotinni fasatennee", quantity: 2, chance: 0.40, price: 7500 },
+      { name: "zezo big bomba fart", quantity: 2, chance: 0.40, price: 1200 },
+      { name: "lilly kowaferr", quantity: 2, chance: 0.40, price: 6000 },
+      { name: "Zezo shower", quantity: 2, chance: 0.20, price: 1500 }
   ]
 };
 
@@ -701,7 +704,7 @@ function openPack(type) {
     packPrice = 550;
     pool = cardPools.divine;
   } else if (type === "pristimatic") {
-    packPrice = 650;
+    packPrice = 750;
     pool = cardPools.pristimatic;
   }
 
