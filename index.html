@@ -249,12 +249,13 @@
   </div>
 
   <div style="display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 20px;">
-    <button class="btn" onclick="openPack('common')">Buy Common Pack (100%) ($100)</button>
-    <button class="btn btn-blue" onclick="openPack('rare')">Buy Rare Pack (100%) ($250)</button>
-    <button class="btn btn-purple" onclick="openPack('epic')">Buy Epic Pack (100%) ($350)</button>
-    <button class="btn btn-gold" onclick="openPack('legendary')">Buy Legendary Pack (100%) ($1500)</button>
-    <button class="btn btn-divine" onclick="openPack('divine')">Buy Divine Pack (100%) ($5000)</button>
-    <button class="btn btn-pristimatic" onclick="openPack('pristimatic')">Buy Pristimatic Pack (100%) ($7500)</button>
+    <!-- Added IDs so we can enable/disable buttons when balance is low -->
+    <button id="buyCommonBtn" class="btn" onclick="openPack('common')">Buy Common Pack (100%) ($100)</button>
+    <button id="buyRareBtn" class="btn btn-blue" onclick="openPack('rare')">Buy Rare Pack (100%) ($250)</button>
+    <button id="buyEpicBtn" class="btn btn-purple" onclick="openPack('epic')">Buy Epic Pack (100%) ($350)</button>
+    <button id="buyLegendaryBtn" class="btn btn-gold" onclick="openPack('legendary')">Buy Legendary Pack (100%) ($1500)</button>
+    <button id="buyDivineBtn" class="btn btn-divine" onclick="openPack('divine')">Buy Divine Pack (100%) ($5000)</button>
+    <button id="buyPristimaticBtn" class="btn btn-pristimatic" onclick="openPack('pristimatic')">Buy Pristimatic Pack (100%) ($7500)</button>
   </div>
   <div id="openedCard"></div>
   <h3>Your Collection</h3>
@@ -661,6 +662,9 @@ function updateUI() {
   // Hide other user's collection when back to base
   document.getElementById("otherUserCollection").style.display = 'none';
   document.getElementById("otherUserHeader").style.display = 'none';
+
+  // Update pack button states (disabled/enabled and text)
+  updatePackChances();
 }
 
 function showMyCollection() {
@@ -797,7 +801,17 @@ function openPack(type) {
     pool = cardPools.pristimatic;
   }
 
+  // --- NEW: Prevent purchase if user doesn't have enough balance ---
+  if (balance < packPrice) {
+    showMessage("You don't have enough money to buy this pack.");
+    return;
+  }
+
+  // Deduct AFTER checking funds
   balance -= packPrice;
+  // Save immediately so state is persistent and UI reflects the deduction
+  saveUser();
+  updateUI();
 
   let available = pool.filter(c => c.quantity > 0);
   if (available.length === 0) {
@@ -864,12 +878,12 @@ function sellCard(cardId) {
 
 function updatePackChances() {
   const packs = [
-    { type: 'common', pool: cardPools.common, button: document.querySelector('.btn') },
-    { type: 'rare', pool: cardPools.rare, button: document.querySelector('.btn-blue') },
-    { type: 'epic', pool: cardPools.epic, button: document.querySelector('.btn-purple') },
-    { type: 'legendary', pool: cardPools.legendary, button: document.querySelector('.btn-gold') },
-    { type: 'divine', pool: cardPools.divine, button: document.querySelector('.btn-divine') },
-    { type: 'pristimatic', pool: cardPools.pristimatic, button: document.querySelector('.btn-pristimatic') }
+    { type: 'common', pool: cardPools.common, buttonId: 'buyCommonBtn' },
+    { type: 'rare', pool: cardPools.rare, buttonId: 'buyRareBtn' },
+    { type: 'epic', pool: cardPools.epic, buttonId: 'buyEpicBtn' },
+    { type: 'legendary', pool: cardPools.legendary, buttonId: 'buyLegendaryBtn' },
+    { type: 'divine', pool: cardPools.divine, buttonId: 'buyDivineBtn' },
+    { type: 'pristimatic', pool: cardPools.pristimatic, buttonId: 'buyPristimaticBtn' }
   ];
 
   packs.forEach(pack => {
@@ -879,7 +893,15 @@ function updatePackChances() {
 
     let chanceText = `(${Math.round(totalChance * 100)}%)`;
     const packPrice = pack.type === 'common' ? 100 : pack.type === 'rare' ? 250 : pack.type === 'epic' ? 350 : pack.type === 'legendary' ? 1500 : pack.type === 'divine' ? 5000 : 7500;
-    pack.button.innerText = `Buy ${pack.type.charAt(0).toUpperCase() + pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
+    const btn = document.getElementById(pack.buttonId);
+    if (btn) {
+      btn.innerText = `Buy ${pack.type.charAt(0).toUpperCase() + pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
+      // Disable button if user doesn't have enough money or if pack is sold out
+      btn.disabled = (balance < packPrice) || (availableCards.length === 0);
+      // Provide a subtle visual indicator when disabled
+      btn.style.opacity = btn.disabled ? 0.5 : 1;
+      btn.style.cursor = btn.disabled ? 'not-allowed' : 'pointer';
+    }
   });
 }
 
