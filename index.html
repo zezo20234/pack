@@ -1078,6 +1078,28 @@ async function finalizeSteal(cardId, victimId, cardToSteal) {
     document.getElementById("welcome-container").style.display = "none";
   });
 </script>
+<!-- Refresh Button (Top Right) -->
+<button id="refresh-btn" style="
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  font-size: 18px;
+  border: none;
+  border-radius: 10px;
+  background: #2196f3;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  z-index: 9999;">
+  🔄 Refresh
+</button>
+
+<script>
+  document.getElementById("refresh-btn").addEventListener("click", () => {
+    location.reload();
+  });
+</script>
 
 </body>
 </html>
