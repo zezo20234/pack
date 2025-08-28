@@ -4,14 +4,8 @@
 <meta charset="UTF-8">
 <title>Pack Opening Game with Mutations</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://cdnjs.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js">
-<!-- App Icon -->
 <link rel="apple-touch-icon" href="foot.jpeg">
-
-<!-- App Name -->
 <meta name="apple-mobile-web-app-title" content="YourAppName">
-
-<!-- Fullscreen Web App Mode -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" sizes="180x180" href="foot.jpeg">
@@ -19,194 +13,198 @@
 <link rel="apple-touch-icon" sizes="120x120" href="foot.jpeg">
 
 <style>
-  body {
-    font-family: 'Inter', sans-serif;
-    text-align: center;
-    background: #e6f0ff;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    color: #333;
-  }
-  .login-box, .game-box, #messageBox, #cardDetailsBox, #stealMessageBox {
-    margin: 20px auto;
-    padding: 20px;
-    border-radius: 12px;
-    background: white;
-    max-width: 480px;
-    width: 100%;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  }
-  .card-container {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    justify-content: center;
-    margin-top: 20px;
-  }
-  .card {
-    padding: 15px;
-    width: 100%;
-    min-height: 250px;
-    border-radius: 12px;
-    text-align: center;
-    border: 3px solid;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-  }
-  .card:hover {
-    transform: scale(1.05);
-    box-shadow: 0 8px 15px rgba(0,0,0,0.3);
-  }
-  .mutation-label {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
-    padding: 2px 6px;
-    border-radius: 8px;
-    font-size: 0.75rem;
-  }
-  .mutation-list {
-    margin-top: 10px;
-    text-align: left;
-    width: 100%;
-  }
-  .mutation-list h4 {
-    margin: 0;
-    font-size: 0.9rem;
-    color: #444;
-  }
-  .mutation-list ul {
-    list-style: none;
-    padding: 0;
-    margin: 5px 0 0;
-  }
-  .mutation-list li {
-    font-size: 0.8rem;
-    margin-bottom: 2px;
-  }
-  .common-card {
-    background: linear-gradient(#ddd, #bbb);
-    border-color: #666;
-    color: #444;
-  }
-  .rare-card {
-    background: linear-gradient(#a0d4ff, #66aaff);
-    border-color: #004488;
-    color: white;
-    font-weight: bold;
-  }
-  .epic-card {
-    background: linear-gradient(to bottom right, #a020f0, #800080);
-    border-color: #663399;
-    color: #eee;
-    font-weight: bold;
-  }
-  .legendary-card {
-    background: linear-gradient(to bottom right, #ffcc00, #b8860b);
-    border-color: #d4af37;
-    color: #333;
-    font-weight: bold;
-  }
-  .divine-card {
-    background: linear-gradient(to bottom right, #e0e0ff, #c0c0d4);
-    border-color: #9999ff;
-    color: #1a1a33;
-    font-weight: bold;
-  }
-  .pristimatic-card {
-    background: conic-gradient(red, orange, yellow, green, blue, indigo, violet);
-    border-color: #000;
-    color: white;
-    font-weight: bold;
-    text-shadow: 1px 1px 2px black;
-  }
-  .btn {
-    padding: 12px 24px;
-    margin: 8px;
-    border: none;
-    background: #444;
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background 0.2s ease, transform 0.2s ease;
-  }
-  .btn:hover { 
-    background: #666;
-    transform: translateY(-2px);
-  }
-  .btn-blue { background: #0077ff; }
-  .btn-blue:hover { background: #0055aa; }
-  .btn-purple { background: #800080; }
-  .btn-purple:hover { background: #6a0dad; }
-  .btn-gold { background: #d4af37; }
-  .btn-gold:hover { background: #b8860b; }
-  .btn-divine { background: #9999ff; }
-  .btn-divine:hover { background: #7a7aff; }
-  .btn-pristimatic { background: #e66465; }
-  .btn-pristimatic:hover { background: #9198e5; }
-  .btn-small { padding: 8px 16px; font-size: 14px; margin: 4px; }
-  .locked-card {
-    box-shadow: 0 0 10px 3px #ff0000; /* Red glow for locked cards */
-  }
-  .card-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    margin-top: 10px;
-    width: 100%;
-  }
-  #messageBox, #cardDetailsBox, #stealMessageBox {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1000;
-    display: none;
-  }
-  #cardDetailsBox .card {
-    cursor: default;
-    transform: none;
-    box-shadow: none;
-  }
-  .user-select-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-  .header-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    max-width: 480px;
-  }
-  @media (max-width: 600px) {
-    .card-container {
-      grid-template-columns: 1fr;
+    body {
+        font-family: 'Inter', sans-serif;
+        text-align: center;
+        background: #e6f0ff;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        color: #333;
     }
-    .game-box, .login-box {
-      padding: 10px;
+    .login-box, .game-box, #messageBox, #cardDetailsBox, #stealMessageBox {
+        margin: 20px auto;
+        padding: 20px;
+        border-radius: 12px;
+        background: white;
+        max-width: 480px;
+        width: 100%;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    .card-container {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        justify-content: center;
+        margin-top: 20px;
+    }
+    .card {
+        padding: 15px;
+        width: 100%;
+        min-height: 250px;
+        border-radius: 12px;
+        text-align: center;
+        border: 3px solid;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    .card:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+    }
+    .mutation-label {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+    }
+    .mutation-list {
+        margin-top: 10px;
+        text-align: left;
+        width: 100%;
+    }
+    .mutation-list h4 {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #444;
+    }
+    .mutation-list ul {
+        list-style: none;
+        padding: 0;
+        margin: 5px 0 0;
+    }
+    .mutation-list li {
+        font-size: 0.8rem;
+        margin-bottom: 2px;
+    }
+    .common-card {
+        background: linear-gradient(#ddd, #bbb);
+        border-color: #666;
+        color: #444;
+    }
+    .rare-card {
+        background: linear-gradient(#a0d4ff, #66aaff);
+        border-color: #004488;
+        color: white;
+        font-weight: bold;
+    }
+    .epic-card {
+        background: linear-gradient(to bottom right, #a020f0, #800080);
+        border-color: #663399;
+        color: #eee;
+        font-weight: bold;
+    }
+    .legendary-card {
+        background: linear-gradient(to bottom right, #ffcc00, #b8860b);
+        border-color: #d4af37;
+        color: #333;
+        font-weight: bold;
+    }
+    .divine-card {
+        background: linear-gradient(to bottom right, #e0e0ff, #c0c0d4);
+        border-color: #9999ff;
+        color: #1a1a33;
+        font-weight: bold;
+    }
+    .pristimatic-card {
+        background: conic-gradient(red, orange, yellow, green, blue, indigo, violet);
+        border-color: #000;
+        color: white;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px black;
     }
     .btn {
-      padding: 10px 20px;
-      font-size: 14px;
+        padding: 12px 24px;
+        margin: 8px;
+        border: none;
+        background: #444;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.2s ease, transform 0.2s ease;
     }
-  }
+    .btn:hover {
+        background: #666;
+        transform: translateY(-2px);
+    }
+    .btn-blue { background: #0077ff; }
+    .btn-blue:hover { background: #0055aa; }
+    .btn-purple { background: #800080; }
+    .btn-purple:hover { background: #6a0dad; }
+    .btn-gold { background: #d4af37; }
+    .btn-gold:hover { background: #b8860b; }
+    .btn-divine { background: #9999ff; }
+    .btn-divine:hover { background: #7a7aff; }
+    .btn-pristimatic { background: #e66465; }
+    .btn-pristimatic:hover { background: #9198e5; }
+    .btn-small { padding: 8px 16px; font-size: 14px; margin: 4px; }
+    .locked-card {
+        box-shadow: 0 0 10px 3px #ff0000;
+    }
+    .card-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        margin-top: 10px;
+        width: 100%;
+    }
+    #messageBox, #cardDetailsBox, #stealMessageBox {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+        display: none;
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    #cardDetailsBox .card {
+        cursor: default;
+        transform: none;
+        box-shadow: none;
+    }
+    .user-select-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        max-width: 480px;
+    }
+    @media (max-width: 600px) {
+        .card-container {
+            grid-template-columns: 1fr;
+        }
+        .game-box, .login-box {
+            padding: 10px;
+        }
+        .btn {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+    }
 </style>
 </head>
 <body>
@@ -221,7 +219,6 @@
   <button class="btn" onclick="login()">Login</button>
   <p id="loginStatus"></p>
 </div>
-<audio id="brainrot" src="brainrot.mp3" preload="auto"></audio>
 
 <div class="game-box" id="gameBox" style="display:none;">
   <div class="header-actions">
@@ -254,17 +251,17 @@
   <div id="otherUserCollection" class="card-container" style="display:none;"></div>
 </div>
 
-<div id="messageBox">
+<div id="messageBox" style="display:none;">
   <p id="messageText"></p>
   <button class="btn" onclick="closeMessage()">OK</button>
 </div>
 
-<div id="cardDetailsBox">
+<div id="cardDetailsBox" style="display:none;">
   <div id="cardDetailsContent"></div>
   <button class="btn" onclick="closeCardDetails()">Close</button>
 </div>
 
-<div id="stealMessageBox">
+<div id="stealMessageBox" style="display:none;">
   <h3>Steal Attempt!</h3>
   <p>Solve this equation to steal the card:</p>
   <h2 id="mathQuestion"></h2>
@@ -292,12 +289,16 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// --- Simulation timings (1 hour -> 1 minute, 7 minutes -> 7 seconds) ---
+const MUTATION_INTERVAL_MS = 1000 * 60;    // 1 minute (simulated "hour")
+const DISTRIBUTION_INTERVAL_MS = 1000 * 7; // 7 seconds (simulated "7 minutes")
+
 // --- Game Data ---
 const accounts = {
   zezo: "000",
   asser: "230",
   lilly: "246",
-  layan: "123" // Added Layan's account
+  layan: "123"
 };
 
 const MUTATION_TIERS = {
@@ -426,7 +427,7 @@ function showCardDetails(cardId) {
     ? `<div class="mutation-list">
          <h4>Mutations:</h4>
          <ul>
-           ${card.mutations.map(m => `<li>${m.name} (+${m.priceIncrease})</li>`).join('')}
+           ${card.mutations.map(m => `<li>${m.name} (+${m.priceIncrease || ''})</li>`).join('')}
          </ul>
        </div>`
     : `<p>This card has no mutations yet.</p>`;
@@ -462,11 +463,13 @@ window.onload = function() {
     }
   }
 
-  // Start the hourly mutation selection cycle (runs every hour)
-  setInterval(applyMutations, 1000 * 60 * 60);
-  applyMutations(); // Run once immediately to select the first mutation
-  // Start the distribution cycle (runs every 10 minutes)
-  setInterval(distributeMutation, 1000 * 60 * 7);
+  // Start the mutation selection cycle (simulated: every 1 minute)
+  setInterval(applyMutations, MUTATION_INTERVAL_MS);
+  applyMutations(); // attempt now
+
+  // Start the distribution cycle (simulated: every 7 seconds)
+  setInterval(distributeMutation, DISTRIBUTION_INTERVAL_MS);
+  distributeMutation(); // attempt now (will skip if no mutation)
 };
 
 function login() {
@@ -546,7 +549,8 @@ function loadCardQuantities() {
 }
 
 function saveUser() {
-  db.ref("users/" + currentUser).set({
+  // return the promise so callers can await it
+  return db.ref("users/" + currentUser).set({
     balance: balance,
     collection: collection,
     lockedCards: lockedCards
@@ -560,7 +564,7 @@ function saveCardQuantities() {
       quantities[card.name] = card.quantity;
     });
   }
-  db.ref("cardQuantities").set(quantities);
+  return db.ref("cardQuantities").set(quantities);
 }
 
 function checkNotifications() {
@@ -809,27 +813,81 @@ function updatePackChances() {
 
     let chanceText = `(${Math.round(totalChance * 100)}%)`;
     const packPrice = pack.type === 'common' ? 100 : pack.type === 'rare' ? 200 : pack.type === 'epic' ? 300 : pack.type === 'legendary' ? 500 : pack.type === 'divine' ? 550 : 650;
-    pack.button.innerText = `Buy ${pack.type.charAt(0).toUpperCase() + pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
+    if (pack.button) pack.button.innerText = `Buy ${pack.type.charAt(0).toUpperCase() + pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
   });
 }
 
-// --- Mutation Logic ---
+// --- MUTATION / FIREBASE SYNC ---
+// canonical mutation path in the database
+const mutationRef = db.ref("game/currentMutation");
+let lastSeenMutationTimestamp = 0;
+
+// Listen for mutation changes in real-time so ALL clients get the same mutation
+mutationRef.on("value", snap => {
+  const m = snap.val();
+  if (!m) return;
+  currentHourlyMutation = { name: m.name, priceIncrease: m.priceIncrease, timestamp: m.timestamp || 0 };
+  console.log("Mutation updated from Firebase:", currentHourlyMutation);
+
+  // If this client hasn't seen this mutation yet, notify the user and refresh UI
+  if (currentHourlyMutation.timestamp > lastSeenMutationTimestamp) {
+    lastSeenMutationTimestamp = currentHourlyMutation.timestamp;
+    // Only show the popup if a user is logged in
+    if (currentUser) {
+      showMessage(`New mutation is active: ${currentHourlyMutation.name}`);
+      updateUI();
+    }
+  }
+});
+
+// Try to create a new mutation in Firebase only if none exists or the stored mutation is stale.
+// We use a transaction so multiple clients won't overwrite each other.
 function applyMutations() {
-  console.log("Starting new hourly mutation cycle.");
-  // Choose a new mutation for the next hour
-  currentHourlyMutation = getRandomMutation();
-  console.log(`New hourly mutation selected: ${currentHourlyMutation.name}.`);
+  console.log("Attempting to set a new hourly mutation in Firebase (transaction).");
+
+  mutationRef.transaction(current => {
+    const now = Date.now();
+    // If no current mutation or it's older than the mutation interval, create a new one.
+    if (!current || (now - (current.timestamp || 0)) > MUTATION_INTERVAL_MS) {
+      const newMut = getRandomMutation();
+      return {
+        name: newMut.name,
+        priceIncrease: newMut.priceIncrease,
+        timestamp: now
+      };
+    }
+    // Otherwise, do not change (another client already set it recently)
+    return;
+  }, (error, committed, snapshot) => {
+    if (error) {
+      console.error("applyMutations transaction error:", error);
+      return;
+    }
+    if (committed) {
+      console.log("A new mutation was set in Firebase:", snapshot.val());
+      // the on('value') listener will pick this up and notify users
+    } else {
+      // no-op; current mutation still valid
+    }
+  });
 }
 
+// Distribution will *read* the canonical mutation from Firebase before mutating cards.
+// This ensures every distribution uses the same mutation for everyone.
+// IMPORTANT CHANGE: we now ensure a card cannot receive the SAME mutation name twice.
 async function distributeMutation() {
-  if (!currentHourlyMutation) {
-    console.log("No hourly mutation selected. Skipping distribution.");
-    return;
-  }
-  
-  console.log(`Attempting to distribute mutation: ${currentHourlyMutation.name}`);
-
   try {
+    const mutSnap = await mutationRef.once("value");
+    const mutObj = mutSnap.val();
+    if (!mutObj) {
+      console.log("No current mutation available in Firebase. Skipping distribution.");
+      return;
+    }
+
+    const mutationName = mutObj.name;
+    const mutationPriceIncrease = mutObj.priceIncrease;
+    const mutationToApply = { name: mutationName, priceIncrease: mutationPriceIncrease, appliedAt: Date.now() };
+
     const allUsersSnapshot = await db.ref("users").once("value");
     const allUsersData = allUsersSnapshot.val();
     if (!allUsersData) {
@@ -843,9 +901,9 @@ async function distributeMutation() {
       const lockedCardsForUser = userData.lockedCards || {};
       for (const cardId in lockedCardsForUser) {
         const card = lockedCardsForUser[cardId];
-        // Ensure card has less than 5 mutations to be eligible
+        // only consider cards with less than 5 mutations
         if ((card.mutations || []).length < 5) {
-            allLockedCards.push({ userId, cardId, card });
+          allLockedCards.push({ userId, cardId, card });
         }
       }
     }
@@ -854,30 +912,41 @@ async function distributeMutation() {
       console.log("No locked cards available to mutate.");
       return;
     }
-    
-    // Randomly pick one card from the pool of all locked cards
-    const randomIndex = Math.floor(Math.random() * allLockedCards.length);
-    const cardToMutate = allLockedCards[randomIndex];
-    const { userId, cardId, card } = cardToMutate;
 
-    // Apply the mutation and update the last mutation time
-    card.mutations = card.mutations || [];
-    card.mutations.push(currentHourlyMutation);
-    card.currentPrice += currentHourlyMutation.priceIncrease;
-    card.lastMutationTime = Date.now();
+    // Filter out cards that already HAVE this mutation name (prevent duplicates)
+    const eligibleLockedCards = allLockedCards.filter(entry => {
+      const card = entry.card;
+      const existingNames = (card.mutations || []).map(m => m.name);
+      return !existingNames.includes(mutationName);
+    });
 
-    // Update the card for the selected user in the database
-    await db.ref(`users/${userId}/lockedCards/${cardId}`).set(card);
-    
-    console.log(`Successfully mutated card "${card.name}" for user "${userId}".`);
-
-    // If the current logged-in user's card was mutated, update their local state and UI
-    if (userId === currentUser) {
-        lockedCards[cardId] = card;
-        updateUI();
-        showMessage(`Your card "${card.name}" has gained a new mutation!`);
+    if (eligibleLockedCards.length === 0) {
+      console.log(`All locked cards already have the "${mutationName}" mutation — skipping distribution this cycle.`);
+      return;
     }
 
+    // Randomly pick one eligible locked card to mutate
+    const randomIndex = Math.floor(Math.random() * eligibleLockedCards.length);
+    const cardToMutateEntry = eligibleLockedCards[randomIndex];
+    const { userId, cardId, card } = cardToMutateEntry;
+
+    // Apply mutation (now duplicates of same name are prevented)
+    card.mutations = card.mutations || [];
+    card.mutations.push(mutationToApply); // unique because we filtered above
+    card.currentPrice = (card.currentPrice || card.basePrice || 0) + mutationToApply.priceIncrease;
+    card.lastMutationTime = Date.now();
+
+    // Save mutated card back to that user's lockedCards
+    await db.ref(`users/${userId}/lockedCards/${cardId}`).set(card);
+
+    console.log(`Successfully applied mutation "${mutationToApply.name}" to card "${card.name}" for user "${userId}".`);
+
+    // If it affected the current logged-in user, update local state and UI
+    if (userId === currentUser) {
+      lockedCards[cardId] = card;
+      updateUI();
+      showMessage(`Your card "${card.name}" received mutation: ${mutationToApply.name}`);
+    }
   } catch (error) {
     console.error("Error distributing mutation:", error);
   }
@@ -888,9 +957,9 @@ function getRandomMutation() {
     const mutation = MUTATIONS[key];
     const tierChance = MUTATION_TIERS[mutation.tier].chance;
     return {
-        name: key,
-        priceIncrease: mutation.priceIncrease,
-        chance: tierChance
+      name: key,
+      priceIncrease: mutation.priceIncrease,
+      chance: tierChance
     };
   });
 
@@ -901,13 +970,11 @@ function getRandomMutation() {
   for (const mutation of mutationsWithChances) {
     sum += mutation.chance;
     if (rand <= sum) {
-      return {
-        name: mutation.name,
-        priceIncrease: mutation.priceIncrease
-      };
+      return { name: mutation.name, priceIncrease: mutation.priceIncrease };
     }
   }
 
+  // fallback
   return { name: 'bloom', priceIncrease: 300 };
 }
 
@@ -1029,8 +1096,8 @@ async function finalizeSteal(cardId, victimId, cardToSteal) {
         collection[cardId] = cardToSteal;
 
         // Save changes for both users
-        await victimRef.child('collection').set(victimData.collection);
-        await victimRef.child('lockedCards').set(victimData.lockedCards);
+        await victimRef.child('collection').set(victimData.collection || {});
+        await victimRef.child('lockedCards').set(victimData.lockedCards || {});
         await saveUser(); // Saves the thief's updated collection
 
         // Send a notification to the victim
@@ -1045,6 +1112,7 @@ async function finalizeSteal(cardId, victimId, cardToSteal) {
     }
 }
 </script>
+
 <!-- Centered Welcome Button + Brainrot Audio -->
 <div id="welcome-container" style="
   position: fixed;
@@ -1069,7 +1137,7 @@ async function finalizeSteal(cardId, victimId, cardToSteal) {
   </button>
 </div>
 
-<audio id="brainrot-audio" src="brainrot.mp3"></audio>
+<audio id="brainrot-audio" src="brainrot.mp3" preload="auto"></audio>
 
 <script>
   document.getElementById("welcome-btn").addEventListener("click", () => {
@@ -1078,6 +1146,7 @@ async function finalizeSteal(cardId, victimId, cardToSteal) {
     document.getElementById("welcome-container").style.display = "none";
   });
 </script>
+
 <!-- Refresh Button (Top Right) -->
 <button id="refresh-btn" style="
   position: fixed;
