@@ -236,11 +236,11 @@
 
   <div style="display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 20px;">
     <button class="btn" onclick="openPack('common')">Buy Common Pack (100%) ($100)</button>
-    <button class="btn btn-blue" onclick="openPack('rare')">Buy Rare Pack (100%) ($200)</button>
-    <button class="btn btn-purple" onclick="openPack('epic')">Buy Epic Pack (100%) ($300)</button>
-    <button class="btn btn-gold" onclick="openPack('legendary')">Buy Legendary Pack (100%) ($500)</button>
-    <button class="btn btn-divine" onclick="openPack('divine')">Buy Divine Pack (100%) ($550)</button>
-    <button class="btn btn-pristimatic" onclick="openPack('pristimatic')">Buy Pristimatic Pack (100%) ($650)</button>
+    <button class="btn btn-blue" onclick="openPack('rare')">Buy Rare Pack (100%) ($250)</button>
+    <button class="btn btn-purple" onclick="openPack('epic')">Buy Epic Pack (100%) ($350)</button>
+    <button class="btn btn-gold" onclick="openPack('legendary')">Buy Legendary Pack (100%) ($1500)</button>
+    <button class="btn btn-divine" onclick="openPack('divine')">Buy Divine Pack (100%) ($5000)</button>
+    <button class="btn btn-pristimatic" onclick="openPack('pristimatic')">Buy Pristimatic Pack (100%) ($7500)</button>
   </div>
   <div id="openedCard"></div>
   <h3>Your Collection</h3>
@@ -323,7 +323,7 @@ const MUTATIONS = {
 };
 
 let cardPools = {
-  common: [
+    common: [
     { name: "asser", quantity: 50, chance: 0.25, price: 110 },
     { name: "asser eat", quantity: 50, chance: 0.15, price: 120 },
     { name: "asser angry", quantity: 50, chance: 0.15, price: 130 },
@@ -333,45 +333,45 @@ let cardPools = {
     { name: "asser sleep", quantity: 50, chance: 0.10, price: 130 }
   ],
   rare: [
-    { name: "Blue Asser", quantity: 40, chance: 0.30, price: 250 },
+    { name: "Blue Asser", quantity: 40, chance: 0.30, price: 260 },
     { name: "Asser Dragon", quantity: 40, chance: 0.25, price: 280 },
     { name: "Asser Galaxy", quantity: 35, chance: 0.20, price: 300 },
     { name: "Asser Legend", quantity: 10, chance: 0.15, price: 350 },
     { name: "Asser Mythic", quantity: 15, chance: 0.10, price: 400 }
   ],
   epic: [
-    { name: "lilly eat", quantity: 50, chance: 0.15, price: 320 },
-    { name: "lilly angry", quantity: 50, chance: 0.15, price: 325 },
-    { name: "lilly sad", quantity: 50, chance: 0.10, price: 340 },
-    { name: "lilly happy", quantity: 50, chance: 0.15, price: 320 },
-    { name: "lilly sleep", quantity: 50, chance: 0.10, price: 350 },
-    { name: "lilly", quantity: 50, chance: 0.25, price: 315 },
-    { name: "Lilly Bomba", quantity: 10, chance: 0.10, price: 550 }
+    { name: "lilly eat", quantity: 50, chance: 0.15, price: 360 },
+    { name: "lilly angry", quantity: 50, chance: 0.15, price: 365 },
+    { name: "lilly sad", quantity: 50, chance: 0.10, price: 360 },
+    { name: "lilly happy", quantity: 50, chance: 0.15, price: 380 },
+    { name: "lilly sleep", quantity: 50, chance: 0.10, price: 370 },
+    { name: "lilly", quantity: 50, chance: 0.25, price: 355 },
+    { name: "Lilly Bomba", quantity: 10, chance: 0.10, price: 600 }
   ],
   legendary: [
-      { name: "Lilly laugh", quantity: 10, chance: 0.40, price: 550 },
-      { name: "Lilly Queen", quantity: 10, chance: 0.40, price: 550 },
-      { name: "Lilly Dragon", quantity: 7, chance: 0.10, price: 700 },
-      { name: "Lilly Hero", quantity: 4, chance: 0.10, price: 1000 }
+      { name: "Lilly laugh", quantity: 10, chance: 0.40, price: 1550 },
+      { name: "Lilly Queen", quantity: 10, chance: 0.40, price: 1550 },
+      { name: "Lilly Dragon", quantity: 7, chance: 0.10, price: 1700 },
+      { name: "Lilly Hero", quantity: 4, chance: 0.10, price: 1500 }
   ],
   divine: [
-      { name: "Zezo laugh", quantity: 15, chance: 0.10, price: 600 },
-      { name: "Zezo sad", quantity: 15, chance: 0.10, price: 650 },
-      { name: "Zezo angry", quantity: 10, chance: 0.10, price: 800 },
-      { name: "Zezo ps5", quantity: 10, chance: 0.20, price: 700 },
-      { name: "Zezo happy", quantity: 15, chance: 0.10, price: 600 },
-      { name: "Zezo smile", quantity: 5, chance: 0.10, price: 620 },
-      { name: "Zezo roblox", quantity: 5, chance: 0.10, price: 750 },
-      { name: "Zezo fart", quantity: 6, chance: 0.05, price: 1000 },
-      { name: "normal zezo full", quantity: 3, chance: 0.15, price: 850 }
+      { name: "Zezo laugh", quantity: 15, chance: 0.10, price: 5600 },
+      { name: "Zezo sad", quantity: 15, chance: 0.10, price: 5650 },
+      { name: "Zezo angry", quantity: 10, chance: 0.10, price: 5800 },
+      { name: "Zezo ps5", quantity: 10, chance: 0.20, price: 5700 },
+      { name: "Zezo happy", quantity: 15, chance: 0.10, price: 5600 },
+      { name: "Zezo smile", quantity: 5, chance: 0.10, price: 5620 },
+      { name: "Zezo roblox", quantity: 5, chance: 0.10, price: 5750 },
+      { name: "Zezo fart", quantity: 6, chance: 0.05, price: 6000 },
+      { name: "normal zezo full", quantity: 3, chance: 0.15, price: 5850 }
   ],
   pristimatic: [
-      { name: "Zezo Prismatic", quantity: 2, chance: 0.40, price: 900 },
-      { name: "Zezo Rainbow", quantity: 2, chance: 0.40, price: 1200 },
-      { name: "Asser colotinni fasatennee", quantity: 2, chance: 0.40, price: 7500 },
-      { name: "zezo big bomba fart", quantity: 2, chance: 0.40, price: 1200 },
-      { name: "lilly kowaferr", quantity: 2, chance: 0.40, price: 6000 },
-      { name: "Zezo shower", quantity: 2, chance: 0.20, price: 1500 }
+      { name: "Zezo Prismatic", quantity: 2, chance: 0.40, price: 7500 },
+      { name: "Zezo Rainbow", quantity: 2, chance: 0.40, price: 7800 },
+      { name: "Asser colotinni fasatennee", quantity: 2, chance: 0.40, price: 8000 },
+      { name: "zezo big bomba fart", quantity: 2, chance: 0.40, price: 12000 },
+      { name: "lilly kowaferr", quantity: 2, chance: 0.40, price: 8000 },
+      { name: "Zezo shower", quantity: 2, chance: 0.20, price: 8500 }
   ]
 };
 
@@ -750,23 +750,23 @@ function openPack(type) {
   let packPrice = 0;
   let pool = [];
 
-  if (type === "common") {
+    if (type === "common") {
     packPrice = 100;
     pool = cardPools.common;
   } else if (type === "rare") {
-    packPrice = 200;
+    packPrice = 250;
     pool = cardPools.rare;
   } else if (type === "epic") {
-    packPrice = 300;
+    packPrice = 350;
     pool = cardPools.epic;
   } else if (type === "legendary") {
-    packPrice = 500;
+    packPrice = 1500;
     pool = cardPools.legendary;
   } else if (type === "divine") {
-    packPrice = 550;
+    packPrice = 5000;
     pool = cardPools.divine;
   } else if (type === "pristimatic") {
-    packPrice = 750;
+    packPrice = 7500;
     pool = cardPools.pristimatic;
   }
 
