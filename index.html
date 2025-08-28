@@ -856,7 +856,7 @@ function updatePackChances() {
     availableCards.forEach(card => totalChance += card.chance);
 
     let chanceText = `(${Math.round(totalChance * 100)}%)`;
-    const packPrice = pack.type === 'common' ? 100 : pack.type === 'rare' ? 200 : pack.type === 'epic' ? 300 : pack.type === 'legendary' ? 500 : pack.type === 'divine' ? 550 : 650;
+    const packPrice = pack.type === 'common' ? 100 : pack.type === 'rare' ? 250 : pack.type === 'epic' ? 350 : pack.type === 'legendary' ? 1500 : pack.type === 'divine' ? 5000 : 7500;
     if (pack.button) pack.button.innerText = `Buy ${pack.type.charAt(0).toUpperCase() + pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
   });
 }
