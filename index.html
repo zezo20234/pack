@@ -292,7 +292,7 @@ const db = firebase.database();
 const MUTATION_INTERVAL_MS = 1000 * 60 * 30; // 30 minutes for new global mutation
 const DISTRIBUTION_INTERVAL_MS = 1000 * 60 * 7; // 7 minutes to distribute the mutation
 const PRESENCE_HEARTBEAT_MS = 1000 * 30; // presence update interval
-const PRESENCE_ONLINE_THRESHOLD_MS = 1000 * 60 * 10; // consider users online if seen in last 10 minutes
+ 60 * 10; // consider users online if seen in last 10 minutes
 
 // --- Game Data ---
 const accounts = {
