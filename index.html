@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Pack Opening Game</title>
+<title>Pack Opening Game with Mutations</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js">
 <style>
   body {
-    font-family: Arial, sans-serif;
+    font-family: 'Inter', sans-serif;
     text-align: center;
     background: #e6f0ff;
     min-height: 100vh;
@@ -16,15 +16,16 @@
     align-items: center;
     justify-content: center;
     padding: 1rem;
+    color: #333;
   }
-  .login-box, .game-box {
+  .login-box, .game-box, #messageBox, #cardDetailsBox, #stealMessageBox {
     margin: 20px auto;
     padding: 20px;
     border-radius: 12px;
     background: white;
     max-width: 480px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     width: 100%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
   }
   .card-container {
     display: grid;
@@ -36,7 +37,7 @@
   .card {
     padding: 15px;
     width: 100%;
-    height: 250px;
+    min-height: 250px;
     border-radius: 12px;
     text-align: center;
     border: 3px solid;
@@ -45,10 +46,43 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
   }
   .card:hover {
     transform: scale(1.05);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+  }
+  .mutation-label {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+  }
+  .mutation-list {
+    margin-top: 10px;
+    text-align: left;
+    width: 100%;
+  }
+  .mutation-list h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #444;
+  }
+  .mutation-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 5px 0 0;
+  }
+  .mutation-list li {
+    font-size: 0.8rem;
+    margin-bottom: 2px;
   }
   .common-card {
     background: linear-gradient(#ddd, #bbb);
@@ -111,30 +145,54 @@
   .btn-divine:hover { background: #7a7aff; }
   .btn-pristimatic { background: #e66465; }
   .btn-pristimatic:hover { background: #9198e5; }
-  .locked-card .btn {
-      background: #888;
-      cursor: not-allowed;
+  .btn-small { padding: 8px 16px; font-size: 14px; margin: 4px; }
+  .locked-card {
+    box-shadow: 0 0 10px 3px #ff0000; /* Red glow for locked cards */
   }
   .card-buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 10px;
+    width: 100%;
   }
-  #messageBox {
+  #messageBox, #cardDetailsBox, #stealMessageBox {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     z-index: 1000;
     display: none;
   }
-  #messageBox button {
-    margin-top: 10px;
+  #cardDetailsBox .card {
+    cursor: default;
+    transform: none;
+    box-shadow: none;
+  }
+  .user-select-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 480px;
+  }
+  @media (max-width: 600px) {
+    .card-container {
+      grid-template-columns: 1fr;
+    }
+    .game-box, .login-box {
+      padding: 10px;
+    }
+    .btn {
+      padding: 10px 20px;
+      font-size: 14px;
+    }
   }
 </style>
 </head>
@@ -152,8 +210,20 @@
 </div>
 
 <div class="game-box" id="gameBox" style="display:none;">
-  <h2>Welcome <span id="userName"></span></h2>
+  <div class="header-actions">
+    <h2>Welcome <span id="userName"></span></h2>
+    <button class="btn btn-small" onclick="logout()">Logout</button>
+  </div>
   <p>Balance: $<span id="balance">0</span></p>
+
+  <!-- User Selection Buttons for Stealing -->
+  <div class="user-select-buttons">
+      <button class="btn btn-blue" onclick="showUserCollection('zezo')">Zezo</button>
+      <button class="btn btn-blue" onclick="showUserCollection('layan')">Layan</button>
+      <button class="btn btn-blue" onclick="showUserCollection('asser')">Asser</button>
+      <button class="btn btn-purple" onclick="showMyCollection()">My Base</button>
+  </div>
+
   <div style="display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 20px;">
     <button class="btn" onclick="openPack('common')">Buy Common Pack (100%) ($100)</button>
     <button class="btn btn-blue" onclick="openPack('rare')">Buy Rare Pack (100%) ($200)</button>
@@ -165,6 +235,9 @@
   <div id="openedCard"></div>
   <h3>Your Collection</h3>
   <div id="collection" class="card-container"></div>
+
+  <h3><span id="otherUserHeader"></span>'s Collection</h3>
+  <div id="otherUserCollection" class="card-container" style="display:none;"></div>
 </div>
 
 <div id="messageBox">
@@ -172,11 +245,26 @@
   <button class="btn" onclick="closeMessage()">OK</button>
 </div>
 
+<div id="cardDetailsBox">
+  <div id="cardDetailsContent"></div>
+  <button class="btn" onclick="closeCardDetails()">Close</button>
+</div>
+
+<div id="stealMessageBox">
+  <h3>Steal Attempt!</h3>
+  <p>Solve this equation to steal the card:</p>
+  <h2 id="mathQuestion"></h2>
+  <p>Time remaining: <span id="stealTimer">5</span>s</p>
+  <input type="number" id="mathAnswer" placeholder="Your Answer" style="padding:10px; border-radius:8px; border:1px solid #ccc; width:80%; margin-top: 10px;">
+  <button class="btn" onclick="checkStealAnswer()">Submit</button>
+</div>
+
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
 <script>
+// --- Firebase Setup ---
 const firebaseConfig = {
   apiKey: "AIzaSyDclp6rqCZRVreOzTcxv840mXcl6nDKAv8",
   authDomain: "pack-f76c3.firebaseapp.com",
@@ -190,83 +278,178 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// Accounts
+// --- Game Data ---
 const accounts = {
   zezo: "000",
   asser: "230",
-  lilly: "246"
+  lilly: "246",
+  layan: "123" // Added Layan's account
 };
 
-// Card pools with initial quantities
+const MUTATION_TIERS = {
+  common: { name: "Common", chance: 0.50 },
+  uncommon: { name: "Uncommon", chance: 0.25 },
+  rare: { name: "Rare", chance: 0.15 },
+  veryHard: { name: "Very Hard", chance: 0.10 }
+};
+
+const MUTATIONS = {
+    plasma: { priceIncrease: 500, tier: 'uncommon' },
+    bloom: { priceIncrease: 300, tier: 'common' },
+    choc: { priceIncrease: 400, tier: 'common' },
+    shocked: { priceIncrease: 650, tier: 'rare' },
+    rainbow: { priceIncrease: 500, tier: 'uncommon' },
+    burnt: { priceIncrease: 350, tier: 'uncommon' },
+    chilled: { priceIncrease: 550, tier: 'rare' },
+    frozen: { priceIncrease: 350, tier: 'common' },
+    brainrot: { priceIncrease: 600, tier: 'veryHard' },
+    zezoplot: { priceIncrease: 700, tier: 'veryHard' }
+};
+
 let cardPools = {
-    common: [
-      { name: "asser", quantity: 50, chance: 0.25, price: 110 },
-      { name: "asser eat", quantity: 50, chance: 0.15, price: 120 },
-      { name: "asser angry", quantity: 50, chance: 0.15, price: 130 },
-      { name: "asser cry", quantity: 50, chance: 0.10, price: 150 },
-      { name: "asser sad", quantity: 50, chance: 0.10, price: 140 },
-      { name: "asser happy", quantity: 50, chance: 0.15, price: 130 },
-      { name: "asser sleep", quantity: 50, chance: 0.10, price: 130 }
-    ],
-    rare: [
-      { name: "Blue Asser", quantity: 30, chance: 0.30, price: 250 },
-      { name: "Asser Dragon", quantity: 20, chance: 0.25, price: 280 },
-      { name: "Asser Galaxy", quantity: 15, chance: 0.20, price: 300 },
-      { name: "Asser Legend", quantity: 10, chance: 0.15, price: 350 },
-      { name: "Asser Mythic", quantity: 5,  chance: 0.10, price: 400 }
-    ],
-    epic: [
-      { name: "lilly eat", quantity: 50, chance: 0.15, price: 220 },
-      { name: "lilly angry", quantity: 50, chance: 0.15, price: 230 },
-      { name: "lilly sad", quantity: 50, chance: 0.10, price: 240 },
-      { name: "lilly happy", quantity: 50, chance: 0.15, price: 230 },
-      { name: "lilly sleep", quantity: 50, chance: 0.10, price: 230 },
-      { name: "lilly", quantity: 50, chance: 0.25, price: 210 },
-      { name: "Lilly Bomba", quantity: 10, chance: 0.10, price: 500 }
-    ],
-    legendary: [
-        { name: "Lilly laugh", quantity: 5, chance: 0.40, price: 550 },
-        { name: "Lilly Queen", quantity: 5, chance: 0.40, price: 550 },
-        { name: "Lilly Dragon", quantity: 3, chance: 0.10, price: 700 },
-        { name: "Lilly Hero", quantity: 1, chance: 0.10, price: 1000 }
-    ],
-    divine: [
-        { name: "Zezo laugh", quantity: 2, chance: 0.10, price: 600 },
-        { name: "Zezo sad", quantity: 2, chance: 0.10, price: 650 },
-        { name: "Zezo angry", quantity: 1, chance: 0.10, price: 800 },
-        { name: "Zezo ps5", quantity: 2, chance: 0.20, price: 700 },
-        { name: "Zezo happy", quantity: 2, chance: 0.10, price: 600 },
-        { name: "Zezo smile", quantity: 2, chance: 0.10, price: 620 },
-        { name: "Zezo roblox", quantity: 2, chance: 0.10, price: 750 },
-        { name: "Zezo fart", quantity: 2, chance: 0.05, price: 1000 },
-        { name: "normal zezo full", quantity: 1, chance: 0.15, price: 850 }
-    ],
-    pristimatic: [
-        { name: "Zezo Prismatic", quantity: 1, chance: 0.40, price: 900 },
-        { name: "Zezo Rainbow", quantity: 1, chance: 0.40, price: 1200 },
-        { name: "Zezo shower", quantity: 1, chance: 0.20, price: 1500 }
-    ]
+  common: [
+    { name: "asser", quantity: 50, chance: 0.25, price: 110 },
+    { name: "asser eat", quantity: 50, chance: 0.15, price: 120 },
+    { name: "asser angry", quantity: 50, chance: 0.15, price: 130 },
+    { name: "asser cry", quantity: 50, chance: 0.10, price: 150 },
+    { name: "asser sad", quantity: 50, chance: 0.10, price: 140 },
+    { name: "asser happy", quantity: 50, chance: 0.15, price: 130 },
+    { name: "asser sleep", quantity: 50, chance: 0.10, price: 130 }
+  ],
+  rare: [
+    { name: "Blue Asser", quantity: 30, chance: 0.30, price: 250 },
+    { name: "Asser Dragon", quantity: 20, chance: 0.25, price: 280 },
+    { name: "Asser Galaxy", quantity: 15, chance: 0.20, price: 300 },
+    { name: "Asser Legend", quantity: 10, chance: 0.15, price: 350 },
+    { name: "Asser Mythic", quantity: 5, chance: 0.10, price: 400 }
+  ],
+  epic: [
+    { name: "lilly eat", quantity: 50, chance: 0.15, price: 220 },
+    { name: "lilly angry", quantity: 50, chance: 0.15, price: 230 },
+    { name: "lilly sad", quantity: 50, chance: 0.10, price: 240 },
+    { name: "lilly happy", quantity: 50, chance: 0.15, price: 230 },
+    { name: "lilly sleep", quantity: 50, chance: 0.10, price: 230 },
+    { name: "lilly", quantity: 50, chance: 0.25, price: 210 },
+    { name: "Lilly Bomba", quantity: 10, chance: 0.10, price: 500 }
+  ],
+  legendary: [
+      { name: "Lilly laugh", quantity: 5, chance: 0.40, price: 550 },
+      { name: "Lilly Queen", quantity: 5, chance: 0.40, price: 550 },
+      { name: "Lilly Dragon", quantity: 3, chance: 0.10, price: 700 },
+      { name: "Lilly Hero", quantity: 1, chance: 0.10, price: 1000 }
+  ],
+  divine: [
+      { name: "Zezo laugh", quantity: 2, chance: 0.10, price: 600 },
+      { name: "Zezo sad", quantity: 2, chance: 0.10, price: 650 },
+      { name: "Zezo angry", quantity: 1, chance: 0.10, price: 800 },
+      { name: "Zezo ps5", quantity: 2, chance: 0.20, price: 700 },
+      { name: "Zezo happy", quantity: 2, chance: 0.10, price: 600 },
+      { name: "Zezo smile", quantity: 2, chance: 0.10, price: 620 },
+      { name: "Zezo roblox", quantity: 2, chance: 0.10, price: 750 },
+      { name: "Zezo fart", quantity: 2, chance: 0.05, price: 1000 },
+      { name: "normal zezo full", quantity: 1, chance: 0.15, price: 850 }
+  ],
+  pristimatic: [
+      { name: "Zezo Prismatic", quantity: 1, chance: 0.40, price: 900 },
+      { name: "Zezo Rainbow", quantity: 1, chance: 0.40, price: 1200 },
+      { name: "Zezo shower", quantity: 1, chance: 0.20, price: 1500 }
+  ]
 };
 
+// --- Game State Variables ---
 let currentUser = null;
 let balance = 0;
-let collection = {};
+let collection = {}; 
 let lockedCards = {};
+let currentHourlyMutation = null;
+let stealData = {};
+let stealTimerInterval = null;
 
-// Handle "Keep me signed in" functionality
+// --- Utility Functions ---
+function generateCardId() {
+  return Date.now().toString() + Math.random().toString().substr(2, 6);
+}
+
+function getCardType(cardName) {
+  if (cardPools.common.some(c => c.name === cardName)) return 'common';
+  if (cardPools.rare.some(c => c.name === cardName)) return 'rare';
+  if (cardPools.epic.some(c => c.name === cardName)) return 'epic';
+  if (cardPools.legendary.some(c => c.name === cardName)) return 'legendary';
+  if (cardPools.divine.some(c => c.name === cardName)) return 'divine';
+  if (cardPools.pristimatic.some(c => c.name === cardName)) return 'pristimatic';
+  return '';
+}
+
+function getBaseCardPrice(cardName) {
+  const allCards = [...cardPools.common, ...cardPools.rare, ...cardPools.epic, ...cardPools.legendary, ...cardPools.divine, ...cardPools.pristimatic];
+  const card = allCards.find(c => c.name === cardName);
+  return card ? card.price : 0;
+}
+
+function getCardQuantity(cardName) {
+  const allCards = [...cardPools.common, ...cardPools.rare, ...cardPools.epic, ...cardPools.legendary, ...cardPools.divine, ...cardPools.pristimatic];
+  const card = allCards.find(c => c.name === cardName);
+  return card ? card.quantity : 0;
+}
+
+function showMessage(message) {
+  document.getElementById('messageText').innerText = message;
+  document.getElementById('messageBox').style.display = 'block';
+}
+
+function closeMessage() {
+  document.getElementById('messageBox').style.display = 'none';
+}
+
+function showCardDetails(cardId) {
+  const card = collection[cardId] || lockedCards[cardId];
+  if (!card) return;
+
+  const mutationListHtml = card.mutations && card.mutations.length > 0
+    ? `<div class="mutation-list">
+         <h4>Mutations:</h4>
+         <ul>
+           ${card.mutations.map(m => `<li>${m.name} (+${m.priceIncrease})</li>`).join('')}
+         </ul>
+       </div>`
+    : `<p>This card has no mutations yet.</p>`;
+
+  const cardHtml = `
+    <div class="card ${getCardType(card.name)}-card" data-card-id="${cardId}">
+      <h3>${card.name}</h3>
+      <p>Base Value: $${getBaseCardPrice(card.name)}</p>
+      <p>Current Value: $${card.currentPrice}</p>
+      ${mutationListHtml}
+    </div>
+  `;
+  document.getElementById('cardDetailsContent').innerHTML = cardHtml;
+  document.getElementById('cardDetailsBox').style.display = 'block';
+}
+
+function closeCardDetails() {
+  document.getElementById('cardDetailsBox').style.display = 'none';
+}
+
+
+// --- User & Data Management ---
 window.onload = function() {
   const lastUser = localStorage.getItem("lastLoggedInUser");
   const keepSignedIn = localStorage.getItem("keepSignedIn");
   if (lastUser && keepSignedIn === "true") {
     document.getElementById("username").value = lastUser;
     document.getElementById("keepSignedIn").checked = true;
-    // Log the user in directly if credentials are known
     const pass = accounts[lastUser];
     if (pass) {
         document.getElementById("password").value = pass;
         login();
     }
   }
+
+  // Start the hourly mutation selection cycle (runs every hour)
+  setInterval(applyMutations, 1000 * 60 * 60);
+  applyMutations(); // Run once immediately to select the first mutation
+  // Start the distribution cycle (runs every 10 minutes)
+  setInterval(distributeMutation, 1000 * 60 * 7);
 };
 
 function login() {
@@ -292,12 +475,29 @@ function login() {
   }
 }
 
+function logout() {
+    currentUser = null;
+    balance = 0;
+    collection = {};
+    lockedCards = {};
+    localStorage.removeItem("lastLoggedInUser");
+    localStorage.removeItem("keepSignedIn");
+    document.getElementById("gameBox").style.display = "none";
+    document.getElementById("loginBox").style.display = "block";
+    document.getElementById("username").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("loginStatus").innerText = "";
+    document.getElementById("keepSignedIn").checked = false;
+    updateUI();
+}
+
 function loadUserData() {
   db.ref("users/" + currentUser).once("value").then(snap => {
     if (snap.exists()) {
-      balance = snap.val().balance || 100;
-      collection = snap.val().collection || {};
-      lockedCards = snap.val().lockedCards || {};
+      const userData = snap.val();
+      balance = userData.balance || 100;
+      collection = userData.collection || {};
+      lockedCards = userData.lockedCards || {};
     } else {
       balance = 100;
       collection = {};
@@ -306,6 +506,7 @@ function loadUserData() {
     }
     loadCardQuantities();
   });
+  checkNotifications();
 }
 
 function loadCardQuantities() {
@@ -345,67 +546,139 @@ function saveCardQuantities() {
   db.ref("cardQuantities").set(quantities);
 }
 
-function getCardType(cardName) {
-  if (cardPools.common.some(c => c.name === cardName)) return 'common';
-  if (cardPools.rare.some(c => c.name === cardName)) return 'rare';
-  if (cardPools.epic.some(c => c.name === cardName)) return 'epic';
-  if (cardPools.legendary.some(c => c.name === cardName)) return 'legendary';
-  if (cardPools.divine.some(c => c.name === cardName)) return 'divine';
-  if (cardPools.pristimatic.some(c => c.name === cardName)) return 'pristimatic';
-  return '';
+function checkNotifications() {
+  const notificationsRef = db.ref(`notifications/${currentUser}`);
+  notificationsRef.once("value").then(snap => {
+    if (snap.exists()) {
+      const notifications = snap.val();
+      for (const key in notifications) {
+        showMessage(notifications[key]);
+      }
+      // Clear notifications after showing them
+      notificationsRef.remove();
+    }
+  });
 }
 
-function getCardPrice(cardName) {
-  const allCards = [...cardPools.common, ...cardPools.rare, ...cardPools.epic, ...cardPools.legendary, ...cardPools.divine, ...cardPools.pristimatic];
-  const card = allCards.find(c => c.name === cardName);
-  return card ? card.price : 0;
-}
 
-function getCardQuantity(cardName) {
-  const allCards = [...cardPools.common, ...cardPools.rare, ...cardPools.epic, ...cardPools.legendary, ...cardPools.divine, ...cardPools.pristimatic];
-  const card = allCards.find(c => c.name === cardName);
-  return card ? card.quantity : 0;
-}
-
+// --- Core Game Logic ---
 function updateUI() {
   document.getElementById("balance").innerText = balance;
+  document.getElementById("collection").innerHTML = renderCollection(collection, lockedCards, true);
+  
+  // Hide other user's collection when back to base
+  document.getElementById("otherUserCollection").style.display = 'none';
+  document.getElementById("otherUserHeader").style.display = 'none';
+}
+
+function showMyCollection() {
+    document.getElementById("collection").style.display = 'block';
+    document.getElementById("otherUserCollection").style.display = 'none';
+    document.getElementById("otherUserHeader").style.display = 'none';
+}
+
+function renderCollection(cardCollection, lockedCards, isMyCollection = false, victimId = null) {
   let collHTML = "";
-  for (let c in collection) {
-    if (collection[c] > 0) {
-      const cardType = getCardType(c);
-      const isLocked = lockedCards[c];
+  const allCards = { ...cardCollection, ...lockedCards };
+
+  if (Object.keys(allCards).length === 0) {
+    return "This user has no cards yet.";
+  }
+
+  for (let cardId in allCards) {
+    const card = allCards[cardId];
+    if (card) {
+      const cardType = getCardType(card.name);
+      const isLocked = !!lockedCards[cardId];
       const cardClass = isLocked ? 'locked-card' : '';
-      const cardQuantity = getCardQuantity(c);
-      collHTML += `<div class="card ${cardType}-card ${cardClass}">
-        <h3>${c}</h3>
-        <p>Qty: ${collection[c]}</p>
-        <p>Available: ${cardQuantity}</p>
+      const mutationsCount = (card.mutations && card.mutations.length) || 0;
+      const mutationLabel = mutationsCount > 0 ? `<span class="mutation-label">${mutationsCount}x Mutated</span>` : '';
+      
+      let buttonsHtml = '';
+      if (isMyCollection) {
+        buttonsHtml = `
+          <button class="btn btn-small" onclick="event.stopPropagation(); ${isLocked ? `unlockCard('${cardId}')` : `lockCard('${cardId}')`}">${isLocked ? 'Unlock' : 'Lock'}</button>
+          <button class="btn btn-small" onclick="event.stopPropagation(); sellCard('${cardId}')" ${isLocked ? 'disabled' : ''}>Sell ($${card.currentPrice})</button>
+        `;
+      } else {
+        buttonsHtml = `
+          <button class="btn btn-small btn-gold" onclick="event.stopPropagation(); startStealAttempt('${cardId}', '${victimId}')">Steal</button>
+        `;
+      }
+
+      collHTML += `
+      <div class="card ${cardType}-card ${cardClass}" onclick="showCardDetails('${cardId}')">
+        ${mutationLabel}
+        <h3>${card.name}</h3>
+        <p>Value: $${card.currentPrice}</p>
         <div class="card-buttons">
-            <button class="btn" onclick="${isLocked ? `unlockCard('${c}')` : `lockCard('${c}')`}">${isLocked ? 'Unlock' : 'Lock'}</button>
-            <button class="btn" onclick="sellCard('${c}')" ${isLocked ? 'disabled' : ''}>Sell ($${getCardPrice(c)})</button>
+            ${buttonsHtml}
         </div>
       </div>`;
     }
   }
-  document.getElementById("collection").innerHTML = collHTML || "No cards yet.";
+  return collHTML;
 }
 
-function lockCard(cardName) {
-    lockedCards[cardName] = true;
-    saveUser();
-    updateUI();
-}
-
-function unlockCard(cardName) {
-    const userInput = prompt(`Are you sure you want to unlock "${cardName}"? Type the card's name to confirm.`);
-    if (userInput === cardName) {
-        delete lockedCards[cardName];
-        saveUser();
-        updateUI();
-        showMessage(`Card "${cardName}" has been unlocked.`);
-    } else {
-        showMessage(`Unlock failed. Card "${cardName}" remains locked.`);
+function showUserCollection(targetUser) {
+    if (targetUser === currentUser) {
+      showMessage("You can't steal from yourself! Use 'My Base' instead.");
+      return;
     }
+
+    document.getElementById("collection").style.display = 'none';
+    document.getElementById("otherUserCollection").style.display = 'block';
+    document.getElementById("otherUserHeader").innerText = targetUser;
+    document.getElementById("otherUserHeader").style.display = 'block';
+    
+    // Check if user is "online" (has a profile in the database)
+    db.ref("users/" + targetUser).once("value").then(snap => {
+        if (!snap.exists()) {
+            document.getElementById("otherUserCollection").innerHTML = `<p>${targetUser} isn't playing this game!</p>`;
+            return;
+        }
+
+        const userData = snap.val();
+        const otherCollection = userData.collection || {};
+        const otherLockedCards = userData.lockedCards || {};
+        
+        document.getElementById("otherUserCollection").innerHTML = renderCollection(otherCollection, otherLockedCards, false, targetUser);
+    }).catch(error => {
+        console.error("Error loading user data:", error);
+        document.getElementById("otherUserCollection").innerHTML = `<p>Error loading ${targetUser}'s data.</p>`;
+    });
+}
+
+function lockCard(cardId) {
+  const cardToLock = collection[cardId];
+  if (!cardToLock) return showMessage("Card not found in collection.");
+  
+  cardToLock.isLocked = true;
+  cardToLock.lockTime = Date.now();
+  cardToLock.lastMutationTime = Date.now();
+  cardToLock.mutations = cardToLock.mutations || [];
+
+  lockedCards[cardId] = cardToLock;
+  delete collection[cardId];
+
+  saveUser();
+  updateUI();
+  showMessage(`Card "${cardToLock.name}" has been locked.`);
+}
+
+function unlockCard(cardId) {
+  const cardToUnlock = lockedCards[cardId];
+  if (!cardToUnlock) return showMessage("Card not found in locked cards.");
+
+  cardToUnlock.isLocked = false;
+  cardToUnlock.lockTime = 0;
+
+  collection[cardId] = cardToUnlock;
+  delete lockedCards[cardId];
+
+  saveUser();
+  updateUI();
+  showMessage(`Card "${cardToUnlock.name}" has been unlocked.`);
 }
 
 function openPack(type) {
@@ -447,81 +720,313 @@ function openPack(type) {
   
   let rand = Math.random();
   let sum = 0;
-  let chosen = available[0];
+  let chosenCardTemplate = available[0];
   for (let card of available) {
     sum += card.chance;
     if (rand <= sum) { 
-      chosen = card; 
+      chosenCardTemplate = card; 
       break; 
     }
   }
 
-  const chosenCardInPool = pool.find(card => card.name === chosen.name);
+  const chosenCardInPool = pool.find(card => card.name === chosenCardTemplate.name);
   if (chosenCardInPool) {
       chosenCardInPool.quantity--;
   }
-  
-  if (!collection[chosen.name]) {
-      collection[chosen.name] = 0;
-  }
-  collection[chosen.name]++;
+
+  const newCardId = generateCardId();
+  const newCard = {
+    id: newCardId,
+    name: chosenCardTemplate.name,
+    basePrice: chosenCardTemplate.price,
+    currentPrice: chosenCardTemplate.price,
+    isLocked: false,
+    lockTime: 0,
+    lastMutationTime: Date.now(),
+    mutations: []
+  };
+
+  collection[newCardId] = newCard;
   
   saveUser();
   saveCardQuantities();
   updateUI();
   
   document.getElementById("openedCard").innerHTML = `
-    <div class="card ${getCardType(chosen.name)}-card">
-      <h3>${chosen.name}</h3>
-      <p>Value: $${chosen.price}</p>
-      <p>Quantity: ${collection[chosen.name]}</p>
+    <div class="card ${getCardType(newCard.name)}-card">
+      <h3>${newCard.name}</h3>
+      <p>Value: $${newCard.currentPrice}</p>
       <p>Added to your collection!</p>
     </div>`;
 }
 
-function sellCard(cardName) {
-  if (lockedCards[cardName]) {
-      showMessage("This card is locked and cannot be sold!");
-      return;
+function sellCard(cardId) {
+  const cardToSell = collection[cardId];
+  if (!cardToSell) {
+    showMessage("Card not found!");
+    return;
   }
-  if (collection[cardName] > 0) {
-    collection[cardName]--;
-    balance += getCardPrice(cardName);
-    if (collection[cardName] === 0) delete collection[cardName];
-    saveUser();
-    updateUI();
-  }
-}
 
-function showMessage(message) {
-  document.getElementById('messageText').innerText = message;
-  document.getElementById('messageBox').style.display = 'block';
-}
-
-function closeMessage() {
-  document.getElementById('messageBox').style.display = 'none';
+  balance += cardToSell.currentPrice;
+  delete collection[cardId];
+  
+  saveUser();
+  updateUI();
+  showMessage(`Sold card "${cardToSell.name}" for $${cardToSell.currentPrice}.`);
 }
 
 function updatePackChances() {
-    const packs = [
-        { type: 'common', pool: cardPools.common, button: document.querySelector('.btn') },
-        { type: 'rare', pool: cardPools.rare, button: document.querySelector('.btn-blue') },
-        { type: 'epic', pool: cardPools.epic, button: document.querySelector('.btn-purple') },
-        { type: 'legendary', pool: cardPools.legendary, button: document.querySelector('.btn-gold') },
-        { type: 'divine', pool: cardPools.divine, button: document.querySelector('.btn-divine') },
-        { type: 'pristimatic', pool: cardPools.pristimatic, button: document.querySelector('.btn-pristimatic') }
-    ];
+  const packs = [
+    { type: 'common', pool: cardPools.common, button: document.querySelector('.btn') },
+    { type: 'rare', pool: cardPools.rare, button: document.querySelector('.btn-blue') },
+    { type: 'epic', pool: cardPools.epic, button: document.querySelector('.btn-purple') },
+    { type: 'legendary', pool: cardPools.legendary, button: document.querySelector('.btn-gold') },
+    { type: 'divine', pool: cardPools.divine, button: document.querySelector('.btn-divine') },
+    { type: 'pristimatic', pool: cardPools.pristimatic, button: document.querySelector('.btn-pristimatic') }
+  ];
 
-    packs.forEach(pack => {
-        let totalChance = 0;
-        const availableCards = pack.pool.filter(card => getCardQuantity(card.name) > 0);
-        availableCards.forEach(card => totalChance += card.chance);
+  packs.forEach(pack => {
+    let totalChance = 0;
+    const availableCards = pack.pool.filter(card => getCardQuantity(card.name) > 0);
+    availableCards.forEach(card => totalChance += card.chance);
 
-        let chanceText = `(${Math.round(totalChance * 100)}%)`;
-        pack.button.innerText = `Buy ${pack.type.charAt(0).toUpperCase() + pack.type.slice(1)} Pack ${chanceText} ($${pack.type === 'common' ? 100 : pack.type === 'rare' ? 200 : pack.type === 'epic' ? 300 : pack.type === 'legendary' ? 500 : pack.type === 'divine' ? 550 : 650})`;
-    });
+    let chanceText = `(${Math.round(totalChance * 100)}%)`;
+    const packPrice = pack.type === 'common' ? 100 : pack.type === 'rare' ? 200 : pack.type === 'epic' ? 300 : pack.type === 'legendary' ? 500 : pack.type === 'divine' ? 550 : 650;
+    pack.button.innerText = `Buy ${pack.type.charAt(0).toUpperCase() + pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
+  });
 }
 
+// --- Mutation Logic ---
+function applyMutations() {
+  console.log("Starting new hourly mutation cycle.");
+  // Choose a new mutation for the next hour
+  currentHourlyMutation = getRandomMutation();
+  console.log(`New hourly mutation selected: ${currentHourlyMutation.name}.`);
+}
+
+async function distributeMutation() {
+  if (!currentHourlyMutation) {
+    console.log("No hourly mutation selected. Skipping distribution.");
+    return;
+  }
+  
+  console.log(`Attempting to distribute mutation: ${currentHourlyMutation.name}`);
+
+  try {
+    const allUsersSnapshot = await db.ref("users").once("value");
+    const allUsersData = allUsersSnapshot.val();
+    if (!allUsersData) {
+      console.log("No user data found. Cannot distribute mutation.");
+      return;
+    }
+
+    let allLockedCards = [];
+    for (const userId in allUsersData) {
+      const userData = allUsersData[userId];
+      const lockedCardsForUser = userData.lockedCards || {};
+      for (const cardId in lockedCardsForUser) {
+        const card = lockedCardsForUser[cardId];
+        // Ensure card has less than 5 mutations to be eligible
+        if ((card.mutations || []).length < 5) {
+            allLockedCards.push({ userId, cardId, card });
+        }
+      }
+    }
+
+    if (allLockedCards.length === 0) {
+      console.log("No locked cards available to mutate.");
+      return;
+    }
+    
+    // Randomly pick one card from the pool of all locked cards
+    const randomIndex = Math.floor(Math.random() * allLockedCards.length);
+    const cardToMutate = allLockedCards[randomIndex];
+    const { userId, cardId, card } = cardToMutate;
+
+    // Apply the mutation and update the last mutation time
+    card.mutations = card.mutations || [];
+    card.mutations.push(currentHourlyMutation);
+    card.currentPrice += currentHourlyMutation.priceIncrease;
+    card.lastMutationTime = Date.now();
+
+    // Update the card for the selected user in the database
+    await db.ref(`users/${userId}/lockedCards/${cardId}`).set(card);
+    
+    console.log(`Successfully mutated card "${card.name}" for user "${userId}".`);
+
+    // If the current logged-in user's card was mutated, update their local state and UI
+    if (userId === currentUser) {
+        lockedCards[cardId] = card;
+        updateUI();
+        showMessage(`Your card "${card.name}" has gained a new mutation!`);
+    }
+
+  } catch (error) {
+    console.error("Error distributing mutation:", error);
+  }
+}
+
+function getRandomMutation() {
+  const mutationsWithChances = Object.keys(MUTATIONS).map(key => {
+    const mutation = MUTATIONS[key];
+    const tierChance = MUTATION_TIERS[mutation.tier].chance;
+    return {
+        name: key,
+        priceIncrease: mutation.priceIncrease,
+        chance: tierChance
+    };
+  });
+
+  const totalChance = mutationsWithChances.reduce((sum, m) => sum + m.chance, 0);
+  let rand = Math.random() * totalChance;
+  let sum = 0;
+
+  for (const mutation of mutationsWithChances) {
+    sum += mutation.chance;
+    if (rand <= sum) {
+      return {
+        name: mutation.name,
+        priceIncrease: mutation.priceIncrease
+      };
+    }
+  }
+
+  return { name: 'bloom', priceIncrease: 300 };
+}
+
+
+// --- Steal Logic ---
+async function startStealAttempt(cardId, victimId) {
+    // Hide all other boxes
+    document.getElementById('cardDetailsBox').style.display = 'none';
+    document.getElementById('messageBox').style.display = 'none';
+    
+    // Check if the card still exists
+    const victimRef = db.ref(`users/${victimId}`);
+    const victimSnapshot = await victimRef.once('value');
+    if (!victimSnapshot.exists()) {
+        showMessage("The victim's account no longer exists!");
+        return;
+    }
+
+    const victimData = victimSnapshot.val();
+    const allVictimCards = {...(victimData.collection || {}), ...(victimData.lockedCards || {})};
+    const cardToSteal = allVictimCards[cardId];
+
+    if (!cardToSteal) {
+        showMessage("This card is no longer available to steal!");
+        showUserCollection(victimId);
+        return;
+    }
+
+    // Generate a simple math question
+    const num1 = Math.floor(Math.random() * 10) + 1;
+    const num2 = Math.floor(Math.random() * 10) + 1;
+    const operator = Math.random() < 0.5 ? '+' : '-';
+    const question = `${num1} ${operator} ${num2}`;
+    const answer = operator === '+' ? num1 + num2 : num1 - num2;
+
+    // Store steal data for the checkAnswer function
+    stealData = {
+        cardToSteal: cardToSteal,
+        cardId: cardId,
+        victimId: victimId,
+        answer: answer,
+        startTime: Date.now()
+    };
+
+    // Show the steal modal and start the timer
+    document.getElementById('mathQuestion').innerText = question;
+    document.getElementById('mathAnswer').value = '';
+    document.getElementById('stealMessageBox').style.display = 'block';
+    
+    let timeRemaining = 5;
+    document.getElementById('stealTimer').innerText = timeRemaining;
+    
+    // Clear any existing timer
+    if (stealTimerInterval) {
+        clearInterval(stealTimerInterval);
+    }
+    
+    stealTimerInterval = setInterval(() => {
+        timeRemaining--;
+        document.getElementById('stealTimer').innerText = timeRemaining;
+        if (timeRemaining <= 0) {
+            clearInterval(stealTimerInterval);
+            document.getElementById('stealMessageBox').style.display = 'none';
+            showMessage(`Time's up! You failed to steal ${cardToSteal.name}.`);
+        }
+    }, 1000);
+}
+
+async function checkStealAnswer() {
+    const userAnswer = parseInt(document.getElementById('mathAnswer').value);
+    
+    if (isNaN(userAnswer)) {
+        showMessage("Please enter a valid number!");
+        return;
+    }
+
+    // Stop the timer
+    clearInterval(stealTimerInterval);
+    document.getElementById('stealMessageBox').style.display = 'none';
+    
+    if (userAnswer === stealData.answer) {
+        await finalizeSteal(stealData.cardId, stealData.victimId, stealData.cardToSteal);
+    } else {
+        showMessage(`Wrong answer! You failed to steal ${stealData.cardToSteal.name}.`);
+    }
+}
+
+async function finalizeSteal(cardId, victimId, cardToSteal) {
+    try {
+        const victimRef = db.ref(`users/${victimId}`);
+        const thiefRef = db.ref(`users/${currentUser}`);
+
+        // Fetch victim's data
+        const victimSnapshot = await victimRef.once('value');
+        if (!victimSnapshot.exists()) {
+            showMessage("The victim's account no longer exists!");
+            return;
+        }
+        const victimData = victimSnapshot.val();
+
+        // Check if card is in victim's collection or locked cards and remove it
+        let cardFound = false;
+        if (victimData.collection && victimData.collection[cardId]) {
+            delete victimData.collection[cardId];
+            cardFound = true;
+        } else if (victimData.lockedCards && victimData.lockedCards[cardId]) {
+            delete victimData.lockedCards[cardId];
+            cardFound = true;
+        }
+
+        if (!cardFound) {
+            showMessage("The card was not found in the victim's collection. It might have already been stolen.");
+            return;
+        }
+
+        // Add the card to the thief's collection
+        cardToSteal.isLocked = false;
+        cardToSteal.lockTime = 0;
+        collection[cardId] = cardToSteal;
+
+        // Save changes for both users
+        await victimRef.child('collection').set(victimData.collection);
+        await victimRef.child('lockedCards').set(victimData.lockedCards);
+        await saveUser(); // Saves the thief's updated collection
+
+        // Send a notification to the victim
+        await db.ref(`notifications/${victimId}`).push().set(`Your card "${cardToSteal.name}" was stolen by ${currentUser}!`);
+        
+        showMessage(`Success! You have stolen ${cardToSteal.name} from ${victimId}!`);
+        updateUI();
+
+    } catch (error) {
+        console.error("Error finalizing steal:", error);
+        showMessage("An error occurred while stealing the card.");
+    }
+}
 </script>
 </body>
 </html>
