@@ -4,13 +4,8 @@
 <meta charset="UTF-8">
 <title>Pack Opening Game with Mutations</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- App Icon -->
 <link rel="apple-touch-icon" href="foot.jpeg">
-
-<!-- App Name -->
 <meta name="apple-mobile-web-app-title" content="YourAppName">
-
-<!-- Fullscreen Web App Mode -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" sizes="180x180" href="foot.jpeg">
@@ -67,99 +62,20 @@
     transform: scale(1.05);
     box-shadow: 0 8px 15px rgba(0,0,0,0.3);
   }
-  .mutation-label {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
-    padding: 2px 6px;
-    border-radius: 8px;
-    font-size: 0.75rem;
-  }
-  /* NEW: quantity badge (top-right) */
-  .quantity-label {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: rgba(255, 255, 255, 0.95);
-    color: #111;
-    padding: 4px 8px;
-    border-radius: 10px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-  }
-  .mutation-list {
-    margin-top: 10px;
-    text-align: left;
-    width: 100%;
-  }
-  .mutation-list h4 {
-    margin: 0;
-    font-size: 0.9rem;
-    color: #444;
-  }
-  .mutation-list ul {
-    list-style: none;
-    padding: 0;
-    margin: 5px 0 0;
-  }
-  .mutation-list li {
-    font-size: 0.8rem;
-    margin-bottom: 2px;
-  }
-  .common-card {
-    background: linear-gradient(#ddd, #bbb);
-    border-color: #666;
-    color: #444;
-  }
-  .rare-card {
-    background: linear-gradient(#a0d4ff, #66aaff);
-    border-color: #004488;
-    color: white;
-    font-weight: bold;
-  }
-  .epic-card {
-    background: linear-gradient(to bottom right, #a020f0, #800080);
-    border-color: #663399;
-    color: #eee;
-    font-weight: bold;
-  }
-  .legendary-card {
-    background: linear-gradient(to bottom right, #ffcc00, #b8860b);
-    border-color: #d4af37;
-    color: #333;
-    font-weight: bold;
-  }
-  .divine-card {
-    background: linear-gradient(to bottom right, #e0e0ff, #c0c0d4);
-    border-color: #9999ff;
-    color: #1a1a33;
-    font-weight: bold;
-  }
-  .pristimatic-card {
-    background: conic-gradient(red, orange, yellow, green, blue, indigo, violet);
-    border-color: #000;
-    color: white;
-    font-weight: bold;
-    text-shadow: 1px 1px 2px black;
-  }
-  .btn {
-    padding: 12px 24px;
-    margin: 8px;
-    border: none;
-    background: #444;
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background 0.2s ease, transform 0.2s ease;
-  }
-  .btn:hover { 
-    background: #666;
-    transform: translateY(-2px);
-  }
+  .mutation-label { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.5); color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.75rem; }
+  .quantity-label { position: absolute; top: 5px; right: 5px; background: rgba(255,255,255,0.95); color: #111; padding: 4px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+  .mutation-list { margin-top: 10px; text-align: left; width: 100%; }
+  .mutation-list h4 { margin: 0; font-size: 0.9rem; color: #444; }
+  .mutation-list ul { list-style: none; padding: 0; margin: 5px 0 0; }
+  .mutation-list li { font-size: 0.8rem; margin-bottom: 2px; }
+  .common-card { background: linear-gradient(#ddd, #bbb); border-color: #666; color: #444; }
+  .rare-card { background: linear-gradient(#a0d4ff, #66aaff); border-color: #004488; color: white; font-weight: bold; }
+  .epic-card { background: linear-gradient(to bottom right, #a020f0, #800080); border-color: #663399; color: #eee; font-weight: bold; }
+  .legendary-card { background: linear-gradient(to bottom right, #ffcc00, #b8860b); border-color: #d4af37; color: #333; font-weight: bold; }
+  .divine-card { background: linear-gradient(to bottom right, #e0e0ff, #c0c0d4); border-color: #9999ff; color: #1a1a33; font-weight: bold; }
+  .pristimatic-card { background: conic-gradient(red, orange, yellow, green, blue, indigo, violet); border-color: #000; color: white; font-weight: bold; text-shadow: 1px 1px 2px black; }
+  .btn { padding: 12px 24px; margin: 8px; border: none; background: #444; color: white; border-radius: 8px; cursor: pointer; font-size: 16px; transition: background 0.2s ease, transform 0.2s ease; }
+  .btn:hover { background: #666; transform: translateY(-2px); }
   .btn-blue { background: #0077ff; }
   .btn-blue:hover { background: #0055aa; }
   .btn-purple { background: #800080; }
@@ -171,60 +87,15 @@
   .btn-pristimatic { background: #e66465; }
   .btn-pristimatic:hover { background: #9198e5; }
   .btn-small { padding: 8px 16px; font-size: 14px; margin: 4px; }
-  .locked-card {
-    box-shadow: 0 0 10px 3px #ff0000; /* Red glow for locked cards */
-  }
-  .card-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    margin-top: 10px;
-    width: 100%;
-  }
-  #messageBox, #cardDetailsBox, #stealMessageBox {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1000;
-    display: none;
-  }
-  #cardDetailsBox .card {
-    cursor: default;
-    transform: none;
-    box-shadow: none;
-  }
-  .user-select-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-  .header-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    max-width: 480px;
-  }
-  #nextDistribution {
-    font-size: 0.9rem;
-    color: #333;
-    margin-top: 6px;
-    opacity: 0.9;
-  }
-  @media (max-width: 600px) {
-    .card-container {
-      grid-template-columns: 1fr;
-    }
-    .game-box, .login-box {
-      padding: 10px;
-    }
-    .btn {
-      padding: 10px 20px;
-      font-size: 14px;
-    }
-  }
+  .locked-card { box-shadow: 0 0 10px 3px #ff0000; }
+  .card-buttons { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; width: 100%; }
+  #messageBox, #cardDetailsBox, #stealMessageBox { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; display: none; }
+  #cardDetailsBox .card { cursor: default; transform: none; box-shadow: none; }
+  .user-select-buttons { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+  .header-actions { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 480px; }
+  .header-right { display:flex; flex-direction:column; gap:6px; align-items:flex-end; } /* so Logout on top and refill button under it */
+  #nextDistribution { font-size: 0.9rem; color: #333; margin-top: 6px; opacity: 0.9; }
+  @media (max-width: 600px) { .card-container { grid-template-columns: 1fr; } .game-box, .login-box { padding: 10px; } .btn { padding: 10px 20px; font-size: 14px; } }
 </style>
 </head>
 <body>
@@ -233,35 +104,36 @@
   <h2>Login</h2>
   <input id="username" placeholder="Username" style="padding:10px; border-radius:8px; border:1px solid #ccc; width:80%;"><br><br>
   <input id="password" type="password" placeholder="Password" style="padding:10px; border-radius:8px; border:1px solid #ccc; width:80%;"><br><br>
-  <label style="display: flex; align-items: center; justify-content: center; margin: 10px 0;">
-    <input type="checkbox" id="keepSignedIn" style="margin-right: 5px;"> Keep me signed in
+  <label style="display:flex; align-items:center; justify-content:center; margin:10px 0;">
+    <input type="checkbox" id="keepSignedIn" style="margin-right:5px;"> Keep me signed in
   </label>
   <button class="btn" onclick="login()">Login</button>
   <p id="loginStatus"></p>
 </div>
-<audio id="brainrot" src="brainrot.mp3" preload="auto"></audio>
 
 <div class="game-box" id="gameBox" style="display:none;">
   <div class="header-actions">
     <div style="text-align:left;">
       <h2>Welcome <span id="userName"></span></h2>
-      <!-- NEXT DISTRIBUTION COUNTDOWN -->
       <div id="nextDistribution">Next distribution in: --</div>
     </div>
-    <button class="btn btn-small" onclick="logout()">Logout</button>
+    <!-- Right side: logout on top, refill button under it -->
+    <div class="header-right">
+      <button class="btn btn-small" onclick="logout()">Logout</button>
+      <button class="btn btn-small" onclick="refillStocksPrompt()">Refill Stocks</button>
+    </div>
   </div>
+
   <p>Balance: $<span id="balance">0</span></p>
 
-  <!-- User Selection Buttons for Stealing -->
   <div class="user-select-buttons">
-      <button class="btn btn-blue" onclick="showUserCollection('zezo')">Zezo</button>
-      <button class="btn btn-blue" onclick="showUserCollection('layan')">Layan</button>
-      <button class="btn btn-blue" onclick="showUserCollection('asser')">Asser</button>
-      <button class="btn btn-purple" onclick="showMyCollection()">My Base</button>
+    <button class="btn btn-blue" onclick="showUserCollection('zezo')">Zezo</button>
+    <button class="btn btn-blue" onclick="showUserCollection('layan')">Layan</button>
+    <button class="btn btn-blue" onclick="showUserCollection('asser')">Asser</button>
+    <button class="btn btn-purple" onclick="showMyCollection()">My Base</button>
   </div>
 
-  <div style="display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 20px;">
-    <!-- Added IDs so we can enable/disable buttons when balance is low -->
+  <div style="display:flex; flex-wrap:wrap; justify-content:center; margin-bottom:20px;">
     <button id="buyCommonBtn" class="btn" onclick="openPack('common')">Buy Common Pack (100%) ($100)</button>
     <button id="buyRareBtn" class="btn btn-blue" onclick="openPack('rare')">Buy Rare Pack (100%) ($250)</button>
     <button id="buyEpicBtn" class="btn btn-purple" onclick="openPack('epic')">Buy Epic Pack (100%) ($350)</button>
@@ -269,7 +141,9 @@
     <button id="buyDivineBtn" class="btn btn-divine" onclick="openPack('divine')">Buy Divine Pack (100%) ($5000)</button>
     <button id="buyPristimaticBtn" class="btn btn-pristimatic" onclick="openPack('pristimatic')">Buy Pristimatic Pack (100%) ($7500)</button>
   </div>
+
   <div id="openedCard"></div>
+
   <h3>Your Collection</h3>
   <div id="collection" class="card-container"></div>
 
@@ -277,15 +151,9 @@
   <div id="otherUserCollection" class="card-container" style="display:none;"></div>
 </div>
 
-<div id="messageBox">
-  <p id="messageText"></p>
-  <button class="btn" onclick="closeMessage()">OK</button>
-</div>
+<div id="messageBox"><p id="messageText"></p><button class="btn" onclick="closeMessage()">OK</button></div>
 
-<div id="cardDetailsBox">
-  <div id="cardDetailsContent"></div>
-  <button class="btn" onclick="closeCardDetails()">Close</button>
-</div>
+<div id="cardDetailsBox"><div id="cardDetailsContent"></div><button class="btn" onclick="closeCardDetails()">Close</button></div>
 
 <div id="stealMessageBox">
   <h3>Steal Attempt!</h3>
@@ -315,41 +183,19 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// --- Game Data ---
-const accounts = {
-  zezo: "000",
-  asser: "230",
-  lilly: "246",
-  layan: "123" // Added Layan's account
-};
+// --- Helper: safe DB key for card names (replace firebase-invalid chars) ---
+function toKey(name) {
+  return String(name).replace(/[.#$\[\]\/]/g, '_');
+}
 
-// Tweak mutation tier chances. Added 'ultra' for very-rare, high-value mutations.
-const MUTATION_TIERS = {
-  common: { name: "Common", chance: 0.50 },
-  uncommon: { name: "Uncommon", chance: 0.24 },
-  rare: { name: "Rare", chance: 0.15 },
-  veryHard: { name: "Very Hard", chance: 0.08 },
-  ultra: { name: "Ultra", chance: 0.03 } // very rare, high-value
-};
+// --- Game Data & Pools ---
+const accounts = { zezo: "000", asser: "230", lilly: "246", layan: "123" };
 
-// Mutations now include a couple of 'ultra' entries (very rare). You can tune priceIncrease & names.
-const MUTATIONS = {
-    plasma: { priceIncrease: 400, tier: 'uncommon' },
-    bloom: { priceIncrease: 300, tier: 'common' },
-    choc: { priceIncrease: 350, tier: 'common' },
-    shocked: { priceIncrease: 450, tier: 'rare' },
-    rainbow: { priceIncrease: 250, tier: 'uncommon' },
-    burnt: { priceIncrease: 300, tier: 'uncommon' },
-    chilled: { priceIncrease: 450, tier: 'rare' },
-    frozen: { priceIncrease: 150, tier: 'common' },
-    brainrot: { priceIncrease: 550, tier: 'veryHard' },
-    zezoplot: { priceIncrease: 650, tier: 'veryHard' },
-    aurora: { priceIncrease: 1000, tier: 'ultra' },
-    EGYPT: { priceIncrease: 3000, tier: 'ultra' }
-};
+const MUTATION_TIERS = { common: {chance:0.5}, uncommon:{chance:0.24}, rare:{chance:0.15}, veryHard:{chance:0.08}, ultra:{chance:0.03} };
+const MUTATIONS = { plasma:{priceIncrease:400,tier:'uncommon'}, bloom:{priceIncrease:300,tier:'common'}, choc:{priceIncrease:350,tier:'common'}, shocked:{priceIncrease:450,tier:'rare'}, rainbow:{priceIncrease:250,tier:'uncommon'}, burnt:{priceIncrease:300,tier:'uncommon'}, chilled:{priceIncrease:450,tier:'rare'}, frozen:{priceIncrease:150,tier:'common'}, brainrot:{priceIncrease:550,tier:'veryHard'}, zezoplot:{priceIncrease:650,tier:'veryHard'}, aurora:{priceIncrease:1000,tier:'ultra'}, EGYPT:{priceIncrease:3000,tier:'ultra'} };
 
 let cardPools = {
-    common: [
+  common: [
     { name: "asser", quantity: 50, chance: 0.25, price: 110 },
     { name: "asser eat", quantity: 50, chance: 0.15, price: 120 },
     { name: "asser angry", quantity: 50, chance: 0.15, price: 130 },
@@ -375,142 +221,107 @@ let cardPools = {
     { name: "Lilly Bomba", quantity: 10, chance: 0.10, price: 600 }
   ],
   legendary: [
-      { name: "Lilly laugh", quantity: 10, chance: 0.40, price: 1550 },
-      { name: "Lilly Queen", quantity: 10, chance: 0.40, price: 1550 },
-      { name: "Lilly Dragon", quantity: 7, chance: 0.10, price: 1700 },
-      { name: "Lilly Hero", quantity: 4, chance: 0.10, price: 1500 }
+    { name: "Lilly laugh", quantity: 10, chance: 0.40, price: 1550 },
+    { name: "Lilly Queen", quantity: 10, chance: 0.40, price: 1550 },
+    { name: "Lilly Dragon", quantity: 7, chance: 0.10, price: 1700 },
+    { name: "Lilly Hero", quantity: 4, chance: 0.10, price: 1500 }
   ],
   divine: [
-      { name: "Zezo laugh", quantity: 15, chance: 0.10, price: 5600 },
-      { name: "Zezo sad", quantity: 15, chance: 0.10, price: 5650 },
-      { name: "Zezo angry", quantity: 10, chance: 0.10, price: 5800 },
-      { name: "Zezo ps5", quantity: 10, chance: 0.20, price: 5700 },
-      { name: "Zezo happy", quantity: 15, chance: 0.10, price: 5600 },
-      { name: "Zezo smile", quantity: 5, chance: 0.10, price: 5620 },
-      { name: "Zezo roblox", quantity: 5, chance: 0.10, price: 5750 },
-      { name: "Zezo fart", quantity: 6, chance: 0.05, price: 6000 },
-      { name: "normal zezo full", quantity: 3, chance: 0.15, price: 5850 }
+    { name: "Zezo laugh", quantity: 15, chance: 0.10, price: 5600 },
+    { name: "Zezo sad", quantity: 15, chance: 0.10, price: 5650 },
+    { name: "Zezo angry", quantity: 10, chance: 0.10, price: 5800 },
+    { name: "Zezo ps5", quantity: 10, chance: 0.20, price: 5700 },
+    { name: "Zezo happy", quantity: 15, chance: 0.10, price: 5600 },
+    { name: "Zezo smile", quantity: 5, chance: 0.10, price: 5620 },
+    { name: "Zezo roblox", quantity: 5, chance: 0.10, price: 5750 },
+    { name: "Zezo fart", quantity: 6, chance: 0.05, price: 6000 },
+    { name: "normal zezo full", quantity: 3, chance: 0.15, price: 5850 }
   ],
   pristimatic: [
-      { name: "Zezo Prismatic", quantity: 2, chance: 0.40, price: 7500 },
-      { name: "Zezo Rainbow", quantity: 2, chance: 0.40, price: 7800 },
-      { name: "Asser colotinni fasatennee", quantity: 2, chance: 0.40, price: 8000 },
-      { name: "zezo big bomba fart", quantity: 2, chance: 0.40, price: 12000 },
-      { name: "lilly kowaferr", quantity: 2, chance: 0.40, price: 8000 },
-      { name: "Zezo shower", quantity: 2, chance: 0.20, price: 8500 }
+    { name: "Zezo Prismatic", quantity: 2, chance: 0.40, price: 7500 },
+    { name: "Zezo Rainbow", quantity: 2, chance: 0.40, price: 7800 },
+    { name: "Asser colotinni fasatennee", quantity: 2, chance: 0.40, price: 8000 },
+    { name: "zezo big bomba fart", quantity: 2, chance: 0.40, price: 12000 },
+    { name: "lilly kowaferr", quantity: 2, chance: 0.40, price: 8000 },
+    { name: "Zezo shower", quantity: 2, chance: 0.20, price: 8500 }
   ]
 };
 
-// --- Game State Variables ---
+// Capture initial quantities so refill can restore original counts
+const INITIAL_QUANTITIES = {};
+(function captureInitialQuantities() {
+  for (const packType in cardPools) {
+    cardPools[packType].forEach(card => {
+      INITIAL_QUANTITIES[card.name] = card.quantity;
+    });
+  }
+})();
+
+// --- State ---
 let currentUser = null;
 let balance = 0;
-let collection = {}; 
+let collection = {};
 let lockedCards = {};
 let currentHourlyMutation = null;
 let stealData = {};
 let stealTimerInterval = null;
-
-// intervals (start after login)
 let mutationInterval = null;
 let distributeInterval = null;
-
-// NEW: distribution timing control and countdown
-let distributionDelayMs = 1000 * 60 * 10; // default 10 minutes (update here to change frequency)
+let distributionDelayMs = 1000 * 60 * 10;
 let nextDistributionTimestamp = null;
 let distributionCountdownInterval = null;
 
-// --- Utility Functions ---
-function generateCardId() {
-  return Date.now().toString() + Math.random().toString().substr(2, 6);
-}
-
+// --- Utils ---
+function generateCardId() { return Date.now().toString() + Math.random().toString().substr(2,6); }
 function getCardType(cardName) {
-  if (cardPools.common.some(c => c.name === cardName)) return 'common';
-  if (cardPools.rare.some(c => c.name === cardName)) return 'rare';
-  if (cardPools.epic.some(c => c.name === cardName)) return 'epic';
-  if (cardPools.legendary.some(c => c.name === cardName)) return 'legendary';
-  if (cardPools.divine.some(c => c.name === cardName)) return 'divine';
-  if (cardPools.pristimatic.some(c => c.name === cardName)) return 'pristimatic';
+  if (cardPools.common.some(c=>c.name===cardName)) return 'common';
+  if (cardPools.rare.some(c=>c.name===cardName)) return 'rare';
+  if (cardPools.epic.some(c=>c.name===cardName)) return 'epic';
+  if (cardPools.legendary.some(c=>c.name===cardName)) return 'legendary';
+  if (cardPools.divine.some(c=>c.name===cardName)) return 'divine';
+  if (cardPools.pristimatic.some(c=>c.name===cardName)) return 'pristimatic';
   return '';
 }
-
 function getBaseCardPrice(cardName) {
-  const allCards = [...cardPools.common, ...cardPools.rare, ...cardPools.epic, ...cardPools.legendary, ...cardPools.divine, ...cardPools.pristimatic];
-  const card = allCards.find(c => c.name === cardName);
-  return card ? card.price : 0;
+  const all = [...cardPools.common,...cardPools.rare,...cardPools.epic,...cardPools.legendary,...cardPools.divine,...cardPools.pristimatic];
+  const c = all.find(x=>x.name===cardName);
+  return c?c.price:0;
 }
-
 function getCardQuantity(cardName) {
-  const allCards = [...cardPools.common, ...cardPools.rare, ...cardPools.epic, ...cardPools.legendary, ...cardPools.divine, ...cardPools.pristimatic];
-  const card = allCards.find(c => c.name === cardName);
-  return card ? card.quantity : 0;
+  const all = [...cardPools.common,...cardPools.rare,...cardPools.epic,...cardPools.legendary,...cardPools.divine,...cardPools.pristimatic];
+  const c = all.find(x=>x.name===cardName);
+  return c?c.quantity:0;
 }
 
 function showMessage(message) {
   document.getElementById('messageText').innerText = message;
   document.getElementById('messageBox').style.display = 'block';
 }
-
-function closeMessage() {
-  document.getElementById('messageBox').style.display = 'none';
-}
-
+function closeMessage() { document.getElementById('messageBox').style.display = 'none'; }
 function showCardDetails(cardId) {
   const card = collection[cardId] || lockedCards[cardId];
   if (!card) return;
-
-  const mutationListHtml = card.mutations && card.mutations.length > 0
-    ? `<div class="mutation-list">
-         <h4>Mutations:</h4>
-         <ul>
-           ${card.mutations.map(m => `<li>${m.name} (+${m.priceIncrease})</li>`).join('')}
-         </ul>
-       </div>`
-    : `<p>This card has no mutations yet.</p>`;
-
+  const mutationListHtml = card.mutations && card.mutations.length>0 ? `<div class="mutation-list"><h4>Mutations:</h4><ul>${card.mutations.map(m=>`<li>${m.name} (+${m.priceIncrease})</li>`).join('')}</ul></div>` : `<p>This card has no mutations yet.</p>`;
   const qty = getCardQuantity(card.name);
-
-  const cardHtml = `
-    <div class="card ${getCardType(card.name)}-card" data-card-id="${cardId}">
-      <span class="quantity-label">x${qty}</span>
-      <h3>${card.name}</h3>
-      <p>Base Value: $${getBaseCardPrice(card.name)}</p>
-      <p>Current Value: $${card.currentPrice}</p>
-      ${mutationListHtml}
-    </div>
-  `;
+  const cardHtml = `<div class="card ${getCardType(card.name)}-card" data-card-id="${cardId}"><span class="quantity-label">x${qty}</span><h3>${card.name}</h3><p>Base Value: $${getBaseCardPrice(card.name)}</p><p>Current Value: $${card.currentPrice}</p>${mutationListHtml}</div>`;
   document.getElementById('cardDetailsContent').innerHTML = cardHtml;
   document.getElementById('cardDetailsBox').style.display = 'block';
 }
+function closeCardDetails() { document.getElementById('cardDetailsBox').style.display = 'none'; }
 
-function closeCardDetails() {
-  document.getElementById('cardDetailsBox').style.display = 'none';
-}
-
-// Update distribution countdown UI
 function updateDistributionCountdown() {
   const el = document.getElementById('nextDistribution');
   if (!el) return;
-  if (!nextDistributionTimestamp) {
-    el.innerText = 'Next distribution in: --';
-    return;
-  }
+  if (!nextDistributionTimestamp) { el.innerText = 'Next distribution in: --'; return; }
   const now = Date.now();
   let diff = nextDistributionTimestamp - now;
-  if (diff <= 0) {
-    el.innerText = 'Next distribution: distributing now...';
-    return;
-  }
+  if (diff <= 0) { el.innerText = 'Next distribution: distributing now...'; return; }
   const mins = Math.floor(diff / 60000);
   const secs = Math.floor((diff % 60000) / 1000);
-  if (mins > 0) {
-    el.innerText = `Next distribution in: ${mins}m ${secs}s`;
-  } else {
-    el.innerText = `Next distribution in: ${secs}s`;
-  }
+  el.innerText = mins>0 ? `Next distribution in: ${mins}m ${secs}s` : `Next distribution in: ${secs}s`;
 }
 
-// --- User & Data Management ---
+// --- Auth / Load ---
 window.onload = function() {
   const lastUser = localStorage.getItem("lastLoggedInUser");
   const keepSignedIn = localStorage.getItem("keepSignedIn");
@@ -518,98 +329,50 @@ window.onload = function() {
     document.getElementById("username").value = lastUser;
     document.getElementById("keepSignedIn").checked = true;
     const pass = accounts[lastUser];
-    if (pass) {
-        document.getElementById("password").value = pass;
-        login();
-    }
+    if (pass) { document.getElementById("password").value = pass; login(); }
   }
-
-  // NOTE: intervals now start after successful login so mutations only happen for logged-in user
 };
 
 function login() {
   const u = document.getElementById("username").value.trim();
   const p = document.getElementById("password").value.trim();
-  const keepSignedIn = document.getElementById("keepSignedIn").checked;
-
+  const keep = document.getElementById("keepSignedIn").checked;
   if (accounts[u] && accounts[u] === p) {
     currentUser = u;
-    if (keepSignedIn) {
-        localStorage.setItem("lastLoggedInUser", u);
-        localStorage.setItem("keepSignedIn", "true");
-    } else {
-        localStorage.removeItem("lastLoggedInUser");
-        localStorage.removeItem("keepSignedIn");
-    }
+    if (keep) { localStorage.setItem("lastLoggedInUser", u); localStorage.setItem("keepSignedIn","true"); } else { localStorage.removeItem("lastLoggedInUser"); localStorage.removeItem("keepSignedIn"); }
     document.getElementById("loginBox").style.display = "none";
     document.getElementById("gameBox").style.display = "block";
     document.getElementById("userName").innerText = u;
     loadUserData();
-
-    // 🔥 start mutation cycles only after login (so only logged-in user receives mutations)
-    if (!mutationInterval) {
-      mutationInterval = setInterval(applyMutations, 1000 * 60 * 30); // every 30 minutes
-      applyMutations();
-    }
-    if (!distributeInterval) {
-      distributeInterval = setInterval(distributeMutation, distributionDelayMs); // controlled by distributionDelayMs
-      // set next distribution timestamp for the countdown
-      nextDistributionTimestamp = Date.now() + distributionDelayMs;
-      // start updating countdown every second
-      if (!distributionCountdownInterval) {
-        distributionCountdownInterval = setInterval(updateDistributionCountdown, 1000);
-        updateDistributionCountdown();
-      }
-    }
+    if (!mutationInterval) { mutationInterval = setInterval(applyMutations, 1000 * 60 * 30); applyMutations(); }
+    if (!distributeInterval) { distributeInterval = setInterval(distributeMutation, distributionDelayMs); nextDistributionTimestamp = Date.now() + distributionDelayMs; if (!distributionCountdownInterval) { distributionCountdownInterval = setInterval(updateDistributionCountdown, 1000); updateDistributionCountdown(); } }
   } else {
     document.getElementById("loginStatus").innerText = "Invalid credentials!";
   }
 }
 
 function logout() {
-    currentUser = null;
-    balance = 0;
-    collection = {};
-    lockedCards = {};
-    localStorage.removeItem("lastLoggedInUser");
-    localStorage.removeItem("keepSignedIn");
-    document.getElementById("gameBox").style.display = "none";
-    document.getElementById("loginBox").style.display = "block";
-    document.getElementById("username").value = "";
-    document.getElementById("password").value = "";
-    document.getElementById("loginStatus").innerText = "";
-    document.getElementById("keepSignedIn").checked = false;
-    updateUI();
-
-    // 🛑 stop mutation/distribution loops when logging out
-    if (mutationInterval) {
-      clearInterval(mutationInterval);
-      mutationInterval = null;
-    }
-    if (distributeInterval) {
-      clearInterval(distributeInterval);
-      distributeInterval = null;
-    }
-    if (distributionCountdownInterval) {
-      clearInterval(distributionCountdownInterval);
-      distributionCountdownInterval = null;
-    }
-    nextDistributionTimestamp = null;
-    updateDistributionCountdown();
+  currentUser = null; balance = 0; collection = {}; lockedCards = {};
+  localStorage.removeItem("lastLoggedInUser"); localStorage.removeItem("keepSignedIn");
+  document.getElementById("gameBox").style.display = "none"; document.getElementById("loginBox").style.display = "block";
+  document.getElementById("username").value = ""; document.getElementById("password").value = ""; document.getElementById("loginStatus").innerText = ""; document.getElementById("keepSignedIn").checked = false;
+  updateUI();
+  if (mutationInterval) { clearInterval(mutationInterval); mutationInterval = null; }
+  if (distributeInterval) { clearInterval(distributeInterval); distributeInterval = null; }
+  if (distributionCountdownInterval) { clearInterval(distributionCountdownInterval); distributionCountdownInterval = null; }
+  nextDistributionTimestamp = null; updateDistributionCountdown();
 }
 
+// --- Data Load / Save ---
 function loadUserData() {
-  db.ref("users/" + currentUser).once("value").then(snap => {
+  db.ref("users/" + currentUser).once("value").then(snap=>{
     if (snap.exists()) {
-      const userData = snap.val();
-      balance = userData.balance || 100;
-      collection = userData.collection || {};
-      lockedCards = userData.lockedCards || {};
+      const data = snap.val();
+      balance = data.balance || 100;
+      collection = data.collection || {};
+      lockedCards = data.lockedCards || {};
     } else {
-      balance = 100;
-      collection = {};
-      lockedCards = {};
-      saveUser();
+      balance = 100; collection = {}; lockedCards = {}; saveUser();
     }
     loadCardQuantities();
   });
@@ -617,284 +380,105 @@ function loadUserData() {
 }
 
 function loadCardQuantities() {
-  db.ref("cardQuantities").once("value").then(snap => {
-    if (snap.exists()) {
-      const dbQuantities = snap.val();
-      for (const packType in cardPools) {
-        cardPools[packType].forEach(card => {
-          if (dbQuantities[card.name] !== undefined) {
-            card.quantity = dbQuantities[card.name];
-          }
-        });
-      }
-    } else {
-      saveCardQuantities();
+  db.ref("cardQuantities").once("value").then(snap=>{
+    const dbQty = snap.val() || {};
+    for (const packType in cardPools) {
+      cardPools[packType].forEach(card=>{
+        const k = toKey(card.name);
+        if (dbQty[k] !== undefined) card.quantity = dbQty[k];
+      });
     }
-    updateUI();
-    updatePackChances();
-  });
+    updateUI(); updatePackChances();
+  }).catch(err => { console.error("loadCardQuantities err", err); updateUI(); });
 }
 
 function saveUser() {
-  if (!currentUser) return;
-  db.ref("users/" + currentUser).set({
-    balance: balance,
-    collection: collection,
-    lockedCards: lockedCards
-  });
+  if (!currentUser) return Promise.resolve();
+  return db.ref("users/" + currentUser).set({ balance: balance, collection: collection, lockedCards: lockedCards }).catch(err => { console.error("saveUser err", err); throw err; });
 }
 
 function saveCardQuantities() {
-  const quantities = {};
+  const q = {};
   for (const packType in cardPools) {
-    cardPools[packType].forEach(card => {
-      quantities[card.name] = card.quantity;
-    });
+    cardPools[packType].forEach(card => { q[toKey(card.name)] = card.quantity; });
   }
-  db.ref("cardQuantities").set(quantities);
+  return db.ref("cardQuantities").update(q).catch(err => console.error("saveCardQuantities err", err));
 }
 
 function checkNotifications() {
-  const notificationsRef = db.ref(`notifications/${currentUser}`);
-  notificationsRef.once("value").then(snap => {
-    if (snap.exists()) {
-      const notifications = snap.val();
-      for (const key in notifications) {
-        showMessage(notifications[key]);
-      }
-      // Clear notifications after showing them
-      notificationsRef.remove();
-    }
-  });
+  const ref = db.ref(`notifications/${currentUser}`);
+  ref.once("value").then(snap=>{ if (snap.exists()) { const notes = snap.val(); for (const k in notes) showMessage(notes[k]); ref.remove(); } });
 }
 
-
-// --- Core Game Logic ---
+// --- UI / Collection ---
 function updateUI() {
   document.getElementById("balance").innerText = balance;
   document.getElementById("collection").innerHTML = renderCollection(collection, lockedCards, true);
-  
-  // Hide other user's collection when back to base
   document.getElementById("otherUserCollection").style.display = 'none';
   document.getElementById("otherUserHeader").style.display = 'none';
-
-  // Update pack button states (disabled/enabled and text)
   updatePackChances();
 }
 
-function showMyCollection() {
-    document.getElementById("collection").style.display = 'block';
-    document.getElementById("otherUserCollection").style.display = 'none';
-    document.getElementById("otherUserHeader").style.display = 'none';
-}
+function showMyCollection() { document.getElementById("collection").style.display='block'; document.getElementById("otherUserCollection").style.display='none'; document.getElementById("otherUserHeader").style.display='none'; }
 
 function renderCollection(cardCollection, lockedCardsObj, isMyCollection = false, victimId = null) {
   let collHTML = "";
-  const allCards = { ...cardCollection, ...lockedCardsObj };
-
-  if (Object.keys(allCards).length === 0) {
-    return "This user has no cards yet.";
-  }
-
-  for (let cardId in allCards) {
-    const card = allCards[cardId];
-    if (card) {
-      const cardType = getCardType(card.name);
-      const isLocked = !!lockedCardsObj[cardId];
-      const cardClass = isLocked ? 'locked-card' : '';
-      const mutationsCount = (card.mutations && card.mutations.length) || 0;
-      const mutationLabel = mutationsCount > 0 ? `<span class="mutation-label">${mutationsCount}x Mutated</span>` : '';
-      const qty = getCardQuantity(card.name);
-      const quantityLabelHtml = `<span class="quantity-label">x${qty}</span>`;
-      
-      let buttonsHtml = '';
-      if (isMyCollection) {
-        buttonsHtml = `
-          <button class="btn btn-small" onclick="event.stopPropagation(); ${isLocked ? `unlockCard('${cardId}')` : `lockCard('${cardId}')`}">${isLocked ? 'Unlock' : 'Lock'}</button>
-          <button class="btn btn-small" onclick="event.stopPropagation(); sellCard('${cardId}')" ${isLocked ? 'disabled' : ''}>Sell ($${card.currentPrice})</button>
-        `;
-      } else {
-        buttonsHtml = `
-          <button class="btn btn-small btn-gold" onclick="event.stopPropagation(); startStealAttempt('${cardId}', '${victimId}')">Steal</button>
-        `;
-      }
-
-      collHTML += `
-      <div class="card ${cardType}-card ${cardClass}" onclick="showCardDetails('${cardId}')">
-        ${mutationLabel}
-        ${quantityLabelHtml}
-        <h3>${card.name}</h3>
-        <p>Value: $${card.currentPrice}</p>
-        <div class="card-buttons">
-            ${buttonsHtml}
-        </div>
-      </div>`;
+  const all = { ...cardCollection, ...lockedCardsObj };
+  if (Object.keys(all).length === 0) return "This user has no cards yet.";
+  for (let id in all) {
+    const card = all[id];
+    if (!card) continue;
+    const cardType = getCardType(card.name);
+    const isLocked = !!lockedCardsObj[id];
+    const cls = isLocked ? 'locked-card' : '';
+    const mutationsCount = (card.mutations && card.mutations.length) || 0;
+    const mutationLabel = mutationsCount>0 ? `<span class="mutation-label">${mutationsCount}x Mutated</span>` : '';
+    const qty = getCardQuantity(card.name);
+    const qtyHtml = `<span class="quantity-label">x${qty}</span>`;
+    let buttons = '';
+    if (isMyCollection) {
+      buttons = `<button class="btn btn-small" onclick="event.stopPropagation(); ${isLocked ? `unlockCard('${id}')` : `lockCard('${id}')`}">${isLocked ? 'Unlock' : 'Lock'}</button>
+                 <button class="btn btn-small" onclick="event.stopPropagation(); sellCard('${id}')" ${isLocked?'disabled':''}>Sell ($${card.currentPrice})</button>`;
+    } else {
+      buttons = `<button class="btn btn-small btn-gold" onclick="event.stopPropagation(); startStealAttempt('${id}','${victimId}')">Steal</button>`;
     }
+    collHTML += `<div class="card ${cardType}-card ${cls}" onclick="showCardDetails('${id}')">${mutationLabel}${qtyHtml}<h3>${card.name}</h3><p>Value: $${card.currentPrice}</p><div class="card-buttons">${buttons}</div></div>`;
   }
   return collHTML;
 }
 
 function showUserCollection(targetUser) {
-    if (targetUser === currentUser) {
-      showMessage("You can't steal from yourself! Use 'My Base' instead.");
-      return;
-    }
-
-    document.getElementById("collection").style.display = 'none';
-    document.getElementById("otherUserCollection").style.display = 'block';
-    document.getElementById("otherUserHeader").innerText = targetUser;
-    document.getElementById("otherUserHeader").style.display = 'block';
-    
-    // Check if user is "online" (has a profile in the database)
-    db.ref("users/" + targetUser).once("value").then(snap => {
-        if (!snap.exists()) {
-            document.getElementById("otherUserCollection").innerHTML = `<p>${targetUser} isn't playing this game!</p>`;
-            return;
-        }
-
-        const userData = snap.val();
-        const otherCollection = userData.collection || {};
-        const otherLockedCards = userData.lockedCards || {};
-        
-        document.getElementById("otherUserCollection").innerHTML = renderCollection(otherCollection, otherLockedCards, false, targetUser);
-    }).catch(error => {
-        console.error("Error loading user data:", error);
-        document.getElementById("otherUserCollection").innerHTML = `<p>Error loading ${targetUser}'s data.</p>`;
-    });
+  if (targetUser === currentUser) { showMessage("You can't steal from yourself! Use 'My Base' instead."); return; }
+  document.getElementById("collection").style.display='none';
+  document.getElementById("otherUserCollection").style.display='block';
+  document.getElementById("otherUserHeader").innerText = targetUser; document.getElementById("otherUserHeader").style.display='block';
+  db.ref("users/" + targetUser).once("value").then(snap=>{
+    if (!snap.exists()) { document.getElementById("otherUserCollection").innerHTML = `<p>${targetUser} isn't playing this game!</p>`; return; }
+    const d = snap.val(); const otherCollection = d.collection||{}; const otherLocked = d.lockedCards||{};
+    document.getElementById("otherUserCollection").innerHTML = renderCollection(otherCollection, otherLocked, false, targetUser);
+  }).catch(err => { console.error("showUserCollection err", err); document.getElementById("otherUserCollection").innerHTML = `<p>Error loading ${targetUser}'s data.</p>`; });
 }
 
+// --- Lock / Unlock / Sell ---
 function lockCard(cardId) {
-  const cardToLock = collection[cardId];
-  if (!cardToLock) return showMessage("Card not found in collection.");
-  
-  cardToLock.isLocked = true;
-  cardToLock.lockTime = Date.now();
-  cardToLock.lastMutationTime = Date.now();
-  cardToLock.mutations = cardToLock.mutations || [];
-
-  lockedCards[cardId] = cardToLock;
-  delete collection[cardId];
-
-  saveUser();
-  updateUI();
-  showMessage(`Card "${cardToLock.name}" has been locked.`);
+  const c = collection[cardId];
+  if (!c) return showMessage("Card not found in collection.");
+  c.isLocked = true; c.lockTime = Date.now(); c.lastMutationTime = Date.now(); c.mutations = c.mutations||[];
+  lockedCards[cardId] = c; delete collection[cardId];
+  saveUser(); updateUI(); showMessage(`Card "${c.name}" has been locked.`);
 }
-
 function unlockCard(cardId) {
-  const cardToUnlock = lockedCards[cardId];
-  if (!cardToUnlock) return showMessage("Card not found in locked cards.");
-
-  cardToUnlock.isLocked = false;
-  cardToUnlock.lockTime = 0;
-
-  collection[cardId] = cardToUnlock;
-  delete lockedCards[cardId];
-
-  saveUser();
-  updateUI();
-  showMessage(`Card "${cardToUnlock.name}" has been unlocked.`);
+  const c = lockedCards[cardId];
+  if (!c) return showMessage("Card not found in locked cards.");
+  c.isLocked = false; c.lockTime = 0;
+  collection[cardId] = c; delete lockedCards[cardId];
+  saveUser(); updateUI(); showMessage(`Card "${c.name}" has been unlocked.`);
 }
-
-function openPack(type) {
-  let packPrice = 0;
-  let pool = [];
-
-    if (type === "common") {
-    packPrice = 100;
-    pool = cardPools.common;
-  } else if (type === "rare") {
-    packPrice = 250;
-    pool = cardPools.rare;
-  } else if (type === "epic") {
-    packPrice = 350;
-    pool = cardPools.epic;
-  } else if (type === "legendary") {
-    packPrice = 1500;
-    pool = cardPools.legendary;
-  } else if (type === "divine") {
-    packPrice = 5000;
-    pool = cardPools.divine;
-  } else if (type === "pristimatic") {
-    packPrice = 7500;
-    pool = cardPools.pristimatic;
-  }
-
-  // --- NEW: Prevent purchase if user doesn't have enough balance ---
-  if (balance < packPrice) {
-    showMessage("You don't have enough money to buy this pack.");
-    return;
-  }
-
-  // Deduct AFTER checking funds
-  balance -= packPrice;
-  // Save immediately so state is persistent and UI reflects the deduction
-  saveUser();
-  updateUI();
-
-  let available = pool.filter(c => c.quantity > 0);
-  if (available.length === 0) {
-      showMessage("This pack is sold out!");
-      return;
-  }
-  
-  let rand = Math.random();
-  let sum = 0;
-  let chosenCardTemplate = available[0];
-  for (let card of available) {
-    sum += card.chance;
-    if (rand <= sum) { 
-      chosenCardTemplate = card; 
-      break; 
-    }
-  }
-
-  const chosenCardInPool = pool.find(card => card.name === chosenCardTemplate.name);
-  if (chosenCardInPool) {
-      chosenCardInPool.quantity--;
-  }
-
-  const newCardId = generateCardId();
-  const newCard = {
-    id: newCardId,
-    name: chosenCardTemplate.name,
-    basePrice: chosenCardTemplate.price,
-    currentPrice: chosenCardTemplate.price,
-    isLocked: false,
-    lockTime: 0,
-    lastMutationTime: Date.now(),
-    mutations: []
-  };
-
-  collection[newCardId] = newCard;
-  
-  saveUser();
-  saveCardQuantities();
-  updateUI();
-  
-  const qtyAfter = getCardQuantity(newCard.name);
-
-  document.getElementById("openedCard").innerHTML = `
-    <div class="card ${getCardType(newCard.name)}-card">
-      <span class="quantity-label">x${qtyAfter}</span>
-      <h3>${newCard.name}</h3>
-      <p>Value: $${newCard.currentPrice}</p>
-      <p>Added to your collection!</p>
-    </div>`;
-}
-
 function sellCard(cardId) {
-  const cardToSell = collection[cardId];
-  if (!cardToSell) {
-    showMessage("Card not found!");
-    return;
-  }
-
-  balance += cardToSell.currentPrice;
-  delete collection[cardId];
-  
-  saveUser();
-  updateUI();
-  showMessage(`Sold card "${cardToSell.name}" for $${cardToSell.currentPrice}.`);
+  const c = collection[cardId];
+  if (!c) return showMessage("Card not found!");
+  balance += c.currentPrice; delete collection[cardId];
+  saveUser(); updateUI(); showMessage(`Sold card "${c.name}" for $${c.currentPrice}.`);
 }
 
 function updatePackChances() {
@@ -906,357 +490,286 @@ function updatePackChances() {
     { type: 'divine', pool: cardPools.divine, buttonId: 'buyDivineBtn' },
     { type: 'pristimatic', pool: cardPools.pristimatic, buttonId: 'buyPristimaticBtn' }
   ];
-
-  packs.forEach(pack => {
+  packs.forEach(pack=>{
     let totalChance = 0;
     const availableCards = pack.pool.filter(card => getCardQuantity(card.name) > 0);
     availableCards.forEach(card => totalChance += card.chance);
-
-    let chanceText = `(${Math.round(totalChance * 100)}%)`;
-    const packPrice = pack.type === 'common' ? 100 : pack.type === 'rare' ? 250 : pack.type === 'epic' ? 350 : pack.type === 'legendary' ? 1500 : pack.type === 'divine' ? 5000 : 7500;
+    const chanceText = `(${Math.round(totalChance*100)}%)`;
+    const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='divine'?5000:7500;
     const btn = document.getElementById(pack.buttonId);
     if (btn) {
-      btn.innerText = `Buy ${pack.type.charAt(0).toUpperCase() + pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
-      // Disable button if user doesn't have enough money or if pack is sold out
+      btn.innerText = `Buy ${pack.type.charAt(0).toUpperCase()+pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
       btn.disabled = (balance < packPrice) || (availableCards.length === 0);
-      // Provide a subtle visual indicator when disabled
       btn.style.opacity = btn.disabled ? 0.5 : 1;
       btn.style.cursor = btn.disabled ? 'not-allowed' : 'pointer';
     }
   });
 }
 
-// --- Mutation Logic ---
+// --- Mutation logic (unchanged) ---
 function applyMutations() {
-  if (!currentUser) {
-    console.log("No logged-in user — skipping mutation selection.");
-    return;
-  }
-  console.log("Starting new mutation selection cycle for user:", currentUser);
-  // Choose a new mutation for the next interval
+  if (!currentUser) return;
   currentHourlyMutation = getRandomMutation();
-  console.log(`New mutation selected: ${currentHourlyMutation.name}`);
+  console.log("Selected mutation:", currentHourlyMutation);
 }
-
-// helper: pick a random mutation excluding a set of names (weighted by tier chance)
-function getRandomMutationExcluding(excludeNames = []) {
-  const candidates = Object.keys(MUTATIONS).filter(k => !excludeNames.includes(k));
-  if (candidates.length === 0) return null;
-
-  const list = candidates.map(key => {
-    const m = MUTATIONS[key];
-    const tierChance = MUTATION_TIERS[m.tier] ? MUTATION_TIERS[m.tier].chance : 0;
-    return { name: key, priceIncrease: m.priceIncrease, weight: tierChance };
-  });
-
-  const total = list.reduce((s, it) => s + it.weight, 0);
-  if (total <= 0) return null;
-  let r = Math.random() * total;
-  let s = 0;
-  for (const it of list) {
-    s += it.weight;
-    if (r <= s) return { name: it.name, priceIncrease: it.priceIncrease };
-  }
-  return { name: list[0].name, priceIncrease: list[0].priceIncrease };
+function getRandomMutation() {
+  const arr = Object.keys(MUTATIONS).map(k=>({name:k,priceIncrease:MUTATIONS[k].priceIncrease, chance: MUTATION_TIERS[MUTATIONS[k].tier]?MUTATION_TIERS[MUTATIONS[k].tier].chance:0}));
+  const total = arr.reduce((s,i)=>s+i.chance,0);
+  let r = Math.random()*total; let s=0;
+  for (const it of arr) { s+=it.chance; if (r<=s) return {name:it.name, priceIncrease:it.priceIncrease}; }
+  return {name:'bloom', priceIncrease:300};
 }
-
+function getRandomMutationExcluding(excludeNames=[]) {
+  const keys = Object.keys(MUTATIONS).filter(k=>!excludeNames.includes(k));
+  if (!keys.length) return null;
+  const list = keys.map(k=>{ const m=MUTATIONS[k]; return {name:k, priceIncrease:m.priceIncrease, weight: MUTATION_TIERS[m.tier]?MUTATION_TIERS[m.tier].chance:0}; });
+  const total = list.reduce((s,i)=>s+i.weight,0); if (total<=0) return null;
+  let r=Math.random()*total, s=0;
+  for (const it of list) { s+=it.weight; if (r<=s) return {name:it.name, priceIncrease:it.priceIncrease}; }
+  return {name:list[0].name, priceIncrease:list[0].priceIncrease};
+}
 async function distributeMutation() {
-  if (!currentHourlyMutation) {
-    console.log("No mutation selected. Skipping distribution.");
-    return;
-  }
-  if (!currentUser) {
-    console.log("No logged-in user. Skipping distribution.");
-    return;
-  }
-  console.log(`Distributing mutation '${currentHourlyMutation.name}' only to locked cards of ${currentUser}`);
-
+  if (!currentHourlyMutation || !currentUser) return;
   try {
-    const userSnapshot = await db.ref(`users/${currentUser}`).once("value");
-    if (!userSnapshot.exists()) {
-      console.log("Current user data not found in DB.");
-      return;
-    }
-
-    const userData = userSnapshot.val();
-    const userLocked = userData.lockedCards || {};
-    let eligible = [];
-    for (const cardId in userLocked) {
-      const card = userLocked[cardId];
-      // max 6 mutations allowed
-      if ((card.mutations || []).length < 6) {
-        eligible.push({ cardId, card });
-      }
-    }
-
-    if (eligible.length === 0) {
-      console.log("No eligible locked cards for mutation for current user.");
-      return;
-    }
-
-    // choose a random eligible card
-    const randomIndex = Math.floor(Math.random() * eligible.length);
-    const chosen = eligible[randomIndex];
-
-    chosen.card.mutations = chosen.card.mutations || [];
-    const existingNames = chosen.card.mutations.map(m => m.name);
-
-    // Try to pick a mutation that's NOT already on the card. We'll attempt up to N times.
+    const userSnap = await db.ref(`users/${currentUser}`).once("value");
+    if (!userSnap.exists()) return;
+    const ud = userSnap.val(); const uLocked = ud.lockedCards||{};
+    const eligible = [];
+    for (const id in uLocked) { const c = uLocked[id]; if ((c.mutations||[]).length < 6) eligible.push({cardId:id, card:c}); }
+    if (eligible.length===0) return;
+    const chosen = eligible[Math.floor(Math.random()*eligible.length)];
+    chosen.card.mutations = chosen.card.mutations||[];
+    const existing = chosen.card.mutations.map(m=>m.name);
     let mutationToApply = null;
-    // First try the hourly mutation if it's not duplicate
-    if (!existingNames.includes(currentHourlyMutation.name)) {
-      mutationToApply = currentHourlyMutation;
-    } else {
-      // otherwise pick a different random mutation (excluding existing ones)
-      mutationToApply = getRandomMutationExcluding(existingNames);
-    }
-
-    // If still null or mutation is duplicate, skip this distribution
-    if (!mutationToApply || existingNames.includes(mutationToApply.name)) {
-      console.log("No non-duplicate mutation available for this card. Skipping.");
-      return;
-    }
-
-    // Apply mutation
+    if (!existing.includes(currentHourlyMutation.name)) mutationToApply = currentHourlyMutation;
+    else mutationToApply = getRandomMutationExcluding(existing);
+    if (!mutationToApply || existing.includes(mutationToApply.name)) { console.log("no mutation available"); return; }
     chosen.card.mutations.push(mutationToApply);
-    chosen.card.currentPrice = (chosen.card.currentPrice || chosen.card.basePrice || 0) + mutationToApply.priceIncrease;
+    chosen.card.currentPrice = (chosen.card.currentPrice||chosen.card.basePrice||0) + mutationToApply.priceIncrease;
     chosen.card.lastMutationTime = Date.now();
-
-    // Update DB for current user's locked card
     await db.ref(`users/${currentUser}/lockedCards/${chosen.cardId}`).set(chosen.card);
-
-    // Update local state and UI
     lockedCards[chosen.cardId] = chosen.card;
     updateUI();
     showMessage(`Your card "${chosen.card.name}" gained a mutation: ${mutationToApply.name}!`);
-
-    console.log(`Mutated card '${chosen.card.name}' for user ${currentUser} with ${mutationToApply.name}`);
-
-  } catch (error) {
-    console.error("Error distributing mutation:", error);
-  } finally {
-    // After each scheduled run (regardless of outcome) update the nextDistributionTimestamp so UI countdown continues
-    nextDistributionTimestamp = Date.now() + distributionDelayMs;
-  }
+  } catch (err) { console.error("distributeMutation err", err); }
+  finally { nextDistributionTimestamp = Date.now() + distributionDelayMs; }
 }
 
-function getRandomMutation() {
-  // This returns a mutation object including some of the "ultra" possibilities.
-  const mutationsWithChances = Object.keys(MUTATIONS).map(key => {
-    const mutation = MUTATIONS[key];
-    const tierChance = MUTATION_TIERS[mutation.tier] ? MUTATION_TIERS[mutation.tier].chance : 0;
-    return {
-        name: key,
-        priceIncrease: mutation.priceIncrease,
-        chance: tierChance
-    };
-  });
+// --- OPEN PACK: safe version (reads fresh quantities, uses transaction, initializes missing keys) ---
+async function openPack(type) {
+  let packPrice = 0;
+  let pool = [];
+  if (type === "common") { packPrice = 100; pool = cardPools.common; }
+  else if (type === "rare") { packPrice = 250; pool = cardPools.rare; }
+  else if (type === "epic") { packPrice = 350; pool = cardPools.epic; }
+  else if (type === "legendary") { packPrice = 1500; pool = cardPools.legendary; }
+  else if (type === "divine") { packPrice = 5000; pool = cardPools.divine; }
+  else if (type === "pristimatic") { packPrice = 7500; pool = cardPools.pristimatic; }
 
-  const totalChance = mutationsWithChances.reduce((sum, m) => sum + m.chance, 0);
-  let rand = Math.random() * totalChance;
-  let sum = 0;
+  if (balance < packPrice) { showMessage("You don't have enough money to buy this pack."); return; }
 
-  for (const mutation of mutationsWithChances) {
-    sum += mutation.chance;
-    if (rand <= sum) {
-      return {
-        name: mutation.name,
-        priceIncrease: mutation.priceIncrease
-      };
+  // Deduct now; refund on failure
+  balance -= packPrice;
+  await saveUser();
+  updateUI();
+
+  try {
+    // 1) Fresh quantities snapshot
+    const snap = await db.ref('cardQuantities').once('value');
+    const dbQty = snap.val() || {};
+
+    // 2) Update local pool counts from server
+    pool.forEach(card => {
+      const k = toKey(card.name);
+      if (dbQty[k] !== undefined) card.quantity = dbQty[k];
+    });
+
+    // 3) Choose only available cards
+    const available = pool.filter(c => c.quantity > 0);
+    if (available.length === 0) {
+      balance += packPrice; await saveUser(); updateUI(); showMessage("This pack is sold out!"); return;
     }
-  }
 
-  return { name: 'bloom', priceIncrease: 300 };
+    // pick by chance
+    let rand = Math.random();
+    let s = 0;
+    let chosenTemplate = available[0];
+    for (const c of available) { s += c.chance; if (rand <= s) { chosenTemplate = c; break; } }
+
+    const chosenName = chosenTemplate.name;
+    const safeKey = toKey(chosenName);
+    const qtyRef = db.ref(`cardQuantities/${safeKey}`);
+
+    console.log("Attempting transaction on", safeKey, "localQty:", chosenTemplate.quantity);
+
+    // Transaction: if missing, initialize to template.quantity then decrement
+    const txnResult = await qtyRef.transaction(current => {
+      if (current === null || current === undefined) {
+        if (!chosenTemplate.quantity || chosenTemplate.quantity <= 0) return; // abort
+        return chosenTemplate.quantity - 1;
+      }
+      if (current > 0) return current - 1;
+      return; // abort if zero
+    }, /* applyLocally */ false);
+
+    console.log("Transaction result:", txnResult && { committed: txnResult.committed, val: txnResult.snapshot && txnResult.snapshot.val() });
+
+    if (!txnResult || !txnResult.committed) {
+      // refund and refresh
+      balance += packPrice; await saveUser(); updateUI();
+      showMessage(`Sorry — "${chosenName}" sold out. You were refunded $${packPrice}.`);
+      loadCardQuantities();
+      return;
+    }
+
+    // success
+    let newQty = txnResult.snapshot.val(); if (newQty === null || newQty === undefined) newQty = 0;
+    const newCardId = generateCardId();
+    const newCard = { id: newCardId, name: chosenName, basePrice: chosenTemplate.price, currentPrice: chosenTemplate.price, isLocked: false, lockTime: 0, lastMutationTime: Date.now(), mutations: [] };
+    collection[newCardId] = newCard;
+
+    // update local pool qty
+    const poolCard = pool.find(x=>x.name===chosenName);
+    if (poolCard) poolCard.quantity = newQty;
+
+    await saveUser();
+    await db.ref('purchases').push({ card: chosenName, user: currentUser, time: Date.now() });
+    updateUI();
+
+    document.getElementById("openedCard").innerHTML = `<div class="card ${getCardType(newCard.name)}-card"><span class="quantity-label">x${newQty}</span><h3>${newCard.name}</h3><p>Value: $${newCard.currentPrice}</p><p>Added to your collection!</p></div>`;
+
+  } catch (err) {
+    console.error("openPack error:", err);
+    balance += packPrice; await saveUser(); updateUI();
+    showMessage("An error occurred while buying the pack — you were refunded.");
+    loadCardQuantities();
+  }
 }
 
-
-// --- Steal Logic ---
+// --- Steal logic (unchanged) ---
 async function startStealAttempt(cardId, victimId) {
-    // Hide all other boxes
-    document.getElementById('cardDetailsBox').style.display = 'none';
-    document.getElementById('messageBox').style.display = 'none';
-    
-    // Check if the card still exists
-    const victimRef = db.ref(`users/${victimId}`);
-    const victimSnapshot = await victimRef.once('value');
-    if (!victimSnapshot.exists()) {
-        showMessage("The victim's account no longer exists!");
-        return;
-    }
+  document.getElementById('cardDetailsBox').style.display = 'none';
+  document.getElementById('messageBox').style.display = 'none';
+  const victimRef = db.ref(`users/${victimId}`);
+  const victimSnapshot = await victimRef.once('value');
+  if (!victimSnapshot.exists()) { showMessage("The victim's account no longer exists!"); return; }
+  const victimData = victimSnapshot.val();
+  const allVictimCards = {...(victimData.collection||{}), ...(victimData.lockedCards||{})};
+  const cardToSteal = allVictimCards[cardId];
+  if (!cardToSteal) { showMessage("This card is no longer available to steal!"); showUserCollection(victimId); return; }
 
-    const victimData = victimSnapshot.val();
-    const allVictimCards = {...(victimData.collection || {}), ...(victimData.lockedCards || {})};
-    const cardToSteal = allVictimCards[cardId];
+  const num1 = Math.floor(Math.random()*10)+1;
+  const num2 = Math.floor(Math.random()*10)+1;
+  const operator = Math.random()<0.5?'+':'-';
+  const question = `${num1} ${operator} ${num2}`;
+  const answer = operator==='+'? num1+num2 : num1-num2;
 
-    if (!cardToSteal) {
-        showMessage("This card is no longer available to steal!");
-        showUserCollection(victimId);
-        return;
-    }
+  stealData = { cardToSteal, cardId, victimId, answer, startTime: Date.now() };
 
-    // Generate a simple math question
-    const num1 = Math.floor(Math.random() * 10) + 1;
-    const num2 = Math.floor(Math.random() * 10) + 1;
-    const operator = Math.random() < 0.5 ? '+' : '-';
-    const question = `${num1} ${operator} ${num2}`;
-    const answer = operator === '+' ? num1 + num2 : num1 - num2;
-
-    // Store steal data for the checkAnswer function
-    stealData = {
-        cardToSteal: cardToSteal,
-        cardId: cardId,
-        victimId: victimId,
-        answer: answer,
-        startTime: Date.now()
-    };
-
-    // Show the steal modal and start the timer
-    document.getElementById('mathQuestion').innerText = question;
-    document.getElementById('mathAnswer').value = '';
-    document.getElementById('stealMessageBox').style.display = 'block';
-    
-    let timeRemaining = 5;
-    document.getElementById('stealTimer').innerText = timeRemaining;
-    
-    // Clear any existing timer
-    if (stealTimerInterval) {
-        clearInterval(stealTimerInterval);
-    }
-    
-    stealTimerInterval = setInterval(() => {
-        timeRemaining--;
-        document.getElementById('stealTimer').innerText = timeRemaining;
-        if (timeRemaining <= 0) {
-            clearInterval(stealTimerInterval);
-            document.getElementById('stealMessageBox').style.display = 'none';
-            showMessage(`Time's up! You failed to steal ${cardToSteal.name}.`);
-        }
-    }, 1000);
+  document.getElementById('mathQuestion').innerText = question;
+  document.getElementById('mathAnswer').value = '';
+  document.getElementById('stealMessageBox').style.display = 'block';
+  let timeRemaining = 5; document.getElementById('stealTimer').innerText = timeRemaining;
+  if (stealTimerInterval) clearInterval(stealTimerInterval);
+  stealTimerInterval = setInterval(()=>{ timeRemaining--; document.getElementById('stealTimer').innerText = timeRemaining; if (timeRemaining<=0) { clearInterval(stealTimerInterval); document.getElementById('stealMessageBox').style.display='none'; showMessage(`Time's up! You failed to steal ${cardToSteal.name}.`); } }, 1000);
 }
 
 async function checkStealAnswer() {
-    const userAnswer = parseInt(document.getElementById('mathAnswer').value);
-    
-    if (isNaN(userAnswer)) {
-        showMessage("Please enter a valid number!");
-        return;
-    }
-
-    // Stop the timer
-    clearInterval(stealTimerInterval);
-    document.getElementById('stealMessageBox').style.display = 'none';
-    
-    if (userAnswer === stealData.answer) {
-        await finalizeSteal(stealData.cardId, stealData.victimId, stealData.cardToSteal);
-    } else {
-        showMessage(`Wrong answer! You failed to steal ${stealData.cardToSteal.name}.`);
-    }
+  const userAnswer = parseInt(document.getElementById('mathAnswer').value);
+  if (isNaN(userAnswer)) { showMessage("Please enter a valid number!"); return; }
+  clearInterval(stealTimerInterval);
+  document.getElementById('stealMessageBox').style.display = 'none';
+  if (userAnswer === stealData.answer) await finalizeSteal(stealData.cardId, stealData.victimId, stealData.cardToSteal);
+  else showMessage(`Wrong answer! You failed to steal ${stealData.cardToSteal.name}.`);
 }
 
 async function finalizeSteal(cardId, victimId, cardToSteal) {
-    try {
-        const victimRef = db.ref(`users/${victimId}`);
-        const thiefRef = db.ref(`users/${currentUser}`);
-
-        // Fetch victim's data
-        const victimSnapshot = await victimRef.once('value');
-        if (!victimSnapshot.exists()) {
-            showMessage("The victim's account no longer exists!");
-            return;
-        }
-        const victimData = victimSnapshot.val();
-
-        // Check if card is in victim's collection or locked cards and remove it
-        let cardFound = false;
-        if (victimData.collection && victimData.collection[cardId]) {
-            delete victimData.collection[cardId];
-            cardFound = true;
-        } else if (victimData.lockedCards && victimData.lockedCards[cardId]) {
-            delete victimData.lockedCards[cardId];
-            cardFound = true;
-        }
-
-        if (!cardFound) {
-            showMessage("The card was not found in the victim's collection. It might have already been stolen.");
-            return;
-        }
-
-        // Add the card to the thief's collection
-        cardToSteal.isLocked = false;
-        cardToSteal.lockTime = 0;
-        collection[cardId] = cardToSteal;
-
-        // Save changes for both users
-        await victimRef.child('collection').set(victimData.collection);
-        await victimRef.child('lockedCards').set(victimData.lockedCards);
-        await saveUser(); // Saves the thief's updated collection
-
-        // Send a notification to the victim
-        await db.ref(`notifications/${victimId}`).push().set(`Your card "${cardToSteal.name}" was stolen by ${currentUser}!`);
-        
-        showMessage(`Success! You have stolen ${cardToSteal.name} from ${victimId}!`);
-        updateUI();
-
-    } catch (error) {
-        console.error("Error finalizing steal:", error);
-        showMessage("An error occurred while stealing the card.");
-    }
+  try {
+    const victimRef = db.ref(`users/${victimId}`);
+    const victimSnapshot = await victimRef.once('value');
+    if (!victimSnapshot.exists()) { showMessage("The victim's account no longer exists!"); return; }
+    const victimData = victimSnapshot.val();
+    let cardFound = false;
+    if (victimData.collection && victimData.collection[cardId]) { delete victimData.collection[cardId]; cardFound = true; }
+    else if (victimData.lockedCards && victimData.lockedCards[cardId]) { delete victimData.lockedCards[cardId]; cardFound = true; }
+    if (!cardFound) { showMessage("The card was not found in the victim's collection. It might have already been stolen."); return; }
+    cardToSteal.isLocked = false; cardToSteal.lockTime = 0; collection[cardId] = cardToSteal;
+    await victimRef.child('collection').set(victimData.collection);
+    await victimRef.child('lockedCards').set(victimData.lockedCards);
+    await saveUser();
+    await db.ref(`notifications/${victimId}`).push().set(`Your card "${cardToSteal.name}" was stolen by ${currentUser}!`);
+    showMessage(`Success! You have stolen ${cardToSteal.name} from ${victimId}!`);
+    updateUI();
+  } catch (err) { console.error("finalizeSteal err", err); showMessage("An error occurred while stealing the card."); }
 }
-</script>
-<!-- Centered Welcome Button + Brainrot Audio -->
-<div id="welcome-container" style="
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.7);
-  z-index: 9999;">
-  
-  <button id="welcome-btn" style="
-    font-size: 24px;
-    padding: 20px 40px;
-    border: none;
-    border-radius: 12px;
-    background: #6a0dad;
-    color: white;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-    Welcome
-  </button>
-</div>
 
-<audio id="brainrot-audio" src="brainrot.mp3"></audio>
+// --- ADMIN: refill stocks (prompt for code '555') ---
+function refillStocksPrompt() {
+  const code = prompt("Enter refill code:");
+  if (code === null) return; // cancelled
+  if (String(code).trim() === "555") {
+    // run refill
+    refillStocks().then(() => {
+      showMessage("Stocks refilled to initial quantities.");
+    }).catch(err => {
+      console.error("refillStocks error:", err);
+      showMessage("Refill failed — check console.");
+    });
+  } else {
+    showMessage("Incorrect code.");
+  }
+}
+
+async function refillStocks() {
+  // Build payload using INITIAL_QUANTITIES and safe keys
+  const payload = {};
+  for (const name in INITIAL_QUANTITIES) {
+    payload[toKey(name)] = INITIAL_QUANTITIES[name];
+  }
+
+  // Write full map to DB (admin action)
+  await db.ref('cardQuantities').set(payload);
+
+  // Update local pools to match initial quantities
+  for (const packType in cardPools) {
+    cardPools[packType].forEach(card => {
+      if (INITIAL_QUANTITIES[card.name] !== undefined) {
+        card.quantity = INITIAL_QUANTITIES[card.name];
+      }
+    });
+  }
+
+  console.log("Admin refill: cardQuantities set to initial values", payload);
+
+  // Refresh UI and pack chances
+  updateUI();
+  updatePackChances();
+
+  // Log admin refill in DB (optional)
+  await db.ref('adminActions').push({ action: 'refillStocks', by: currentUser || 'unknown', time: Date.now() });
+}
+
+// --- END SCRIPT ---
+</script>
+
+<!-- Welcome & Refresh UI -->
+<div id="welcome-container" style="position:fixed; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.7); z-index:9999;">
+  <button id="welcome-btn" style="font-size:24px; padding:20px 40px; border:none; border-radius:12px; background:#6a0dad; color:white; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3);">Welcome</button>
+</div>
 
 <script>
   document.getElementById("welcome-btn").addEventListener("click", () => {
-    const audio = document.getElementById("brainrot-audio");
-    audio.play().catch(err => console.log("Audio play failed:", err));
     document.getElementById("welcome-container").style.display = "none";
+    const audio = new Audio('brainrot.mp3');
+    audio.play().catch(()=>{});
   });
-</script>
-<!-- Refresh Button (Top Right) -->
-<button id="refresh-btn" style="
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 12px 20px;
-  font-size: 18px;
-  border: none;
-  border-radius: 10px;
-  background: #2196f3;
-  color: white;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-  z-index: 9999;">
-  🔄 Refresh
-</button>
-
-<script>
-  document.getElementById("refresh-btn").addEventListener("click", () => {
-    location.reload();
-  });
+  // refresh button
+  const refreshBtn = document.createElement('button');
+  refreshBtn.id = 'refresh-btn';
+  refreshBtn.style = "position:fixed; top:20px; right:20px; padding:12px 20px; font-size:18px; border:none; border-radius:10px; background:#2196f3; color:white; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.3); z-index:9999;";
+  refreshBtn.innerText = "🔄 Refresh";
+  refreshBtn.addEventListener("click", ()=> location.reload());
+  document.body.appendChild(refreshBtn);
 </script>
 
 </body>
