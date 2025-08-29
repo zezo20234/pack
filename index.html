@@ -25,7 +25,7 @@
     padding: 1rem;
     color: #333;
   }
-  .login-box, .game-box, #messageBox, #cardDetailsBox, #stealMessageBox {
+  .login-box, .game-box, #messageBox, #cardDetailsBox, #sendModal {
     margin: 20px auto;
     padding: 20px;
     border-radius: 12px;
@@ -89,7 +89,7 @@
   .btn-small { padding: 8px 16px; font-size: 14px; margin: 4px; }
   .locked-card { box-shadow: 0 0 10px 3px #ff0000; }
   .card-buttons { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; width: 100%; }
-  #messageBox, #cardDetailsBox, #stealMessageBox { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; display: none; }
+  #messageBox, #cardDetailsBox, #sendModal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; display: none; }
   #cardDetailsBox .card { cursor: default; transform: none; box-shadow: none; }
   .user-select-buttons { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
   .header-actions { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 480px; }
@@ -151,25 +151,36 @@
   <div id="otherUserCollection" class="card-container" style="display:none;"></div>
 </div>
 
+<!-- Re-usable message modal -->
 <div id="messageBox"><p id="messageText"></p><button class="btn" onclick="closeMessage()">OK</button></div>
 
+<!-- Card details modal -->
 <div id="cardDetailsBox"><div id="cardDetailsContent"></div><button class="btn" onclick="closeCardDetails()">Close</button></div>
 
-<div id="stealMessageBox">
-  <h3>Steal Attempt!</h3>
-  <p>Solve this equation to steal the card:</p>
-  <h2 id="mathQuestion"></h2>
-  <p>Time remaining: <span id="stealTimer">5</span>s</p>
-  <input type="number" id="mathAnswer" placeholder="Your Answer" style="padding:10px; border-radius:8px; border:1px solid #ccc; width:80%; margin-top: 10px;">
-  <button class="btn" onclick="checkStealAnswer()">Submit</button>
+<!-- Send modal (choose recipient) -->
+<div id="sendModal">
+  <h3>Send Card</h3>
+  <p>Send "<strong id="sendCardName"></strong>" to:</p>
+  <div style="display:flex; justify-content:center; gap:10px; margin-top:8px;">
+    <button class="btn btn-blue" onclick="sendCardToRecipient(currentSendCardId,'asser')">Asser</button>
+    <button class="btn btn-blue" onclick="sendCardToRecipient(currentSendCardId,'lilly')">Lilly</button>
+    <button class="btn btn-blue" onclick="sendCardToRecipient(currentSendCardId,'zezo')">Zezo</button>
+  </div>
+  <div style="margin-top:12px;"><button class="btn" onclick="closeSendModal()">Cancel</button></div>
 </div>
 
-<!-- Firebase -->
+<!-- Welcome & Refresh UI -->
+<div id="welcome-container" style="position:fixed; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.7); z-index:9999;">
+  <button id="welcome-btn" style="font-size:24px; padding:20px 40px; border:none; border-radius:12px; background:#6a0dad; color:white; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3);">Welcome</button>
+</div>
+<!-- Firebase compat libs -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
 <script>
-// --- Firebase Setup ---
+/* --------------------
+   Firebase + Game Data
+   -------------------- */
 const firebaseConfig = {
   apiKey: "AIzaSyDclp6rqCZRVreOzTcxv840mXcl6nDKAv8",
   authDomain: "pack-f76c3.firebaseapp.com",
@@ -184,9 +195,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // --- Helper: safe DB key for card names (replace firebase-invalid chars) ---
-function toKey(name) {
-  return String(name).replace(/[.#$\[\]\/]/g, '_');
-}
+function toKey(name) { return String(name).replace(/[.#$\[\]\/]/g, '_'); }
 
 // --- Game Data & Pools ---
 const accounts = { zezo: "000", asser: "230", lilly: "246", layan: "123" };
@@ -263,16 +272,20 @@ let balance = 0;
 let collection = {};
 let lockedCards = {};
 let currentHourlyMutation = null;
-let stealData = {};
-let stealTimerInterval = null;
 let mutationInterval = null;
 let distributeInterval = null;
 let distributionDelayMs = 1000 * 60 * 10;
 let nextDistributionTimestamp = null;
 let distributionCountdownInterval = null;
 
-// --- Utils ---
+// For sending UI
+let currentSendCardId = null;
+
+/* --------------------
+   Utilities & UI
+   -------------------- */
 function generateCardId() { return Date.now().toString() + Math.random().toString().substr(2,6); }
+
 function getCardType(cardName) {
   if (cardPools.common.some(c=>c.name===cardName)) return 'common';
   if (cardPools.rare.some(c=>c.name===cardName)) return 'rare';
@@ -298,6 +311,7 @@ function showMessage(message) {
   document.getElementById('messageBox').style.display = 'block';
 }
 function closeMessage() { document.getElementById('messageBox').style.display = 'none'; }
+
 function showCardDetails(cardId) {
   const card = collection[cardId] || lockedCards[cardId];
   if (!card) return;
@@ -321,7 +335,9 @@ function updateDistributionCountdown() {
   el.innerText = mins>0 ? `Next distribution in: ${mins}m ${secs}s` : `Next distribution in: ${secs}s`;
 }
 
-// --- Auth / Load ---
+/* --------------------
+   Auth / Load / Save
+   -------------------- */
 window.onload = function() {
   const lastUser = localStorage.getItem("lastLoggedInUser");
   const keepSignedIn = localStorage.getItem("keepSignedIn");
@@ -363,7 +379,6 @@ function logout() {
   nextDistributionTimestamp = null; updateDistributionCountdown();
 }
 
-// --- Data Load / Save ---
 function loadUserData() {
   db.ref("users/" + currentUser).once("value").then(snap=>{
     if (snap.exists()) {
@@ -410,7 +425,9 @@ function checkNotifications() {
   ref.once("value").then(snap=>{ if (snap.exists()) { const notes = snap.val(); for (const k in notes) showMessage(notes[k]); ref.remove(); } });
 }
 
-// --- UI / Collection ---
+/* --------------------
+   UI / Collection Rendering
+   -------------------- */
 function updateUI() {
   document.getElementById("balance").innerText = balance;
   document.getElementById("collection").innerHTML = renderCollection(collection, lockedCards, true);
@@ -421,7 +438,7 @@ function updateUI() {
 
 function showMyCollection() { document.getElementById("collection").style.display='block'; document.getElementById("otherUserCollection").style.display='none'; document.getElementById("otherUserHeader").style.display='none'; }
 
-function renderCollection(cardCollection, lockedCardsObj, isMyCollection = false, victimId = null) {
+function renderCollection(cardCollection, lockedCardsObj, isMyCollection = false, ownerId = null) {
   let collHTML = "";
   const all = { ...cardCollection, ...lockedCardsObj };
   if (Object.keys(all).length === 0) return "This user has no cards yet.";
@@ -435,20 +452,25 @@ function renderCollection(cardCollection, lockedCardsObj, isMyCollection = false
     const mutationLabel = mutationsCount>0 ? `<span class="mutation-label">${mutationsCount}x Mutated</span>` : '';
     const qty = getCardQuantity(card.name);
     const qtyHtml = `<span class="quantity-label">x${qty}</span>`;
+
+    // Buttons: for your collection include Lock/Unlock, Sell, Send
     let buttons = '';
     if (isMyCollection) {
       buttons = `<button class="btn btn-small" onclick="event.stopPropagation(); ${isLocked ? `unlockCard('${id}')` : `lockCard('${id}')`}">${isLocked ? 'Unlock' : 'Lock'}</button>
-                 <button class="btn btn-small" onclick="event.stopPropagation(); sellCard('${id}')" ${isLocked?'disabled':''}>Sell ($${card.currentPrice})</button>`;
+                 <button class="btn btn-small" onclick="event.stopPropagation(); sellCard('${id}')" ${isLocked?'disabled':''}>Sell ($${card.currentPrice})</button>
+                 <button class="btn btn-small btn-blue" onclick="event.stopPropagation(); openSendModal('${id}','${escapeHtml(card.name)}')">Send</button>`;
     } else {
-      buttons = `<button class="btn btn-small btn-gold" onclick="event.stopPropagation(); startStealAttempt('${id}','${victimId}')">Steal</button>`;
+      // viewing other user's collection (no send button because you don't own those)
+      buttons = `<div style="opacity:0.85; font-size:0.9rem; margin-top:6px;">Owner: ${ownerId || 'player'}</div>`;
     }
+
     collHTML += `<div class="card ${cardType}-card ${cls}" onclick="showCardDetails('${id}')">${mutationLabel}${qtyHtml}<h3>${card.name}</h3><p>Value: $${card.currentPrice}</p><div class="card-buttons">${buttons}</div></div>`;
   }
   return collHTML;
 }
 
 function showUserCollection(targetUser) {
-  if (targetUser === currentUser) { showMessage("You can't steal from yourself! Use 'My Base' instead."); return; }
+  if (targetUser === currentUser) { showMessage("This is your account. Use 'My Base' to manage your cards."); return; }
   document.getElementById("collection").style.display='none';
   document.getElementById("otherUserCollection").style.display='block';
   document.getElementById("otherUserHeader").innerText = targetUser; document.getElementById("otherUserHeader").style.display='block';
@@ -459,7 +481,9 @@ function showUserCollection(targetUser) {
   }).catch(err => { console.error("showUserCollection err", err); document.getElementById("otherUserCollection").innerHTML = `<p>Error loading ${targetUser}'s data.</p>`; });
 }
 
-// --- Lock / Unlock / Sell ---
+/* --------------------
+   Lock / Unlock / Sell
+   -------------------- */
 function lockCard(cardId) {
   const c = collection[cardId];
   if (!c) return showMessage("Card not found in collection.");
@@ -481,6 +505,9 @@ function sellCard(cardId) {
   saveUser(); updateUI(); showMessage(`Sold card "${c.name}" for $${c.currentPrice}.`);
 }
 
+/* --------------------
+   Pack buying etc (unchanged)
+   -------------------- */
 function updatePackChances() {
   const packs = [
     { type: 'common', pool: cardPools.common, buttonId: 'buyCommonBtn' },
@@ -506,11 +533,9 @@ function updatePackChances() {
   });
 }
 
-// --- Mutation logic (unchanged) ---
 function applyMutations() {
   if (!currentUser) return;
   currentHourlyMutation = getRandomMutation();
-  console.log("Selected mutation:", currentHourlyMutation);
 }
 function getRandomMutation() {
   const arr = Object.keys(MUTATIONS).map(k=>({name:k,priceIncrease:MUTATIONS[k].priceIncrease, chance: MUTATION_TIERS[MUTATIONS[k].tier]?MUTATION_TIERS[MUTATIONS[k].tier].chance:0}));
@@ -555,7 +580,9 @@ async function distributeMutation() {
   finally { nextDistributionTimestamp = Date.now() + distributionDelayMs; }
 }
 
-// --- OPEN PACK: safe version (reads fresh quantities, uses transaction, initializes missing keys) ---
+/* --------------------
+   Open pack (unchanged)
+   -------------------- */
 async function openPack(type) {
   let packPrice = 0;
   let pool = [];
@@ -600,8 +627,6 @@ async function openPack(type) {
     const safeKey = toKey(chosenName);
     const qtyRef = db.ref(`cardQuantities/${safeKey}`);
 
-    console.log("Attempting transaction on", safeKey, "localQty:", chosenTemplate.quantity);
-
     // Transaction: if missing, initialize to template.quantity then decrement
     const txnResult = await qtyRef.transaction(current => {
       if (current === null || current === undefined) {
@@ -611,8 +636,6 @@ async function openPack(type) {
       if (current > 0) return current - 1;
       return; // abort if zero
     }, /* applyLocally */ false);
-
-    console.log("Transaction result:", txnResult && { committed: txnResult.committed, val: txnResult.snapshot && txnResult.snapshot.val() });
 
     if (!txnResult || !txnResult.committed) {
       // refund and refresh
@@ -646,69 +669,74 @@ async function openPack(type) {
   }
 }
 
-// --- Steal logic (unchanged) ---
-async function startStealAttempt(cardId, victimId) {
-  document.getElementById('cardDetailsBox').style.display = 'none';
-  document.getElementById('messageBox').style.display = 'none';
-  const victimRef = db.ref(`users/${victimId}`);
-  const victimSnapshot = await victimRef.once('value');
-  if (!victimSnapshot.exists()) { showMessage("The victim's account no longer exists!"); return; }
-  const victimData = victimSnapshot.val();
-  const allVictimCards = {...(victimData.collection||{}), ...(victimData.lockedCards||{})};
-  const cardToSteal = allVictimCards[cardId];
-  if (!cardToSteal) { showMessage("This card is no longer available to steal!"); showUserCollection(victimId); return; }
-
-  const num1 = Math.floor(Math.random()*10)+1;
-  const num2 = Math.floor(Math.random()*10)+1;
-  const operator = Math.random()<0.5?'+':'-';
-  const question = `${num1} ${operator} ${num2}`;
-  const answer = operator==='+'? num1+num2 : num1-num2;
-
-  stealData = { cardToSteal, cardId, victimId, answer, startTime: Date.now() };
-
-  document.getElementById('mathQuestion').innerText = question;
-  document.getElementById('mathAnswer').value = '';
-  document.getElementById('stealMessageBox').style.display = 'block';
-  let timeRemaining = 5; document.getElementById('stealTimer').innerText = timeRemaining;
-  if (stealTimerInterval) clearInterval(stealTimerInterval);
-  stealTimerInterval = setInterval(()=>{ timeRemaining--; document.getElementById('stealTimer').innerText = timeRemaining; if (timeRemaining<=0) { clearInterval(stealTimerInterval); document.getElementById('stealMessageBox').style.display='none'; showMessage(`Time's up! You failed to steal ${cardToSteal.name}.`); } }, 1000);
+/* --------------------
+   Send Card Flow
+   -------------------- */
+function escapeHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 }
 
-async function checkStealAnswer() {
-  const userAnswer = parseInt(document.getElementById('mathAnswer').value);
-  if (isNaN(userAnswer)) { showMessage("Please enter a valid number!"); return; }
-  clearInterval(stealTimerInterval);
-  document.getElementById('stealMessageBox').style.display = 'none';
-  if (userAnswer === stealData.answer) await finalizeSteal(stealData.cardId, stealData.victimId, stealData.cardToSteal);
-  else showMessage(`Wrong answer! You failed to steal ${stealData.cardToSteal.name}.`);
+function openSendModal(cardId, cardName) {
+  currentSendCardId = cardId;
+  document.getElementById('sendCardName').innerText = cardName || (collection[cardId] && collection[cardId].name) || '';
+  document.getElementById('sendModal').style.display = 'block';
 }
 
-async function finalizeSteal(cardId, victimId, cardToSteal) {
+function closeSendModal() {
+  currentSendCardId = null;
+  document.getElementById('sendModal').style.display = 'none';
+}
+
+async function sendCardToRecipient(cardId, recipient) {
   try {
-    const victimRef = db.ref(`users/${victimId}`);
-    const victimSnapshot = await victimRef.once('value');
-    if (!victimSnapshot.exists()) { showMessage("The victim's account no longer exists!"); return; }
-    const victimData = victimSnapshot.val();
-    let cardFound = false;
-    if (victimData.collection && victimData.collection[cardId]) { delete victimData.collection[cardId]; cardFound = true; }
-    else if (victimData.lockedCards && victimData.lockedCards[cardId]) { delete victimData.lockedCards[cardId]; cardFound = true; }
-    if (!cardFound) { showMessage("The card was not found in the victim's collection. It might have already been stolen."); return; }
-    cardToSteal.isLocked = false; cardToSteal.lockTime = 0; collection[cardId] = cardToSteal;
-    await victimRef.child('collection').set(victimData.collection);
-    await victimRef.child('lockedCards').set(victimData.lockedCards);
+    if (!currentUser) { showMessage("You must be logged in to send cards."); return; }
+    if (!cardId) { showMessage("No card selected."); return; }
+    if (!recipient || recipient === currentUser) { showMessage("Select a valid recipient."); return; }
+
+    // fetch recipient exists
+    const rRef = db.ref(`users/${recipient}`);
+    const rSnap = await rRef.once('value');
+    if (!rSnap.exists()) { showMessage("Recipient does not exist."); return; }
+
+    // find card locally (collection or lockedCards)
+    let cardData = null;
+    let wasLocked = false;
+    if (collection[cardId]) { cardData = collection[cardId]; delete collection[cardId]; }
+    else if (lockedCards[cardId]) { cardData = lockedCards[cardId]; wasLocked = true; delete lockedCards[cardId]; }
+    else { showMessage("You no longer own that card."); return; }
+
+    // ensure card is unlocked for recipient
+    cardData.isLocked = false;
+    cardData.lockTime = 0;
+    cardData.lastMutationTime = Date.now();
+
+    // Update sender in DB (collection + lockedCards)
+    await db.ref(`users/${currentUser}/collection`).set(collection || {});
+    await db.ref(`users/${currentUser}/lockedCards`).set(lockedCards || {});
+    // Add to recipient's collection (single key write)
+    await db.ref(`users/${recipient}/collection/${cardId}`).set(cardData);
+
+    // Notify recipient
+    await db.ref(`notifications/${recipient}`).push().set(`${currentUser} sent you a card: "${cardData.name}".`);
+
+    // Save local user record too (optional but keeps parity)
     await saveUser();
-    await db.ref(`notifications/${victimId}`).push().set(`Your card "${cardToSteal.name}" was stolen by ${currentUser}!`);
-    showMessage(`Success! You have stolen ${cardToSteal.name} from ${victimId}!`);
     updateUI();
-  } catch (err) { console.error("finalizeSteal err", err); showMessage("An error occurred while stealing the card."); }
+    closeSendModal();
+    showMessage(`Sent "${cardData.name}" to ${recipient}.`);
+  } catch (err) {
+    console.error("sendCardToRecipient err", err);
+    showMessage("Error sending card. Check console.");
+  }
 }
 
-// --- ADMIN: refill stocks (prompt for code '555') ---
+/* --------------------
+   Admin / Refills
+   -------------------- */
 function refillStocksPrompt() {
   const code = prompt("Enter refill code:");
   if (code === null) return; // cancelled
   if (String(code).trim() === "555") {
-    // run refill
     refillStocks().then(() => {
       showMessage("Stocks refilled to initial quantities.");
     }).catch(err => {
@@ -719,58 +747,33 @@ function refillStocksPrompt() {
     showMessage("Incorrect code.");
   }
 }
-
 async function refillStocks() {
-  // Build payload using INITIAL_QUANTITIES and safe keys
   const payload = {};
-  for (const name in INITIAL_QUANTITIES) {
-    payload[toKey(name)] = INITIAL_QUANTITIES[name];
-  }
-
-  // Write full map to DB (admin action)
+  for (const name in INITIAL_QUANTITIES) payload[toKey(name)] = INITIAL_QUANTITIES[name];
   await db.ref('cardQuantities').set(payload);
-
-  // Update local pools to match initial quantities
   for (const packType in cardPools) {
-    cardPools[packType].forEach(card => {
-      if (INITIAL_QUANTITIES[card.name] !== undefined) {
-        card.quantity = INITIAL_QUANTITIES[card.name];
-      }
-    });
+    cardPools[packType].forEach(card => { if (INITIAL_QUANTITIES[card.name] !== undefined) card.quantity = INITIAL_QUANTITIES[card.name]; });
   }
-
-  console.log("Admin refill: cardQuantities set to initial values", payload);
-
-  // Refresh UI and pack chances
-  updateUI();
-  updatePackChances();
-
-  // Log admin refill in DB (optional)
+  updateUI(); updatePackChances();
   await db.ref('adminActions').push({ action: 'refillStocks', by: currentUser || 'unknown', time: Date.now() });
 }
 
-// --- END SCRIPT ---
-</script>
-
-<!-- Welcome & Refresh UI -->
-<div id="welcome-container" style="position:fixed; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.7); z-index:9999;">
-  <button id="welcome-btn" style="font-size:24px; padding:20px 40px; border:none; border-radius:12px; background:#6a0dad; color:white; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3);">Welcome</button>
-</div>
-
-<script>
-  document.getElementById("welcome-btn").addEventListener("click", () => {
-    document.getElementById("welcome-container").style.display = "none";
-    const audio = new Audio('brainrot.mp3');
-    audio.play().catch(()=>{});
-  });
-  // refresh button
-  const refreshBtn = document.createElement('button');
-  refreshBtn.id = 'refresh-btn';
-  refreshBtn.style = "position:fixed; top:20px; right:20px; padding:12px 20px; font-size:18px; border:none; border-radius:10px; background:#2196f3; color:white; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.3); z-index:9999;";
-  refreshBtn.innerText = "🔄 Refresh";
-  refreshBtn.addEventListener("click", ()=> location.reload());
-  document.body.appendChild(refreshBtn);
+/* --------------------
+   Helpers at end
+   -------------------- */
+// small UI hooks (welcome + refresh)
+document.getElementById("welcome-btn").addEventListener("click", () => {
+  document.getElementById("welcome-container").style.display = "none";
+  const audio = new Audio('brainrot.mp3');
+  audio.play().catch(()=>{});
+});
+// refresh button
+const refreshBtn = document.createElement('button');
+refreshBtn.id = 'refresh-btn';
+refreshBtn.style = "position:fixed; top:20px; right:20px; padding:12px 20px; font-size:18px; border:none; border-radius:10px; background:#2196f3; color:white; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.3); z-index:9999;";
+refreshBtn.innerText = "🔄 Refresh";
+refreshBtn.addEventListener("click", ()=> location.reload());
+document.body.appendChild(refreshBtn);
 </script>
 
 </body>
-</html>
