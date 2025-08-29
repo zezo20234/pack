@@ -25,7 +25,7 @@
     padding: 1rem;
     color: #333;
   }
-  .login-box, .game-box, #messageBox, #cardDetailsBox, #sendModal {
+  .login-box, .game-box, #messageBox, #cardDetailsBox, #sendModal, #stealModal {
     margin: 20px auto;
     padding: 20px;
     border-radius: 12px;
@@ -114,13 +114,16 @@
   .btn-small { padding: 8px 16px; font-size: 14px; margin: 4px; }
   .locked-card { box-shadow: 0 0 10px 3px #ff0000; }
   .card-buttons { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; width: 100%; }
-  #messageBox, #cardDetailsBox, #sendModal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; display: none; }
+  #messageBox, #cardDetailsBox, #sendModal, #stealModal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; display: none; }
   #cardDetailsBox .card { cursor: default; transform: none; box-shadow: none; }
   .user-select-buttons { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
   .header-actions { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 480px; }
   .header-right { display:flex; flex-direction:column; gap:6px; align-items:flex-end; } /* so Logout on top and refill button under it */
   #nextDistribution { font-size: 0.9rem; color: #333; margin-top: 6px; opacity: 0.9; }
   @media (max-width: 600px) { .card-container { grid-template-columns: 1fr; } .game-box, .login-box { padding: 10px; } .btn { padding: 10px 20px; font-size: 14px; } }
+  /* steal modal specifics */
+  #stealModal .question { font-size: 1.2rem; margin-bottom: 12px; }
+  #stealModal .small { font-size: 0.85rem; color: #666; margin-top:8px; }
 </style>
 </head>
 <body>
@@ -194,6 +197,18 @@
     <button class="btn btn-blue" onclick="sendCardToRecipient(currentSendCardId,'zezo')">Zezo</button>
   </div>
   <div style="margin-top:12px;"><button class="btn" onclick="closeSendModal()">Cancel</button></div>
+</div>
+
+<!-- Steal modal -->
+<div id="stealModal">
+  <h3 id="stealModalTitle">Steal Attempt</h3>
+  <div class="question" id="stealQuestion">Question will appear here</div>
+  <input id="stealAnswerInput" placeholder="Enter answer" style="padding:10px; border-radius:8px; border:1px solid #ccc; width:80%;"><br><br>
+  <div style="display:flex; justify-content:center; gap:10px;">
+    <button class="btn btn-blue" id="submitStealAnswerBtn" onclick="submitStealAnswer()">Submit</button>
+    <button class="btn" onclick="closeStealModal()">Cancel</button>
+  </div>
+  <div class="small" id="stealModalHint"></div>
 </div>
 
 <!-- Welcome & Refresh UI -->
@@ -316,6 +331,12 @@ let distributionCountdownInterval = null;
 // For sending UI
 let currentSendCardId = null;
 
+// Steal-related state
+let stealRequestsListenerRef = null;
+let stealCooldownListenerRef = null;
+const STEAL_COOLDOWN_MS = 15 * 60 * 1000; // 15 minutes
+let activeStealSession = null; // session data for the currently displayed modal
+
 /* --------------------
    Utilities & UI
    -------------------- */
@@ -372,6 +393,54 @@ function updateDistributionCountdown() {
 }
 
 /* --------------------
+   Presence & Steal Listeners
+   -------------------- */
+function setOnlinePresence() {
+  if (!currentUser) return;
+  const ref = db.ref(`presence/${currentUser}`);
+  ref.onDisconnect().remove();
+  ref.set(true).catch(()=>{});
+}
+
+function clearOnlinePresence() {
+  if (!currentUser) return;
+  db.ref(`presence/${currentUser}`).remove().catch(()=>{});
+}
+
+/* Listen for incoming steal requests for current user */
+function listenForStealRequests() {
+  if (!currentUser) return;
+  // detach any old listener
+  if (stealRequestsListenerRef) { stealRequestsListenerRef.off(); stealRequestsListenerRef = null; }
+  const requestsRef = db.ref(`stealRequests/${currentUser}`);
+  stealRequestsListenerRef = requestsRef;
+  requestsRef.on('child_added', async snap => {
+    const session = snap.val();
+    const sessionId = snap.key;
+    if (!session) return;
+    // fetch central session (in case we stored only id)
+    let full = session;
+    if (!session.question) {
+      const central = await db.ref(`stealSessions/${sessionId}`).once('value');
+      full = central.val();
+    }
+    if (!full) {
+      // nothing to do
+      requestsRef.child(sessionId).remove().catch(()=>{});
+      return;
+    }
+    // display modal for this steal session
+    showIncomingSteal(sessionId, full);
+    // we keep the request node for the duration until resolved (we clean up later)
+  });
+}
+
+/* Remove listener on logout */
+function stopListeningForStealRequests() {
+  if (stealRequestsListenerRef) { stealRequestsListenerRef.off(); stealRequestsListenerRef = null; }
+}
+
+/* --------------------
    Auth / Load / Save
    -------------------- */
 window.onload = function() {
@@ -396,6 +465,11 @@ function login() {
     document.getElementById("gameBox").style.display = "block";
     document.getElementById("userName").innerText = u;
     loadUserData();
+    // presence
+    setOnlinePresence();
+    // steal requests listener
+    listenForStealRequests();
+
     if (!mutationInterval) { mutationInterval = setInterval(applyMutations, 1000 * 60 * 30); applyMutations(); }
     if (!distributeInterval) { distributeInterval = setInterval(distributeMutation, distributionDelayMs); nextDistributionTimestamp = Date.now() + distributionDelayMs; if (!distributionCountdownInterval) { distributionCountdownInterval = setInterval(updateDistributionCountdown, 1000); updateDistributionCountdown(); } }
   } else {
@@ -413,6 +487,9 @@ function logout() {
   if (distributeInterval) { clearInterval(distributeInterval); distributeInterval = null; }
   if (distributionCountdownInterval) { clearInterval(distributionCountdownInterval); distributionCountdownInterval = null; }
   nextDistributionTimestamp = null; updateDistributionCountdown();
+  // clear presence and listeners
+  clearOnlinePresence();
+  stopListeningForStealRequests();
 }
 
 function loadUserData() {
@@ -496,8 +573,10 @@ function renderCollection(cardCollection, lockedCardsObj, isMyCollection = false
                  <button class="btn btn-small" onclick="event.stopPropagation(); sellCard('${id}')" ${isLocked?'disabled':''}>Sell ($${card.currentPrice})</button>
                  <button class="btn btn-small btn-blue" onclick="event.stopPropagation(); openSendModal('${id}','${escapeHtml(card.name)}')">Send</button>`;
     } else {
-      // viewing other user's collection (no send button because you don't own those)
-      buttons = `<div style="opacity:0.85; font-size:0.9rem; margin-top:6px;">Owner: ${ownerId || 'player'}</div>`;
+      // viewing other user's collection (add Steal button, only works if online and cooldown permits)
+      const owner = ownerId || 'player';
+      buttons = `<div style="opacity:0.85; font-size:0.9rem; margin-top:6px;">Owner: ${owner}</div>
+                 <button class="btn btn-small btn-gold" onclick="event.stopPropagation(); attemptSteal('${id}','${owner}')">Steal</button>`;
     }
 
     collHTML += `<div class="card ${cardType}-card ${cls}" onclick="showCardDetails('${id}')">${mutationLabel}${qtyHtml}<h3>${card.name}</h3><p>Value: $${card.currentPrice}</p><div class="card-buttons">${buttons}</div></div>`;
@@ -769,6 +848,281 @@ async function sendCardToRecipient(cardId, recipient) {
 }
 
 /* --------------------
+   Steal Flow
+   -------------------- */
+
+/* Utility: get last steal timestamp for a user */
+async function getLastStealTimestamp(user) {
+  const snap = await db.ref(`stealCooldowns/${user}`).once('value');
+  const v = snap.val();
+  return v || 0;
+}
+
+/* Attempt to steal a card (initiated by thief clicking Steal) */
+async function attemptSteal(cardId, owner) {
+  try {
+    if (!currentUser) { showMessage("You must be logged in to attempt a steal."); return; }
+    if (!cardId) return;
+    if (owner === currentUser) { showMessage("You cannot steal your own card."); return; }
+
+    // Check thief cooldown
+    const last = await getLastStealTimestamp(currentUser);
+    const now = Date.now();
+    if (now - last < STEAL_COOLDOWN_MS) {
+      const remain = Math.ceil((STEAL_COOLDOWN_MS - (now - last)) / 60000);
+      showMessage(`You are on steal cooldown. Try again in ~${remain} minute(s).`);
+      return;
+    }
+
+    // Check target online
+    const presSnap = await db.ref(`presence/${owner}`).once('value');
+    if (!presSnap.exists()) { showMessage(`${owner} is offline — you can only steal from online players.`); return; }
+
+    // Fetch owner's card to ensure it's present and unlocked
+    const ownerCardSnap = await db.ref(`users/${owner}/collection/${cardId}`).once('value');
+    if (!ownerCardSnap.exists()) { showMessage("That card is not available (owner doesn't have it or it's locked)."); return; }
+    const cardData = ownerCardSnap.val();
+    if (cardData.isLocked) { showMessage("That card is locked and cannot be stolen."); return; }
+
+    // Build math question: simple + or - with numbers 1..20
+    const a = Math.floor(Math.random()*20)+1;
+    const b = Math.floor(Math.random()*20)+1;
+    const op = Math.random() < 0.5 ? '+' : '-';
+    const answer = op === '+' ? (a + b) : (a - b);
+
+    // Create session
+    const sessionId = generateCardId();
+    const session = {
+      sessionId,
+      cardId,
+      cardName: cardData.name,
+      attacker: currentUser,
+      defender: owner,
+      cardSnapshot: cardData,
+      question: { a, b, op },
+      createdAt: Date.now(),
+      winner: null,
+      resolved: false
+      // answers will be added as child nodes when users answer
+    };
+
+    // Write central session and notify both users (stealRequests)
+    await db.ref(`stealSessions/${sessionId}`).set(session);
+    await db.ref(`stealRequests/${currentUser}/${sessionId}`).set(session);
+    await db.ref(`stealRequests/${owner}/${sessionId}`).set(session);
+
+    // Immediately open modal for thief (we'll also get the child_added listener for the thief because we wrote to stealRequests/currentUser)
+    // But open it proactively for the thief to reduce latency:
+    showIncomingSteal(sessionId, session, true);
+
+  } catch (err) {
+    console.error("attemptSteal err", err);
+    showMessage("Error starting steal. Check console.");
+  }
+}
+
+/* Show incoming steal modal to this client (sessionId + session data) */
+function showIncomingSteal(sessionId, session, isInitiator=false) {
+  activeStealSession = { sessionId, session };
+  const q = session.question;
+  const questionText = `${q.a} ${q.op} ${q.b} = ?`;
+  const title = (session.attacker === currentUser) ? `You are stealing "${session.cardName}" from ${session.defender}` : `${session.attacker} is attempting to steal "${session.cardName}" from you!`;
+  document.getElementById('stealModalTitle').innerText = title;
+  document.getElementById('stealQuestion').innerText = questionText;
+  document.getElementById('stealAnswerInput').value = '';
+  document.getElementById('stealModalHint').innerText = `Solve the question correctly as fast as you can. First correct answer wins.`;
+  document.getElementById('stealModal').style.display = 'block';
+
+  // If you are the defender, try to play a sound (you said you'd add mp3)
+  if (session.defender === currentUser) {
+    const audio = new Audio('steal.mp3'); // add file to project assets
+    audio.play().catch(()=>{});
+  }
+
+  // Optionally focus the input
+  setTimeout(()=>{ try { document.getElementById('stealAnswerInput').focus(); } catch(e){} }, 200);
+}
+
+/* Close steal modal */
+function closeStealModal() {
+  activeStealSession = null;
+  document.getElementById('stealModal').style.display = 'none';
+}
+
+/* When a player submits an answer in the steal modal */
+async function submitStealAnswer() {
+  try {
+    if (!activeStealSession) { closeStealModal(); return; }
+    const sessionId = activeStealSession.sessionId;
+    const session = activeStealSession.session;
+    const raw = document.getElementById('stealAnswerInput').value.trim();
+    if (raw === '') { document.getElementById('stealModalHint').innerText = 'Enter an answer.'; return; }
+    const num = Number(raw);
+    if (isNaN(num)) { document.getElementById('stealModalHint').innerText = 'Enter a numeric answer.'; return; }
+
+    const correct = (() => {
+      const q = session.question;
+      return q.op === '+' ? (q.a + q.b) === num : (q.a - q.b) === num;
+    })();
+
+    if (!correct) {
+      document.getElementById('stealModalHint').innerText = 'Wrong answer — try again quickly!';
+      return;
+    }
+
+    // Write answer to central session
+    const answerPath = `stealSessions/${sessionId}/answers/${currentUser}`;
+    await db.ref(answerPath).set({ time: Date.now(), correct: true });
+
+    // Attempt to claim winner atomically
+    const winnerRef = db.ref(`stealSessions/${sessionId}/winner`);
+    winnerRef.transaction(current => {
+      if (current === null) return currentUser;
+      return; // someone has claimed already
+    }, async (err, committed, snap) => {
+      if (err) { console.error("winner transaction err", err); return; }
+      if (!committed) {
+        // someone else already claimed
+        const winner = snap && snap.val();
+        if (winner === currentUser) {
+          // we still "won" (transaction committed true handled above), but here it's false: someone else is winner
+          document.getElementById('stealModalHint').innerText = 'Too late — someone else solved it first.';
+        } else {
+          document.getElementById('stealModalHint').innerText = `Too late — ${winner} claimed the win.`;
+        }
+        // fetch finalization
+        finalizeSteal(sessionId, winner);
+      } else {
+        // We claimed the winner slot successfully (we are the winner)
+        finalizeSteal(sessionId, currentUser);
+      }
+    });
+
+  } catch (err) {
+    console.error("submitStealAnswer err", err);
+    document.getElementById('stealModalHint').innerText = 'Error submitting answer.';
+  }
+}
+
+/* finalizeSteal(sessionId, winnerId) - called after winner was set (or if already set) */
+async function finalizeSteal(sessionId, winnerId) {
+  try {
+    // fetch session central data
+    const snap = await db.ref(`stealSessions/${sessionId}`).once('value');
+    const sess = snap.val();
+    if (!sess) return;
+    if (sess.resolved) {
+      // already finished
+      // cleanup requests
+      await cleanupStealSession(sessionId);
+      if (document.getElementById('stealModal').style.display === 'block') closeStealModal();
+      return;
+    }
+
+    const attacker = sess.attacker;
+    const defender = sess.defender;
+    const cardId = sess.cardId;
+    const cardSnapshot = sess.cardSnapshot || {};
+
+    // Mark the steal attempt as resolved and store winner
+    await db.ref(`stealSessions/${sessionId}/resolved`).set(true);
+    await db.ref(`stealSessions/${sessionId}/winner`).set(winnerId);
+
+    // Set thief cooldown (persist even if they lost) if attacker exists
+    await db.ref(`stealCooldowns/${attacker}`).set(Date.now());
+
+    // If thief (attacker) is winner -> try to transfer card atomically
+    if (winnerId === attacker) {
+      // attempt to atomically remove defender's card
+      const defenderCardRef = db.ref(`users/${defender}/collection/${cardId}`);
+      defenderCardRef.transaction(current => {
+        if (current === null) {
+          // card missing - abort
+          return; // abort
+        }
+        // remove card from defender
+        return null;
+      }, async (err, committed, snapshot) => {
+        if (err) {
+          console.error("transaction removing card err", err);
+          await db.ref(`stealSessions/${sessionId}/result`).set({ success: false, message: "Error transferring card." });
+          await notifyUsersOfStealResult(sessionId, false, attacker, defender);
+          await cleanupStealSession(sessionId);
+          if (document.getElementById('stealModal').style.display === 'block') closeStealModal();
+          return;
+        }
+        if (!committed) {
+          // card was not present (someone else removed) -> attacker loses by default
+          await db.ref(`stealSessions/${sessionId}/result`).set({ success: false, message: "Card not available." });
+          await notifyUsersOfStealResult(sessionId, false, attacker, defender);
+          await cleanupStealSession(sessionId);
+          if (document.getElementById('stealModal').style.display === 'block') closeStealModal();
+          return;
+        }
+        // removed successfully, now add to attacker's collection
+        const targetRef = db.ref(`users/${attacker}/collection/${cardId}`);
+        await targetRef.set(cardSnapshot).catch(e=>{ console.error("set attacker card err", e); });
+        // update both users' saved data nodes for parity
+        await db.ref(`users/${attacker}/collection`).once('value').then(()=>{});
+        await db.ref('purchases').push({ action: 'stolen_transfer', card: cardSnapshot.name, from: defender, to: attacker, time: Date.now() });
+
+        await db.ref(`stealSessions/${sessionId}/result`).set({ success: true, message: `${attacker} stole "${cardSnapshot.name}" from ${defender}` });
+        await notifyUsersOfStealResult(sessionId, true, attacker, defender);
+        await cleanupStealSession(sessionId);
+
+        // If the thief is the current client, update local saved state by reloading user data
+        if (currentUser === attacker) loadUserData();
+        if (currentUser === defender) loadUserData();
+        if (document.getElementById('stealModal').style.display === 'block') closeStealModal();
+      });
+    } else {
+      // Defender is winner or winner is not attacker -> no transfer
+      await db.ref(`stealSessions/${sessionId}/result`).set({ success: false, message: `${winnerId} defended the card.` });
+      await notifyUsersOfStealResult(sessionId, false, attacker, defender);
+      await cleanupStealSession(sessionId);
+      if (document.getElementById('stealModal').style.display === 'block') closeStealModal();
+      return;
+    }
+
+  } catch (err) {
+    console.error("finalizeSteal err", err);
+    await db.ref(`stealSessions/${sessionId}/result`).set({ success: false, message: "Error finalizing steal." });
+    await cleanupStealSession(sessionId);
+    if (document.getElementById('stealModal').style.display === 'block') closeStealModal();
+  }
+}
+
+/* Notify both users via notifications node (they'll see the message next time they check or automatically if you implement a listener) */
+async function notifyUsersOfStealResult(sessionId, success, attacker, defender) {
+  try {
+    const resSnap = await db.ref(`stealSessions/${sessionId}/result`).once('value');
+    const res = resSnap.val();
+    const msgToAttacker = success ? `You successfully stole "${res && res.message ? '' : ''}"` : `Steal attempt result: ${res && res.message ? res.message : 'Failed'}`;
+    const msgToDefender = success ? `${attacker} stole a card from you: ${res && res.message ? res.message : ''}` : `You defended the steal attempt.`;
+    await db.ref(`notifications/${attacker}`).push(msgToAttacker);
+    await db.ref(`notifications/${defender}`).push(msgToDefender);
+  } catch (e) { console.error("notifyUsersOfStealResult err", e); }
+}
+
+/* cleanupStealSession removes the per-user stealRequests nodes */
+async function cleanupStealSession(sessionId) {
+  try {
+    // remove for both attacker and defender entries under stealRequests
+    const sessSnap = await db.ref(`stealSessions/${sessionId}`).once('value');
+    const sess = sessSnap.val();
+    if (!sess) {
+      // remove leftover requests just in case
+      await db.ref(`stealRequests/${currentUser}/${sessionId}`).remove().catch(()=>{});
+      return;
+    }
+    const attacker = sess.attacker; const defender = sess.defender;
+    await db.ref(`stealRequests/${attacker}/${sessionId}`).remove().catch(()=>{});
+    await db.ref(`stealRequests/${defender}/${sessionId}`).remove().catch(()=>{});
+    // Optionally keep the stealSessions history for auditing; we won't remove stealSessions central node.
+  } catch (e) { console.error("cleanupStealSession err", e); }
+}
+
+/* --------------------
    Admin / Refills
    -------------------- */
 function refillStocksPrompt() {
@@ -812,6 +1166,12 @@ refreshBtn.style = "position:fixed; top:20px; right:20px; padding:12px 20px; fon
 refreshBtn.innerText = "🔄 Refresh";
 refreshBtn.addEventListener("click", ()=> location.reload());
 document.body.appendChild(refreshBtn);
+
+/* Ensure presence is cleared on unload as well (backup) */
+window.addEventListener('beforeunload', () => {
+  try { if (currentUser) db.ref(`presence/${currentUser}`).remove(); } catch(e){}
+});
+
 </script>
 
 </body>
