@@ -1210,10 +1210,21 @@ window.addEventListener('beforeunload', () => { try { if (currentUser) db.ref(`p
 })();
 </script>
 <!-- END ADD -->
-<!-- === Sell All (Unlocked) snippet - paste BEFORE </body> === -->
+<!-- === Sell All (Unlocked) snippet - paste BEFORE </body> (GREEN THEME) === -->
 <style>
-  /* Minimal styles for the Sell All button + modal */
-  #sellAllBtn_snip { margin-left:12px; padding:8px 12px; border-radius:8px; border:none; background:#e53935; color:white; cursor:pointer; font-size:0.95rem; }
+  /* Minimal styles for the Sell All button + modal (green theme) */
+  #sellAllBtn_snip {
+    margin-left:12px;
+    padding:8px 12px;
+    border-radius:8px;
+    border:none;
+    background:#28a745; /* green */
+    color:white;
+    cursor:pointer;
+    font-size:0.95rem;
+    box-shadow: 0 4px 10px rgba(40,167,69,0.18);
+  }
+  #sellAllBtn_snip:hover { background: #1e7e34; }
   #sellAllBtn_snip[disabled] { opacity:0.5; cursor:not-allowed; }
 
   #sellAllModal_snip {
@@ -1238,7 +1249,8 @@ window.addEventListener('beforeunload', () => { try { if (currentUser) db.ref(`p
   #sellAllTotal_snip { font-weight:700; margin-top:12px; font-size:1.05rem; text-align:right; }
   .btn-inline { display:inline-block; padding:10px 14px; border-radius:8px; border:none; cursor:pointer; }
   .btn-cancel { background:#777; color:white; }
-  .btn-confirm { background:#d32f2f; color:white; }
+  .btn-confirm { background:#2e7d32; color:white; } /* confirm is green */
+  .btn-confirm:hover { background:#276b2a; }
   .modal-actions { display:flex; gap:10px; justify-content:center; margin-top:12px; }
 </style>
 
