@@ -102,6 +102,29 @@
   @media (max-width: 600px) { .card-container { grid-template-columns: 1fr; } .game-box, .login-box { padding: 10px; } .btn { padding: 10px 20px; font-size: 14px; } }
   #stealModal .question { font-size: 1.2rem; margin-bottom: 12px; }
   #stealModal .small { font-size: 0.85rem; color: #666; margin-top:8px; }
+
+  /* --- SECRET pack styles --- */
+  .btn-secret {
+    background:
+      radial-gradient(2px 2px at 10% 10%, rgba(255,255,255,0.95) 0, rgba(255,255,255,0.0) 40%),
+      radial-gradient(1.5px 1.5px at 40% 30%, rgba(255,255,255,0.9) 0, rgba(255,255,255,0.0) 40%),
+      radial-gradient(1.2px 1.2px at 70% 60%, rgba(255,255,255,0.85) 0, rgba(255,255,255,0.0) 40%),
+      linear-gradient(180deg, #0b1530 0%, #071026 40%, #050417 100%);
+    color: #f8f8ff;
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 6px 18px rgba(3,10,23,0.6), inset 0 -2px 6px rgba(255,255,255,0.02);
+    text-shadow: 0 1px 0 rgba(0,0,0,0.5);
+  }
+  .secret-card {
+    background:
+      radial-gradient(1px 1px at 10% 12%, rgba(255,255,255,0.95) 0, rgba(255,255,255,0) 30%),
+      radial-gradient(1px 1px at 40% 30%, rgba(255,255,255,0.85) 0, rgba(255,255,255,0) 30%),
+      radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,0.9) 0, rgba(255,255,255,0) 30%),
+      linear-gradient(180deg, #071022 0%, #050218 60%, #03000a 100%);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 6px 20px rgba(2,6,15,0.6);
+  }
 </style>
 </head>
 
@@ -147,6 +170,8 @@
     <button id="buyMythicalBtn" class="btn btn-gold" onclick="openPack('mythical')">Buy Mythical Pack (??%) ($3000)</button>
     <button id="buyDivineBtn" class="btn btn-divine" onclick="openPack('divine')">Buy Divine Pack (100%) ($5000)</button>
     <button id="buyPristimaticBtn" class="btn btn-pristimatic" onclick="openPack('pristimatic')">Buy Pristimatic Pack (100%) ($7500)</button>
+    <!-- SECRET pack button (50,000) -->
+    <button id="buySecretBtn" class="btn btn-secret" onclick="openPack('secret')">Buy SECRET Pack (0%) ($50,000)</button>
   </div>
 
   <div id="openedCard"></div>
@@ -219,7 +244,7 @@ function generateCardId() { return Date.now().toString() + Math.random().toStrin
 const accounts = { zezo: "000", asser: "230", lilly: "246", layan: "123" };
 
 const MUTATION_TIERS = { common: {chance:0.5}, uncommon:{chance:0.24}, rare:{chance:0.15}, veryHard:{chance:0.08}, ultra:{chance:0.03} };
-const MUTATIONS = { plasma:{priceIncrease:400,tier:'uncommon'}, bloom:{priceIncrease:300,tier:'common'}, choc:{priceIncrease:350,tier:'common'}, shocked:{priceIncrease:450,tier:'rare'}, rainbow:{priceIncrease:250,tier:'uncommon'}, burnt:{priceIncrease:300,tier:'uncommon'}, chilled:{priceIncrease:450,tier:'rare'}, frozen:{priceIncrease:150,tier:'common'}, brainrot:{priceIncrease:550,tier:'veryHard'}, zezoplot:{priceIncrease:650,tier:'veryHard'}, aurora:{priceIncrease:1000,tier:'ultra'}, EGYPT:{priceIncrease:3000,tier:'ultra'} };
+const MUTATIONS = { plasma:{priceIncrease:400,tier:'uncommon'}, bloom:{priceIncrease:300,tier:'common'}, choc:{priceIncrease:350,tier:'common'}, shocked:{priceIncrease:450,tier:'rare'}, rainbow:{priceIncrease:350,tier:'uncommon'}, burnt:{priceIncrease:300,tier:'uncommon'}, chilled:{priceIncrease:450,tier:'rare'}, frozen:{priceIncrease:150,tier:'common'}, brainrot:{priceIncrease:650,tier:'veryHard'}, zezoplot:{priceIncrease:700,tier:'veryHard'}, aurora:{priceIncrease:1100,tier:'ultra'}, EGYPT:{priceIncrease:3000,tier:'ultra'} };
 
 let cardPools = {
   common: [
@@ -278,6 +303,18 @@ let cardPools = {
     { name: "zezo big bomba fart", quantity: 8, chance: 0.10, price: 9000 },
     { name: "lilly kowaferr", quantity: 7, chance: 0.15, price: 8000 },
     { name: "Zezo SECRET", quantity: 10, chance: 0.05, price: 13500 }
+  ],
+
+  /* SECRET pack placeholders — slots intentionally left with 0 quantity so you can fill later.
+     Names are placeholder keys so DB paths remain valid. Replace names/quantities/chances later as desired.
+  */
+  secret: [
+    { name: "SECRET_SLOT_1", quantity: 0, chance: 0.20, price: 0 },
+    { name: "SECRET_SLOT_2", quantity: 0, chance: 0.20, price: 0 },
+    { name: "SECRET_SLOT_3", quantity: 0, chance: 0.15, price: 0 },
+    { name: "SECRET_SLOT_4", quantity: 0, chance: 0.15, price: 0 },
+    { name: "SECRET_SLOT_5", quantity: 0, chance: 0.15, price: 0 },
+    { name: "SECRET_SLOT_6", quantity: 0, chance: 0.15, price: 0 }
   ]
 };
 
@@ -323,15 +360,16 @@ function getCardType(cardName) {
   if (cardPools.mythical && cardPools.mythical.some(c=>c.name===cardName)) return 'mythical';
   if (cardPools.divine.some(c=>c.name===cardName)) return 'divine';
   if (cardPools.pristimatic.some(c=>c.name===cardName)) return 'pristimatic';
+  if (cardPools.secret && cardPools.secret.some(c=>c.name===cardName)) return 'secret';
   return '';
 }
 function getBaseCardPrice(cardName) {
-  const all = [...cardPools.common,...cardPools.rare,...cardPools.epic,...cardPools.legendary,...(cardPools.mythical||[]),...cardPools.divine,...cardPools.pristimatic];
+  const all = [...cardPools.common,...cardPools.rare,...cardPools.epic,...cardPools.legendary,...(cardPools.mythical||[]),...cardPools.divine,...cardPools.pristimatic,...(cardPools.secret||[])];
   const c = all.find(x=>x.name===cardName);
   return c?c.price:0;
 }
 function getCardQuantity(cardName) {
-  const all = [...cardPools.common,...cardPools.rare,...cardPools.epic,...cardPools.legendary,...(cardPools.mythical||[]),...cardPools.divine,...cardPools.pristimatic];
+  const all = [...cardPools.common,...cardPools.rare,...cardPools.epic,...cardPools.legendary,...(cardPools.mythical||[]),...cardPools.divine,...cardPools.pristimatic,...(cardPools.secret||[])];
   const c = all.find(x=>x.name===cardName);
   return c?c.quantity:0;
 }
@@ -346,7 +384,8 @@ function showCardDetails(cardId) {
   const qty = getCardQuantity(card.name);
   const prot = card.protectedUntil && card.protectedUntil > Date.now();
   const protHtml = prot ? `<div class="protected-label">Protected</div><div class="protection-countdown">${formatTimeRemaining(card.protectedUntil - Date.now())}</div>` : '';
-  const cardHtml = `<div class="card ${getCardType(card.name)}-card" data-card-id="${cardId}">${protHtml}<span class="quantity-label">x${qty}</span><h3>${card.name}</h3><p>Base Value: $${getBaseCardPrice(card.name)}</p><p>Current Value: $${card.currentPrice}</p>${mutationListHtml}</div>`;
+  const cardClass = getCardType(card.name) + '-card';
+  const cardHtml = `<div class="card ${cardClass}" data-card-id="${cardId}">${protHtml}<span class="quantity-label">x${qty}</span><h3>${card.name}</h3><p>Base Value: $${getBaseCardPrice(card.name)}</p><p>Current Value: $${card.currentPrice}</p>${mutationListHtml}</div>`;
   document.getElementById('cardDetailsContent').innerHTML = cardHtml;
   document.getElementById('cardDetailsBox').style.display = 'block';
 }
@@ -630,7 +669,8 @@ function renderCollection(cardCollection, lockedCardsObj, isMyCollection = false
                  <button class="btn btn-small btn-gold" onclick="event.stopPropagation(); attemptSteal('${id}','${owner}')" ${stealDisabled}>${isProtected? 'Protected' : 'Steal'}</button>`;
     }
 
-    collHTML += `<div class="card ${cardType}-card ${cls}" onclick="showCardDetails('${id}')">${protectionHtml}${mutationLabel}${qtyHtml}<h3>${card.name}</h3><p>Value: $${card.currentPrice}</p><div class="card-buttons">${buttons}</div></div>`;
+    const cardClass = `${cardType}-card`;
+    collHTML += `<div class="card ${cardClass} ${cls}" onclick="showCardDetails('${id}')">${protectionHtml}${mutationLabel}${qtyHtml}<h3>${card.name}</h3><p>Value: $${card.currentPrice}</p><div class="card-buttons">${buttons}</div></div>`;
   }
   return collHTML;
 }
@@ -675,14 +715,15 @@ function updatePackChances() {
     { type: 'legendary', pool: cardPools.legendary, buttonId: 'buyLegendaryBtn' },
     { type: 'mythical', pool: cardPools.mythical, buttonId: 'buyMythicalBtn' },
     { type: 'divine', pool: cardPools.divine, buttonId: 'buyDivineBtn' },
-    { type: 'pristimatic', pool: cardPools.pristimatic, buttonId: 'buyPristimaticBtn' }
+    { type: 'pristimatic', pool: cardPools.pristimatic, buttonId: 'buyPristimaticBtn' },
+    { type: 'secret', pool: cardPools.secret, buttonId: 'buySecretBtn' }
   ];
   packs.forEach(pack=>{
     let totalChance = 0;
-    const availableCards = pack.pool.filter(card => getCardQuantity(card.name) > 0);
+    const availableCards = (pack.pool || []).filter(card => getCardQuantity(card.name) > 0);
     availableCards.forEach(card => totalChance += card.chance);
     const chanceText = `(${Math.round(totalChance*100)}%)`;
-    const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='mythical'?3000:pack.type==='divine'?5000:7500;
+    const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='mythical'?3000:pack.type==='divine'?5000:pack.type==='pristimatic'?7500:(pack.type==='secret'?50000:0);
     const btn = document.getElementById(pack.buttonId);
     if (btn) {
       btn.innerText = `Buy ${pack.type.charAt(0).toUpperCase()+pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
@@ -736,6 +777,7 @@ async function openPack(type) {
   else if (type === "mythical") { packPrice = 3000; pool = cardPools.mythical; }
   else if (type === "divine") { packPrice = 5000; pool = cardPools.divine; }
   else if (type === "pristimatic") { packPrice = 7500; pool = cardPools.pristimatic; }
+  else if (type === "secret") { packPrice = 50000; pool = cardPools.secret; }
 
   if (balance < packPrice) { showMessage("You don't have enough money to buy this pack."); return; }
   balance -= packPrice; await saveUser(); updateUI();
@@ -761,13 +803,14 @@ async function openPack(type) {
     const newCardId = generateCardId();
     // protection: protectAvailableAt set to now + 5 minutes so protection isn't available immediately after opening
     const protectAvailableAt = Date.now() + (5 * 60 * 1000);
-    const newCard = { id: newCardId, name: chosenName, basePrice: chosenTemplate.price, currentPrice: chosenTemplate.price, isLocked: false, lockTime: 0, lastMutationTime: Date.now(), mutations: [], protectAvailableAt: protectAvailableAt, protectedUntil: 0 };
+    const newCard = { id: newCardId, name: chosenName, basePrice: chosenTemplate.price || 0, currentPrice: chosenTemplate.price || 0, isLocked: false, lockTime: 0, lastMutationTime: Date.now(), mutations: [], protectAvailableAt: protectAvailableAt, protectedUntil: 0 };
     collection[newCardId] = newCard;
 
     const poolCard = pool.find(x=>x.name===chosenName); if (poolCard) poolCard.quantity = newQty;
     await saveUser(); await db.ref('purchases').push({ card: chosenName, user: currentUser, time: Date.now() }); updateUI();
 
-    document.getElementById("openedCard").innerHTML = `<div class="card ${getCardType(newCard.name)}-card"><span class="quantity-label">x${newQty}</span><h3>${newCard.name}</h3><p>Value: $${newCard.currentPrice}</p><p>Added to your collection!</p><p style=\"font-size:0.9rem;color:#666;margin-top:8px;\">Protection available in: ${formatTimeRemaining(protectAvailableAt - Date.now())}</p></div>`;
+    const cardClass = getCardType(newCard.name) + '-card';
+    document.getElementById("openedCard").innerHTML = `<div class="card ${cardClass}"><span class="quantity-label">x${newQty}</span><h3>${newCard.name}</h3><p>Value: $${newCard.currentPrice}</p><p>Added to your collection!</p><p style=\"font-size:0.9rem;color:#666;margin-top:8px;\">Protection available in: ${formatTimeRemaining(protectAvailableAt - Date.now())}</p></div>`;
 
   } catch (err) {
     console.error("openPack error:", err);
