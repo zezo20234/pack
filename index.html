@@ -1203,9 +1203,19 @@ async function refillStocks() {
    -------------------- */
 document.getElementById("welcome-btn").addEventListener("click", () => {
   document.getElementById("welcome-container").style.display = "none";
-  const audio = new Audio('g.mp3');
-  audio.play().catch(()=>{});
+
+  // create global player once
+  if (!window.gAudio) {
+    window.gAudio = new Audio('g.mp3');
+    window.gAudio.loop = true;
+    window.gAudio.preload = 'auto';
+    window.gAudio.volume = 0.9; // optional: 0.0 - 1.0
+  }
+
+  // start playback if not already playing
+  if (window.gAudio.paused) window.gAudio.play().catch(()=>{});
 });
+
 const refreshBtn = document.createElement('button');
 refreshBtn.id = 'refresh-btn';
 refreshBtn.style = "position:fixed; top:20px; right:20px; padding:12px 20px; font-size:18px; border:none; border-radius:10px; background:#2196f3; color:white; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.3); z-index:9999;";
