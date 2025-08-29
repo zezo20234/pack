@@ -74,6 +74,31 @@
   .legendary-card { background: linear-gradient(to bottom right, #ffcc00, #b8860b); border-color: #d4af37; color: #333; font-weight: bold; }
   .divine-card { background: linear-gradient(to bottom right, #e0e0ff, #c0c0d4); border-color: #9999ff; color: #1a1a33; font-weight: bold; }
   .pristimatic-card { background: conic-gradient(red, orange, yellow, green, blue, indigo, violet); border-color: #000; color: white; font-weight: bold; text-shadow: 1px 1px 2px black; }
+
+  /* New mythical styling: very shiny gold with subtle shimmer */
+  .mythical-card {
+    background: linear-gradient(135deg, #fff7d6 0%, #ffefb5 20%, #ffd54b 50%, #f2c200 70%, #ffd94d 100%);
+    border-color: #ffd700;
+    color: #2b1f00;
+    font-weight: 800;
+    position: relative;
+    overflow: hidden;
+  }
+  /* shimmer overlay */
+  .mythical-card::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(120deg, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0.0) 100%);
+    transform: rotate(25deg);
+    animation: shimmer 3.5s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes shimmer { 0% { transform: translateX(-60%) rotate(25deg);} 100% { transform: translateX(60%) rotate(25deg);} }
+
   .btn { padding: 12px 24px; margin: 8px; border: none; background: #444; color: white; border-radius: 8px; cursor: pointer; font-size: 16px; transition: background 0.2s ease, transform 0.2s ease; }
   .btn:hover { background: #666; transform: translateY(-2px); }
   .btn-blue { background: #0077ff; }
@@ -138,6 +163,8 @@
     <button id="buyRareBtn" class="btn btn-blue" onclick="openPack('rare')">Buy Rare Pack (100%) ($250)</button>
     <button id="buyEpicBtn" class="btn btn-purple" onclick="openPack('epic')">Buy Epic Pack (100%) ($350)</button>
     <button id="buyLegendaryBtn" class="btn btn-gold" onclick="openPack('legendary')">Buy Legendary Pack (100%) ($1500)</button>
+    <!-- New Mythical pack (very shiny gold) placed under Legendary -->
+    <button id="buyMythicalBtn" class="btn btn-gold" onclick="openPack('mythical')">Buy Mythical Pack (??%) ($3000)</button>
     <button id="buyDivineBtn" class="btn btn-divine" onclick="openPack('divine')">Buy Divine Pack (100%) ($5000)</button>
     <button id="buyPristimaticBtn" class="btn btn-pristimatic" onclick="openPack('pristimatic')">Buy Pristimatic Pack (100%) ($7500)</button>
   </div>
@@ -235,6 +262,14 @@ let cardPools = {
     { name: "Lilly Dragon", quantity: 7, chance: 0.10, price: 1700 },
     { name: "Lilly Hero", quantity: 4, chance: 0.10, price: 1500 }
   ],
+  // NEW: Mythical pack added under Legendary. Fill these placeholder slots with names/prices/quantities as you like.
+  mythical: [
+    { name: "lilly PS5", quantity: 7, chance: 0.25, price: 3500 },
+    { name: "asser bomba", quantity: 7, chance: 0.25, price: 4000 },
+    { name: "asser gamer", quantity: 7, chance: 0.25, price: 4500 },
+    { name: "PS5 CONTROLLER", quantity: 5, chance: 0.15, price: 5000 },
+    { name: "asser farted", quantity: 5, chance: 0.10, price: 5000 }
+  ],
   divine: [
     { name: "Zezo laugh", quantity: 15, chance: 0.10, price: 5600 },
     { name: "Zezo sad", quantity: 15, chance: 0.10, price: 5650 },
@@ -247,12 +282,12 @@ let cardPools = {
     { name: "normal zezo full", quantity: 3, chance: 0.15, price: 5850 }
   ],
   pristimatic: [
-    { name: "Zezo Prismatic", quantity: 2, chance: 0.40, price: 7500 },
-    { name: "Zezo Rainbow", quantity: 2, chance: 0.40, price: 7800 },
-    { name: "Asser colotinni fasatennee", quantity: 2, chance: 0.40, price: 8000 },
-    { name: "zezo big bomba fart", quantity: 2, chance: 0.40, price: 12000 },
-    { name: "lilly kowaferr", quantity: 2, chance: 0.40, price: 8000 },
-    { name: "Zezo shower", quantity: 2, chance: 0.20, price: 8500 }
+    { name: "Zezo Prismatic", quantity: 2, chance: 0.25, price: 7500 },
+    { name: "Zezo Rainbow", quantity: 2, chance: 0.25, price: 7800 },
+    { name: "Asser colotinni fasatennee", quantity: 2, chance: 0.20, price: 8000 },
+    { name: "zezo big bomba fart", quantity: 2, chance: 0.10, price: 12000 },
+    { name: "lilly kowaferr", quantity: 2, chance: 0.15, price: 8000 },
+    { name: "Zezo SECRET", quantity: 2, chance: 0.05, price: 9500 }
   ]
 };
 
@@ -291,17 +326,18 @@ function getCardType(cardName) {
   if (cardPools.rare.some(c=>c.name===cardName)) return 'rare';
   if (cardPools.epic.some(c=>c.name===cardName)) return 'epic';
   if (cardPools.legendary.some(c=>c.name===cardName)) return 'legendary';
+  if (cardPools.mythical && cardPools.mythical.some(c=>c.name===cardName)) return 'mythical';
   if (cardPools.divine.some(c=>c.name===cardName)) return 'divine';
   if (cardPools.pristimatic.some(c=>c.name===cardName)) return 'pristimatic';
   return '';
 }
 function getBaseCardPrice(cardName) {
-  const all = [...cardPools.common,...cardPools.rare,...cardPools.epic,...cardPools.legendary,...cardPools.divine,...cardPools.pristimatic];
+  const all = [...cardPools.common,...cardPools.rare,...cardPools.epic,...cardPools.legendary,...(cardPools.mythical||[]),...cardPools.divine,...cardPools.pristimatic];
   const c = all.find(x=>x.name===cardName);
   return c?c.price:0;
 }
 function getCardQuantity(cardName) {
-  const all = [...cardPools.common,...cardPools.rare,...cardPools.epic,...cardPools.legendary,...cardPools.divine,...cardPools.pristimatic];
+  const all = [...cardPools.common,...cardPools.rare,...cardPools.epic,...cardPools.legendary,...(cardPools.mythical||[]),...cardPools.divine,...cardPools.pristimatic];
   const c = all.find(x=>x.name===cardName);
   return c?c.quantity:0;
 }
@@ -514,6 +550,7 @@ function updatePackChances() {
     { type: 'rare', pool: cardPools.rare, buttonId: 'buyRareBtn' },
     { type: 'epic', pool: cardPools.epic, buttonId: 'buyEpicBtn' },
     { type: 'legendary', pool: cardPools.legendary, buttonId: 'buyLegendaryBtn' },
+    { type: 'mythical', pool: cardPools.mythical, buttonId: 'buyMythicalBtn' },
     { type: 'divine', pool: cardPools.divine, buttonId: 'buyDivineBtn' },
     { type: 'pristimatic', pool: cardPools.pristimatic, buttonId: 'buyPristimaticBtn' }
   ];
@@ -522,7 +559,7 @@ function updatePackChances() {
     const availableCards = pack.pool.filter(card => getCardQuantity(card.name) > 0);
     availableCards.forEach(card => totalChance += card.chance);
     const chanceText = `(${Math.round(totalChance*100)}%)`;
-    const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='divine'?5000:7500;
+    const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='mythical'?3000:pack.type==='divine'?5000:7500;
     const btn = document.getElementById(pack.buttonId);
     if (btn) {
       btn.innerText = `Buy ${pack.type.charAt(0).toUpperCase()+pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
@@ -590,6 +627,7 @@ async function openPack(type) {
   else if (type === "rare") { packPrice = 250; pool = cardPools.rare; }
   else if (type === "epic") { packPrice = 350; pool = cardPools.epic; }
   else if (type === "legendary") { packPrice = 1500; pool = cardPools.legendary; }
+  else if (type === "mythical") { packPrice = 3000; pool = cardPools.mythical; }
   else if (type === "divine") { packPrice = 5000; pool = cardPools.divine; }
   else if (type === "pristimatic") { packPrice = 7500; pool = cardPools.pristimatic; }
 
@@ -777,3 +815,4 @@ document.body.appendChild(refreshBtn);
 </script>
 
 </body>
+</html>
