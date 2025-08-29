@@ -1064,6 +1064,108 @@ window.addEventListener('beforeunload', () => { try { if (currentUser) db.ref(`p
 
 /* End of script */
 </script>
+<!-- ADD THIS JUST BEFORE </body> -->
+<script>
+(function enhancePresenceAndLastActive(){
+  if (typeof firebase === 'undefined' || !firebase.database) {
+    console.warn('Firebase not detected — presence/lastSeen enhancers skipped.');
+    return;
+  }
+  const sv = firebase.database.ServerValue.TIMESTAMP;
+  const DB = firebase.database();
+
+  function setupForUser(u){
+    if (!u) return;
+    try {
+      const presRef = DB.ref(`presence/${u}`);
+      presRef.onDisconnect().remove();           // remove presence on disconnect
+      presRef.set(true).catch(()=>{});          // mark online now
+
+      const lastRef = DB.ref(`lastSeen/${u}`);
+      lastRef.onDisconnect().set(sv);           // server will set lastSeen on disconnect
+      // also update an initial lastSeen/lastActive right away
+      lastRef.set(sv).catch(()=>{});
+      DB.ref(`users/${u}/lastActive`).set(sv).catch(()=>{});
+    } catch(e) { console.error('setupForUser err', e); }
+  }
+
+  async function writeLastSeenNow(u){
+    if (!u) return;
+    try {
+      await DB.ref(`lastSeen/${u}`).set(sv);
+    } catch(e) { /* best effort */ console.warn('writeLastSeenNow err', e); }
+  }
+
+  // monkeypatch login to run setup after successful login
+  if (window.login && !window.__login_enhanced__) {
+    const _login = window.login;
+    window.login = async function(...args){
+      // call original login
+      const res = await _login.apply(this, args);
+      // if a currentUser variable exists and is set by original login, initialize presence hooks
+      if (typeof currentUser !== 'undefined' && currentUser) setupForUser(currentUser);
+      return res;
+    };
+    window.__login_enhanced__ = true;
+  }
+
+  // monkeypatch logout to set lastSeen before original logout
+  if (window.logout && !window.__logout_enhanced__) {
+    const _logout = window.logout;
+    window.logout = async function(...args){
+      try { if (typeof currentUser !== 'undefined' && currentUser) await DB.ref(`lastSeen/${currentUser}`).set(sv); } catch(e){ console.warn('logout lastSeen err', e); }
+      const res = await _logout.apply(this, args);
+      return res;
+    };
+    window.__logout_enhanced__ = true;
+  }
+
+  // best-effort beforeunload: server onDisconnect covers unexpected disconnects,
+  // but we also attempt a synchronous write / beacon when the user explicitly closes
+  window.addEventListener('beforeunload', function(){
+    try {
+      if (typeof currentUser !== 'undefined' && currentUser) {
+        // try navigator.sendBeacon to write a plain timestamp (fallback)
+        try {
+          const url = `https://pack-f76c3-default-rtdb.firebaseio.com/lastSeen/${encodeURIComponent(currentUser)}.json`;
+          navigator.sendBeacon(url, JSON.stringify(Date.now()));
+        } catch(e) {}
+        // best-effort set (may not finish, but onDisconnect exists)
+        try { DB.ref(`lastSeen/${currentUser}`).set(sv); } catch(e) {}
+        try { DB.ref(`presence/${currentUser}`).remove(); } catch(e) {}
+      }
+    } catch(e){ console.warn('beforeunload enhancer err', e); }
+  });
+
+  // helper exposed globally so you can call it manually in your app
+  window.updateLastActive = function(){
+    try {
+      if (typeof currentUser === 'undefined' || !currentUser) return;
+      DB.ref(`users/${currentUser}/lastActive`).set(sv).catch(()=>{});
+      DB.ref(`lastSeen/${currentUser}`).set(sv).catch(()=>{});
+    } catch(e){ console.warn('updateLastActive err', e); }
+  };
+
+  // wrap common action functions so they update lastActive automatically
+  const actionsToWrap = ['openPack','sellCard','sendCardToRecipient','attemptSteal'];
+  actionsToWrap.forEach(name => {
+    if (window[name] && !window[`__wrapped_${name}`]) {
+      const orig = window[name];
+      window[name] = function(...args){
+        try { window.updateLastActive(); } catch(e){ /* ignore */ }
+        return orig.apply(this, args);
+      };
+      window[`__wrapped_${name}`] = true;
+    }
+  });
+
+  // If currentUser was already set when this script runs (page restored), ensure setup runs
+  if (typeof currentUser !== 'undefined' && currentUser) setupForUser(currentUser);
+
+  console.log('Presence/lastSeen enhancer installed.');
+})();
+</script>
+<!-- END ADD -->
 
 </body>
 </html>
