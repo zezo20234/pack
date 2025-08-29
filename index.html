@@ -244,7 +244,7 @@ function generateCardId() { return Date.now().toString() + Math.random().toStrin
 const accounts = { zezo: "000", asser: "230", lilly: "246", layan: "123" };
 
 const MUTATION_TIERS = { common: {chance:0.5}, uncommon:{chance:0.24}, rare:{chance:0.15}, veryHard:{chance:0.08}, ultra:{chance:0.03} };
-const MUTATIONS = { plasma:{priceIncrease:400,tier:'uncommon'}, bloom:{priceIncrease:300,tier:'common'}, choc:{priceIncrease:350,tier:'common'}, shocked:{priceIncrease:450,tier:'rare'}, rainbow:{priceIncrease:350,tier:'uncommon'}, burnt:{priceIncrease:300,tier:'uncommon'}, chilled:{priceIncrease:450,tier:'rare'}, frozen:{priceIncrease:150,tier:'common'}, brainrot:{priceIncrease:650,tier:'veryHard'}, zezoplot:{priceIncrease:700,tier:'veryHard'}, aurora:{priceIncrease:1100,tier:'ultra'}, EGYPT:{priceIncrease:3000,tier:'ultra'} };
+const MUTATIONS = { plasma:{priceIncrease:400,tier:'uncommon'}, bloom:{priceIncrease:300,tier:'common'}, choc:{priceIncrease:350,tier:'common'}, shocked:{priceIncrease:450,tier:'rare'}, rainbow:{priceIncrease:350,tier:'uncommon'}, burnt:{priceIncrease:300,tier:'uncommon'}, chilled:{priceIncrease:450,tier:'rare'}, frozen:{priceIncrease:150,tier:'common'}, brainrot:{priceIncrease:650,tier:'veryHard'}, zezoplot:{priceIncrease:700,tier:'veryHard'}, KHALTO:{priceIncrease:2500,tier:'veryHard'}, aurora:{priceIncrease:1100,tier:'ultra'}, EGYPT:{priceIncrease:3000,tier:'ultra'} };
 
 let cardPools = {
   common: [
@@ -314,8 +314,8 @@ let cardPools = {
     { name: "SECRET PS5", quantity: 0, chance: 0.15, price: 54000 },
     { name: "SECRET PHONE", quantity: 0, chance: 0.15, price: 54000 },
     { name: "SECRET TWINKIES", quantity: 0, chance: 0.15, price: 58000 },
-    { name: "SECRET JANDEL AND GROW A GARDEN", quantity: 0, chance: 0.05, price: 67000 },
-    { name: "SECRET HOHOS", quantity: 0, chance: 0.10, price: 59000 }
+    { name: "SECRET KHALTO", quantity: 0, chance: 0.15, price: 85000 },
+    { name: "SECRET HOHOS", quantity: 0, chance: 0.15, price: 59000 }
   ]
 };
 
@@ -1093,7 +1093,7 @@ async function refillStocks() { const payload = {}; for (const name in INITIAL_Q
    -------------------- */
 document.getElementById("welcome-btn").addEventListener("click", () => {
   document.getElementById("welcome-container").style.display = "none";
-  if (!window.gAudio) { window.gAudio = new Audio('g.mp3'); window.gAudio.loop = true; window.gAudio.preload = 'auto'; window.gAudio.volume = 0.9; }
+  if (!window.gAudio) { window.gAudio = new Audio('brainrot.mp3'); window.gAudio.loop = true; window.gAudio.preload = 'auto'; window.gAudio.volume = 0.9; }
   if (window.gAudio.paused) window.gAudio.play().catch(()=>{});
 });
 
