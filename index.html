@@ -1210,6 +1210,174 @@ window.addEventListener('beforeunload', () => { try { if (currentUser) db.ref(`p
 })();
 </script>
 <!-- END ADD -->
+<!-- ORPHAN / GOLD-GLITTER CARD HIGHLIGHTER -->
+<style>
+  /* visual style for cards that are "no longer in packs" */
+  .orphan-card {
+    /* soft white base with warm golden tint */
+    background: linear-gradient(135deg, #ffffff 0%, #fff9ef 55%, #fff4d9 100%) !important;
+    border-color: #d4af37 !important;
+    color: #2b1f00 !important;
+    box-shadow: 0 6px 18px rgba(212,175,55,0.12), 0 1px 0 rgba(255,255,255,0.5) inset;
+    position: relative;
+    overflow: hidden;
+  }
 
+  /* subtle gold outline */
+  .orphan-card::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: 0 0 0 2px rgba(212,175,55,0.18) inset, 0 4px 18px rgba(212,175,55,0.06);
+    mix-blend-mode: overlay;
+  }
+
+  /* moving glitter layer */
+  .orphan-glitter {
+    position: absolute;
+    left: -60%;
+    top: -40%;
+    width: 220%;
+    height: 180%;
+    pointer-events: none;
+    background-image:
+      radial-gradient(1px 1px at 5% 20%, rgba(255,255,255,0.95) 0, rgba(255,255,255,0) 40%),
+      radial-gradient(1.2px 1.2px at 20% 60%, rgba(255,255,255,0.92) 0, rgba(255,255,255,0) 35%),
+      radial-gradient(1.6px 1.6px at 50% 30%, rgba(255,240,200,0.85) 0, rgba(255,240,200,0) 35%),
+      linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,230,160,0.06), rgba(255,255,255,0.05));
+    transform: translateX(0) rotate(-12deg);
+    opacity: 0.95;
+    animation: glitterMove 3.5s linear infinite;
+    mix-blend-mode: screen;
+  }
+
+  @keyframes glitterMove {
+    0%   { transform: translateX(-40%) rotate(-12deg); opacity: 0.8; }
+    50%  { transform: translateX(0%)   rotate(-12deg); opacity: 1; }
+    100% { transform: translateX(40%)  rotate(-12deg); opacity: 0.85; }
+  }
+
+  /* make sure quantity/mutation labels remain visible */
+  .orphan-card .quantity-label,
+  .orphan-card .mutation-label,
+  .orphan-card .protected-label,
+  .orphan-card .protection-countdown {
+    background: rgba(255,255,255,0.9);
+    color: #111;
+  }
+
+  /* small polish: darker title color for readability */
+  .orphan-card h3 { color: #2b1f00 !important; text-shadow: none !important; }
+</style>
+
+<script>
+(function(){
+  // Build a quick set of all "in-pack names" (lowercased) from your cardPools object
+  function buildPoolNameSet() {
+    const set = new Set();
+    try {
+      for (const k in cardPools) {
+        const arr = cardPools[k] || [];
+        arr.forEach(c => { if (c && c.name) set.add(String(c.name).toLowerCase().trim()); });
+      }
+    } catch(e) { console.warn('buildPoolNameSet err', e); }
+    return set;
+  }
+
+  let poolNames = buildPoolNameSet();
+
+  // returns true if the card name text isn't found in any pool
+  function isOrphanCardName(name) {
+    if (!name) return false;
+    const normalized = String(name).toLowerCase().trim();
+    return !poolNames.has(normalized);
+  }
+
+  // scan card DOM nodes and mark/unmark orphan style
+  function markOrphanCards() {
+    try {
+      // targets where cards appear
+      const targets = [
+        document.getElementById('collection'),
+        document.getElementById('otherUserCollection'),
+        document.getElementById('openedCard'),
+        document.getElementById('cardDetailsContent')
+      ].filter(Boolean);
+
+      targets.forEach(container => {
+        const nodes = container.querySelectorAll('.card');
+        nodes.forEach(cardEl => {
+          // card name usually in an H3 inside the card
+          const h3 = cardEl.querySelector('h3');
+          const name = h3 ? h3.innerText : (cardEl.getAttribute('data-name') || cardEl.textContent);
+          if (isOrphanCardName(name)) {
+            if (!cardEl.classList.contains('orphan-card')) {
+              cardEl.classList.add('orphan-card');
+              // add glitter element if not present
+              if (!cardEl.querySelector('.orphan-glitter')) {
+                const g = document.createElement('div');
+                g.className = 'orphan-glitter';
+                cardEl.appendChild(g);
+              }
+            }
+          } else {
+            if (cardEl.classList.contains('orphan-card')) {
+              cardEl.classList.remove('orphan-card');
+              const g = cardEl.querySelector('.orphan-glitter');
+              if (g) g.remove();
+            }
+          }
+        });
+      });
+    } catch(e) { console.warn('markOrphanCards err', e); }
+  }
+
+  // observe mutations on main containers so newly-rendered cards get rechecked
+  const observeTargets = ['collection','otherUserCollection','openedCard','cardDetailsContent'];
+  observeTargets.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const mo = new MutationObserver(markOrphanCards);
+    mo.observe(el, { childList: true, subtree: true, attributes: true });
+  });
+
+  // monkeypatch updateUI (if present) to run after UI updates
+  if (window.updateUI && !window.__wrapped_updateUI_orphan__) {
+    const _u = window.updateUI;
+    window.updateUI = function(...args){
+      const res = _u.apply(this,args);
+      try { poolNames = buildPoolNameSet(); } catch(e){}
+      setTimeout(markOrphanCards, 40); // slight delay to allow DOM render
+      return res;
+    };
+    window.__wrapped_updateUI_orphan__ = true;
+  }
+
+  // also wrap openPack / send / other actions that change pool quantities
+  if (window.refillStocks && !window.__wrapped_refillStocks_orphan__) {
+    const _r = window.refillStocks;
+    window.refillStocks = async function(...args){
+      const res = await _r.apply(this,args);
+      poolNames = buildPoolNameSet();
+      setTimeout(markOrphanCards, 80);
+      return res;
+    };
+    window.__wrapped_refillStocks_orphan__ = true;
+  }
+
+  // run once now (and again shortly after load)
+  document.addEventListener('DOMContentLoaded', () => { poolNames = buildPoolNameSet(); markOrphanCards(); });
+  // also run immediately (script inserted before </body>)
+  poolNames = buildPoolNameSet(); markOrphanCards();
+
+  // expose helper (optional)
+  window.markOrphanCards = function(){ poolNames = buildPoolNameSet(); markOrphanCards(); };
+
+  console.log('Orphan-card highlighter installed.');
+})();
+</script>
+<!-- END ORPHAN / GOLD-GLITTER CARD HIGHLIGHTER -->
 </body>
 </html>
