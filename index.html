@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Pack Opening Game with Mutations + Protect</title>
@@ -9,9 +11,6 @@
 <link rel="apple-touch-icon" sizes="180x180" href="foot.jpeg">
 <link rel="apple-touch-icon" sizes="152x152" href="foot.jpeg">
 <link rel="apple-touch-icon" sizes="120x120" href="foot.jpeg">
-
-<!-- Preload hint for the steal audio (won't bypass iOS gesture requirement; button needed) -->
-<link rel="preload" href="/sounds/steal.mp3" as="audio">
 
 <style>
   body {
@@ -126,27 +125,9 @@
     border: 1px solid rgba(255,255,255,0.06);
     box-shadow: 0 6px 20px rgba(2,6,15,0.6);
   }
-
-  /* === Added for sound + next-restock UI === */
-  #nextRestock { font-weight:700; }
-  #restockCountdown { font-size:0.9rem; color:#666; margin-left:8px; }
-  #soundStatus { margin-left:8px; font-size:0.9rem; color:#555; }
-  #enableSoundBtn { cursor:pointer; padding:8px 12px; border-radius:6px; }
-  #stealAlert {
-    display:none;
-    position:fixed;
-    right:16px;
-    top:16px;
-    background:#ff4d4d;
-    color:white;
-    padding:8px 12px;
-    border-radius:8px;
-    box-shadow:0 6px 18px rgba(0,0,0,0.2);
-    z-index:99999;
-    font-weight:700;
-  }
 </style>
 </head>
+
 <body>
 
 <div class="login-box" id="loginBox">
@@ -164,22 +145,15 @@
   <div class="header-actions">
     <div style="text-align:left;">
       <h2>Welcome <span id="userName"></span></h2>
-      <div id="nextDistribution">
-        Next distribution: <span id="nextDistributionText">--</span>
-        <span id="restockCountdown" style="font-size:0.9rem;color:#666;margin-left:8px;">(countdown)</span>
-      </div>
+      <div id="nextDistribution">Next distribution in: --</div>
     </div>
     <div class="header-right">
-      <div style="display:flex; align-items:center; gap:8px;">
-        <button class="btn btn-small" onclick="logout()">Logout</button>
-        <button class="btn btn-small" onclick="refillStocksPrompt()">Refill Stocks</button>
-        <!-- Sound status shown here after enable -->
-        <span id="soundStatus" aria-hidden="true">🔇</span>
-      </div>
+      <button class="btn btn-small" onclick="logout()">Logout</button>
+      <button class="btn btn-small" onclick="refillStocksPrompt()">Refill Stocks</button>
     </div>
   </div>
 
-  <p>Balance: <span id="balance">0</span></p>
+  <p>Balance: $<span id="balance">0</span></p>
 
   <div class="user-select-buttons">
     <button class="btn btn-blue" onclick="showUserCollection('zezo')">Zezo</button>
@@ -189,15 +163,15 @@
   </div>
 
   <div style="display:flex; flex-wrap:wrap; justify-content:center; margin-bottom:20px;">
-    <button id="buyCommonBtn" class="btn" onclick="openPack('common')">Buy Common Pack</button>
-    <button id="buyRareBtn" class="btn btn-blue" onclick="openPack('rare')">Buy Rare Pack</button>
-    <button id="buyEpicBtn" class="btn btn-purple" onclick="openPack('epic')">Buy Epic Pack</button>
-    <button id="buyLegendaryBtn" class="btn btn-gold" onclick="openPack('legendary')">Buy Legendary Pack</button>
-    <button id="buyMythicalBtn" class="btn btn-gold" onclick="openPack('mythical')">Buy Mythical Pack</button>
-    <button id="buyDivineBtn" class="btn btn-divine" onclick="openPack('divine')">Buy Divine Pack</button>
-    <button id="buyPristimaticBtn" class="btn btn-pristimatic" onclick="openPack('pristimatic')">Buy Pristimatic Pack</button>
+    <button id="buyCommonBtn" class="btn" onclick="openPack('common')">Buy Common Pack (100%) ($100)</button>
+    <button id="buyRareBtn" class="btn btn-blue" onclick="openPack('rare')">Buy Rare Pack (100%) ($250)</button>
+    <button id="buyEpicBtn" class="btn btn-purple" onclick="openPack('epic')">Buy Epic Pack (100%) ($350)</button>
+    <button id="buyLegendaryBtn" class="btn btn-gold" onclick="openPack('legendary')">Buy Legendary Pack (100%) ($1500)</button>
+    <button id="buyMythicalBtn" class="btn btn-gold" onclick="openPack('mythical')">Buy Mythical Pack (??%) ($3000)</button>
+    <button id="buyDivineBtn" class="btn btn-divine" onclick="openPack('divine')">Buy Divine Pack (100%) ($5000)</button>
+    <button id="buyPristimaticBtn" class="btn btn-pristimatic" onclick="openPack('pristimatic')">Buy Pristimatic Pack (100%) ($7500)</button>
     <!-- SECRET pack button (50,000) -->
-    <button id="buySecretBtn" class="btn btn-secret" onclick="openPack('secret')">Buy SECRET Pack</button>
+    <button id="buySecretBtn" class="btn btn-secret" onclick="openPack('secret')">Buy SECRET Pack (0%) ($50,000)</button>
   </div>
 
   <div id="openedCard"></div>
@@ -235,22 +209,10 @@
   <div class="small" id="stealModalHint"></div>
 </div>
 
-<!-- Welcome overlay: user must tap this to enable audio on iOS -->
 <div id="welcome-container" style="position:fixed; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.7); z-index:9999;">
-  <button id="enableSoundBtn" style="font-size:20px; padding:18px 30px; border:none; border-radius:12px; background:#6a0dad; color:white; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
-    Enable sound (required for iOS)
-  </button>
+  <button id="welcome-btn" style="font-size:24px; padding:20px 40px; border:none; border-radius:12px; background:#6a0dad; color:white; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3);">Welcome</button>
 </div>
 
-<!-- Hidden audio used for steal alarm. Two sources as fallback. -->
-<audio id="stealAudio" preload="auto">
-  <source src="sounds/steal.mp3" type="audio/mpeg">
-  <source src="steal.mp3" type="audio/mpeg">
-  Your browser does not support the audio element.
-</audio>
-
-<!-- Visual alert shown when steal sound is triggered -->
-<div id="stealAlert">Steal detected — alarm playing</div>
 <!-- Firebase compat libs -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -272,88 +234,9 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-/* --- AUDIO / UI helpers added --- */
-const stealAudioEl = () => document.getElementById('stealAudio');
-const soundStatusEl = () => document.getElementById('soundStatus');
-const enableSoundBtnEl = () => document.getElementById('enableSoundBtn');
-const welcomeContainerEl = () => document.getElementById('welcome-container');
-const stealAlertEl = () => document.getElementById('stealAlert');
-
-function setSoundStatus(enabled) {
-  try {
-    if (!soundStatusEl()) return;
-    soundStatusEl().innerText = enabled ? '🔊' : '🔇';
-  } catch(e){}
-}
-
-// Try to play the steal audio (works *after* a user gesture on iOS)
-function triggerSteal() {
-  try {
-    const audio = stealAudioEl();
-    if (!audio) return;
-    audio.pause();
-    audio.currentTime = 0;
-    // attempt to play, swallow errors (browsers can still block)
-    const p = audio.play();
-    if (p && p.catch) p.catch(err => console.warn('steal audio play blocked or failed', err));
-  } catch (e) {
-    console.warn('triggerSteal err', e);
-  } finally {
-    // show visual alert briefly
-    const a = stealAlertEl();
-    if (!a) return;
-    a.style.display = 'block';
-    clearTimeout(a._hideTimeout);
-    a._hideTimeout = setTimeout(()=>{ a.style.display = 'none'; }, 6000);
-  }
-}
-
-/* Called when user taps the enable button to unlock audio for iOS */
-function handleEnableSoundGesture() {
-  try {
-    // hide overlay immediately
-    if (welcomeContainerEl()) welcomeContainerEl().style.display = 'none';
-    // mark enabled in local storage
-    localStorage.setItem('audioEnabled','true');
-    setSoundStatus(true);
-
-    // ensure the stealAudio element exists and try play
-    const stealAudio = stealAudioEl();
-    if (stealAudio) {
-      try { stealAudio.volume = 1.0; stealAudio.currentTime = 0; stealAudio.play().catch(()=>{}); } catch(e){ console.warn('play stealAudio attempt', e); }
-    }
-
-    // Optionally resume or start a looping background audio (keeps previous behavior)
-    if (!window.gAudio) {
-      // existing code used brainrot.mp3 — we keep that as optional background sound but it's not required for the alarm
-      window.gAudio = new Audio('brainrot.mp3');
-      window.gAudio.loop = true;
-      window.gAudio.preload = 'auto';
-      window.gAudio.volume = 0.9;
-    }
-    if (window.gAudio && window.gAudio.paused) {
-      window.gAudio.play().catch(()=>{ /* ignore */ });
-    }
-  } catch (e) {
-    console.warn('handleEnableSoundGesture err', e);
-  }
-}
-
-/* --- Helpers --- */
+// --- Helpers ---
 function toKey(name) { return String(name).replace(/[.#$\[\]\/]/g, '_'); }
 function generateCardId() { return Date.now().toString() + Math.random().toString().substr(2,6); }
-
-// Human-friendly money formatting (1000 -> 1K, 1_500 -> 1.5K, 1_000_000 -> 1M)
-function formatMoney(n) {
-  if (n === null || n === undefined) return "0";
-  const num = Number(n);
-  if (isNaN(num)) return String(n);
-  const abs = Math.abs(num);
-  if (abs >= 1e9) return (num / 1e9).toFixed(abs >= 1e10 ? 0 : 1).replace(/\.0$/,'') + 'B';
-  if (abs >= 1e6) return (num / 1e6).toFixed(abs >= 1e7 ? 0 : 1).replace(/\.0$/,'') + 'M';
-  if (abs >= 1e3) return (num / 1e3).toFixed(abs >= 1e4 ? 0 : 1).replace(/\.0$/,'') + 'K';
-  return String(num);
-}
 
 /* --------------------
    Game data
@@ -422,6 +305,9 @@ let cardPools = {
     { name: "Zezo SECRET", quantity: 10, chance: 0.05, price: 13500 }
   ],
 
+  /* SECRET pack placeholders — slots intentionally left with 0 quantity so you can fill later.
+     Names are placeholder keys so DB paths remain valid. Replace names/quantities/chances later as desired.
+  */
   secret: [
     { name: "SECRET PEPSI", quantity: 0, chance: 0.20, price: 55000 },
     { name: "SECRET ASSER", quantity: 0, chance: 0.20, price: 55000 },
@@ -449,11 +335,11 @@ let lockedCards = {};
 let currentHourlyMutation = null;
 let mutationInterval = null;
 let distributionInterval = null;
-let distributionDelayMs = 1000 * 60 * 5; // 5 minutes (mutation distribution)
+let distributionDelayMs = 1000 * 60 * 5; // 5 minutes
 let nextDistributionTimestamp = null;
 let distributionCountdownInterval = null;
 let currentSendCardId = null;
-const STEAL_COOLDOWN_MS = 1 * 60 * 1000; // 1 minute (as set earlier)
+const STEAL_COOLDOWN_MS = 2 * 60 * 1000; // 15 minutes
 let activeStealSession = null;
 let stealRequestsListenerRef = null;
 let myCollectionRef = null;
@@ -462,7 +348,6 @@ let myBalanceRef = null;
 let otherUserRef = null;
 let nextDistributionRef = null;
 let protectionNormalizationInterval = null;
-let restockInterval = null; // new interval holder
 
 /* --------------------
    Utility & UI
@@ -495,12 +380,12 @@ function closeMessage() { document.getElementById('messageBox').style.display = 
 function showCardDetails(cardId) {
   const card = collection[cardId] || lockedCards[cardId];
   if (!card) return;
-  const mutationListHtml = card.mutations && card.mutations.length>0 ? `<div class="mutation-list"><h4>Mutations:</h4><ul>${card.mutations.map(m=>`<li>${m.name} (+${formatMoney(m.priceIncrease)})</li>`).join('')}</ul></div>` : `<p>This card has no mutations yet.</p>`;
+  const mutationListHtml = card.mutations && card.mutations.length>0 ? `<div class="mutation-list"><h4>Mutations:</h4><ul>${card.mutations.map(m=>`<li>${m.name} (+${m.priceIncrease})</li>`).join('')}</ul></div>` : `<p>This card has no mutations yet.</p>`;
   const qty = getCardQuantity(card.name);
   const prot = card.protectedUntil && card.protectedUntil > Date.now();
   const protHtml = prot ? `<div class="protected-label">Protected</div><div class="protection-countdown">${formatTimeRemaining(card.protectedUntil - Date.now())}</div>` : '';
   const cardClass = getCardType(card.name) + '-card';
-  const cardHtml = `<div class="card ${cardClass}" data-card-id="${cardId}">${protHtml}<span class="quantity-label">x${qty}</span><h3>${card.name}</h3><p>Base Value: ${formatMoney(getBaseCardPrice(card.name))}</p><p>Current Value: ${formatMoney(card.currentPrice)}</p>${mutationListHtml}</div>`;
+  const cardHtml = `<div class="card ${cardClass}" data-card-id="${cardId}">${protHtml}<span class="quantity-label">x${qty}</span><h3>${card.name}</h3><p>Base Value: $${getBaseCardPrice(card.name)}</p><p>Current Value: $${card.currentPrice}</p>${mutationListHtml}</div>`;
   document.getElementById('cardDetailsContent').innerHTML = cardHtml;
   document.getElementById('cardDetailsBox').style.display = 'block';
 }
@@ -596,29 +481,6 @@ window.onload = function() {
 
   nextDistributionRef = db.ref('nextDistribution');
   nextDistributionRef.on('value', snap => { const v = snap.val(); if (v) nextDistributionTimestamp = Number(v); else nextDistributionTimestamp = null; updateDistributionCountdownUI(); });
-
-  // start automatic restock every 10 minutes (600000 ms)
-  if (!restockInterval) {
-    // initial refill on load (best-effort)
-    refillStocks().catch(()=>{});
-    restockInterval = setInterval(() => {
-      refillStocks().catch(err => console.error('automatic refillStocks err', err));
-    }, 10 * 60 * 1000); // 10 minutes
-  }
-
-  // if audio was previously enabled by the user, hide overlay and update UI
-  try {
-    const wasEnabled = localStorage.getItem('audioEnabled') === 'true';
-    if (wasEnabled) {
-      if (welcomeContainerEl()) welcomeContainerEl().style.display = 'none';
-      setSoundStatus(true);
-      // attempt to resume audio (may still be blocked without a new gesture)
-      const s = stealAudioEl(); if (s) s.play().catch(()=>{});
-      if (window.gAudio && window.gAudio.paused) { window.gAudio.play().catch(()=>{}); }
-    } else {
-      setSoundStatus(false);
-    }
-  } catch(e){}
 };
 
 async function login() {
@@ -712,7 +574,7 @@ function checkNotifications() { const ref = db.ref(`notifications/${currentUser}
 
 /* --------------------
    Protection normalization
-  -------------------- */
+   -------------------- */
 async function normalizeProtectionStatesForUser() {
   if (!currentUser) return;
   try {
@@ -755,7 +617,7 @@ async function normalizeProtectionStatesForUser() {
    UI / Collection Rendering
    -------------------- */
 function updateUI() {
-  document.getElementById("balance").innerText = formatMoney(balance);
+  document.getElementById("balance").innerText = balance;
   document.getElementById("collection").innerHTML = renderCollection(collection, lockedCards, true);
   document.getElementById("otherUserCollection").style.display = 'none';
   document.getElementById("otherUserHeader").style.display = 'none';
@@ -793,7 +655,7 @@ function renderCollection(cardCollection, lockedCardsObj, isMyCollection = false
       }
 
       buttons = `<button class="btn btn-small" onclick="event.stopPropagation(); ${isLocked ? `unlockCard('${id}')` : `lockCard('${id}')`}">${isLocked ? 'Unlock' : 'Lock'}</button>
-                 <button class="btn btn-small" onclick="event.stopPropagation(); sellCard('${id}')" ${isLocked?'disabled':''}>Sell (${formatMoney(card.currentPrice)})</button>
+                 <button class="btn btn-small" onclick="event.stopPropagation(); sellCard('${id}')" ${isLocked?'disabled':''}>Sell ($${card.currentPrice})</button>
                  <button class="btn btn-small btn-blue" onclick="event.stopPropagation(); openSendModal('${id}','${escapeHtml(card.name)}')">Send</button>
                  ${protButton}`;
 
@@ -808,7 +670,7 @@ function renderCollection(cardCollection, lockedCardsObj, isMyCollection = false
     }
 
     const cardClass = `${cardType}-card`;
-    collHTML += `<div class="card ${cardClass} ${cls}" onclick="showCardDetails('${id}')">${protectionHtml}${mutationLabel}${qtyHtml}<h3>${card.name}</h3><p>Value: ${formatMoney(card.currentPrice)}</p><div class="card-buttons">${buttons}</div></div>`;
+    collHTML += `<div class="card ${cardClass} ${cls}" onclick="showCardDetails('${id}')">${protectionHtml}${mutationLabel}${qtyHtml}<h3>${card.name}</h3><p>Value: $${card.currentPrice}</p><div class="card-buttons">${buttons}</div></div>`;
   }
   return collHTML;
 }
@@ -839,7 +701,7 @@ function sellCard(cardId) {
   const c = collection[cardId];
   if (!c) return showMessage("Card not found!");
   balance += c.currentPrice; delete collection[cardId];
-  saveUser(); updateUI(); showMessage(`Sold card "${c.name}" for ${formatMoney(c.currentPrice)}.`);
+  saveUser(); updateUI(); showMessage(`Sold card "${c.name}" for $${c.currentPrice}.`);
 }
 
 /* --------------------
@@ -864,7 +726,7 @@ function updatePackChances() {
     const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='mythical'?3000:pack.type==='divine'?5000:pack.type==='pristimatic'?7500:(pack.type==='secret'?50000:0);
     const btn = document.getElementById(pack.buttonId);
     if (btn) {
-      btn.innerText = `Buy ${pack.type.charAt(0).toUpperCase()+pack.type.slice(1)} Pack ${chanceText} (${formatMoney(packPrice)})`;
+      btn.innerText = `Buy ${pack.type.charAt(0).toUpperCase()+pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
       btn.disabled = (balance < packPrice) || (availableCards.length === 0);
       btn.style.opacity = btn.disabled ? 0.5 : 1;
       btn.style.cursor = btn.disabled ? 'not-allowed' : 'pointer';
@@ -934,7 +796,7 @@ async function openPack(type) {
     }, false);
 
     if (!txnResult || !txnResult.committed) {
-      balance += packPrice; await saveUser(); updateUI(); showMessage(`Sorry — "${chosenName}" sold out. You were refunded ${formatMoney(packPrice)}.`); loadCardQuantities(); return;
+      balance += packPrice; await saveUser(); updateUI(); showMessage(`Sorry — "${chosenName}" sold out. You were refunded $${packPrice}.`); loadCardQuantities(); return;
     }
 
     let newQty = txnResult.snapshot.val(); if (newQty === null || newQty === undefined) newQty = 0;
@@ -948,7 +810,7 @@ async function openPack(type) {
     await saveUser(); await db.ref('purchases').push({ card: chosenName, user: currentUser, time: Date.now() }); updateUI();
 
     const cardClass = getCardType(newCard.name) + '-card';
-    document.getElementById("openedCard").innerHTML = `<div class="card ${cardClass}"><span class="quantity-label">x${newQty}</span><h3>${newCard.name}</h3><p>Value: ${formatMoney(newCard.currentPrice)}</p><p>Added to your collection!</p><p style=\"font-size:0.9rem;color:#666;margin-top:8px;\">Protection available in: ${formatTimeRemaining(protectAvailableAt - Date.now())}</p></div>`;
+    document.getElementById("openedCard").innerHTML = `<div class="card ${cardClass}"><span class="quantity-label">x${newQty}</span><h3>${newCard.name}</h3><p>Value: $${newCard.currentPrice}</p><p>Added to your collection!</p><p style=\"font-size:0.9rem;color:#666;margin-top:8px;\">Protection available in: ${formatTimeRemaining(protectAvailableAt - Date.now())}</p></div>`;
 
   } catch (err) {
     console.error("openPack error:", err);
@@ -1107,10 +969,7 @@ function showIncomingSteal(sessionId, session, isInitiator=false) {
   document.getElementById('stealAnswerInput').value = '';
   document.getElementById('stealModalHint').innerText = `Solve the question correctly as fast as you can. First correct answer wins.`;
   document.getElementById('stealModal').style.display = 'block';
-  // Use the shared steal audio element (works if user already tapped the enable button)
-  if (session.defender === currentUser) {
-    triggerSteal();
-  }
+  if (session.defender === currentUser) { const audio = new Audio('steal.mp3'); audio.play().catch(()=>{}); }
   setTimeout(()=>{ try { document.getElementById('stealAnswerInput').focus(); } catch(e){} }, 200);
 }
 
@@ -1226,35 +1085,17 @@ async function cleanupStealSession(sessionId) {
    Admin / Refill
    -------------------- */
 function refillStocksPrompt() { const code = prompt("Enter refill code:"); if (code === null) return; if (String(code).trim() === "555") { refillStocks().then(() => { showMessage("Stocks refilled to initial quantities."); }).catch(err => { console.error("refillStocks error:", err); showMessage("Refill failed — check console."); }); } else { showMessage("Incorrect code."); } }
-async function refillStocks() {
-  // Refill cardQuantities in DB to INITIAL_QUANTITIES and update local cardPools quantities
-  const payload = {};
-  for (const name in INITIAL_QUANTITIES) payload[toKey(name)] = INITIAL_QUANTITIES[name];
-  await db.ref('cardQuantities').set(payload);
-  for (const packType in cardPools) {
-    cardPools[packType].forEach(card => {
-      if (INITIAL_QUANTITIES[card.name] !== undefined) card.quantity = INITIAL_QUANTITIES[card.name];
-    });
-  }
-  updateUI(); updatePackChances();
-  await db.ref('adminActions').push({ action: 'refillStocks', by: currentUser || 'automatic', time: Date.now() });
-}
+async function refillStocks() { const payload = {}; for (const name in INITIAL_QUANTITIES) payload[toKey(name)] = INITIAL_QUANTITIES[name]; await db.ref('cardQuantities').set(payload); for (const packType in cardPools) { cardPools[packType].forEach(card => { if (INITIAL_QUANTITIES[card.name] !== undefined) card.quantity = INITIAL_QUANTITIES[card.name]; }); } updateUI(); updatePackChances(); await db.ref('adminActions').push({ action: 'refillStocks', by: currentUser || 'unknown', time: Date.now() }); }
 
 /* --------------------
    Small helpers / UI hooks
    -------------------- */
-/* Replaced old welcome-btn handler with enableSoundBtn handler that unlocks audio on iOS */
-(function wireEnableSoundButton(){
-  try {
-    const btn = enableSoundBtnEl();
-    if (!btn) return;
-    btn.addEventListener('click', () => {
-      handleEnableSoundGesture();
-    });
-  } catch(e){ console.warn('wireEnableSoundButton err', e); }
-})();
+document.getElementById("welcome-btn").addEventListener("click", () => {
+  document.getElementById("welcome-container").style.display = "none";
+  if (!window.gAudio) { window.gAudio = new Audio('brainrot.mp3'); window.gAudio.loop = true; window.gAudio.preload = 'auto'; window.gAudio.volume = 0.9; }
+  if (window.gAudio.paused) window.gAudio.play().catch(()=>{});
+});
 
-/* Refresh button */
 const refreshBtn = document.createElement('button');
 refreshBtn.id = 'refresh-btn';
 refreshBtn.style = "position:fixed; top:20px; right:20px; padding:12px 20px; font-size:18px; border:none; border-radius:10px; background:#2196f3; color:white; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.3); z-index:9999;";
@@ -1264,9 +1105,8 @@ document.body.appendChild(refreshBtn);
 
 window.addEventListener('beforeunload', () => { try { if (currentUser) db.ref(`presence/${currentUser}`).remove(); } catch(e){} });
 
-/* End of main script */
+/* End of script */
 </script>
-
 <!-- ADD THIS JUST BEFORE </body> -->
 <script>
 (function enhancePresenceAndLastActive(){
@@ -1368,8 +1208,8 @@ window.addEventListener('beforeunload', () => { try { if (currentUser) db.ref(`p
   console.log('Presence/lastSeen enhancer installed.');
 })();
 </script>
-
-<!-- ORPHAN / GOLD-GLITTER CARD HIGHLIGHTER (unchanged) -->
+<!-- END ADD -->
+<!-- ORPHAN / GOLD-GLITTER CARD HIGHLIGHTER -->
 <style>
   /* visual style for cards that are "no longer in packs" */
   .orphan-card {
@@ -1537,5 +1377,261 @@ window.addEventListener('beforeunload', () => { try { if (currentUser) db.ref(`p
   console.log('Orphan-card highlighter installed.');
 })();
 </script>
+<!-- END ORPHAN / GOLD-GLITTER CARD HIGHLIGHTER -->
+  <script>
+/* ------------------------------
+  Number short formatter (drop-in)
+  ------------------------------ */
+
+function formatNumberShort(num, digits = 1) {
+  // handles null/undefined, non-number inputs gracefully
+  if (num === null || num === undefined) return '0';
+  const n = Number(num);
+  if (!isFinite(n)) return String(num);
+
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+
+  if (abs < 1000) {
+    // show integer for small numbers (no decimals)
+    return sign + (Math.round(n) === n ? String(Math.round(n)) : String(n));
+  }
+  const units = [
+    { value: 1e12, symbol: 'T' },
+    { value: 1e9, symbol: 'B' },
+    { value: 1e6, symbol: 'M' },
+    { value: 1e3, symbol: 'K' }
+  ];
+
+  for (const u of units) {
+    if (abs >= u.value) {
+      const formatted = (abs / u.value).toFixed(digits);
+      // remove trailing .0 if present
+      const clean = formatted.replace(/\.0+$/, '');
+      return sign + clean + u.symbol;
+    }
+  }
+  return String(n);
+}
+
+function formatCurrencyShort(num, digits=1){
+  return formatNumberShort(num, digits); // your UI already shows "$" prefix outside span
+}
+
+/* ------------------------------
+  Helpers: rewrite numeric text nodes
+  ------------------------------ */
+
+function _parseNumberFromText(txt) {
+  // remove commas, dollar sign, x prefix and whitespace
+  if (!txt && txt !== 0) return null;
+  const s = String(txt).replace(/[, \$x]/g,'').trim();
+  if (s === '') return null;
+  const v = Number(s);
+  return Number.isNaN(v) ? null : v;
+}
+
+function _formatBalanceSpan() {
+  const el = document.getElementById('balance');
+  if (!el) return;
+  const raw = el.dataset.rawValue;
+  if (raw !== undefined) {
+    // if script or other code stored rawValue, use it
+    el.innerText = formatNumberShort(Number(raw));
+  } else {
+    const n = _parseNumberFromText(el.innerText);
+    if (n !== null) el.innerText = formatNumberShort(n);
+  }
+}
+
+function _formatPackButtons() {
+  const mapping = {
+    buyCommonBtn: 'common',
+    buyRareBtn: 'rare',
+    buyEpicBtn: 'epic',
+    buyLegendaryBtn: 'legendary',
+    buyMythicalBtn: 'mythical',
+    buyDivineBtn: 'divine',
+    buyPristimaticBtn: 'pristimatic',
+    buySecretBtn: 'secret'
+  };
+  Object.keys(mapping).forEach(btnId => {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    // parse existing innerText to extract chance part and replace numeric price
+    // Expected format previously: "Buy Common Pack (100%) ($100)" or similar
+    const text = btn.dataset.rawText || btn.innerText;
+    // try to find price inside parentheses with $ or trailing $...
+    const priceMatch = text.match(/\$\s*([0-9,\.]+)/);
+    const priceVal = priceMatch ? _parseNumberFromText(priceMatch[1]) : null;
+    if (priceVal !== null) {
+      // replace price in the string with formatted
+      const newText = text.replace(/\$\s*[0-9,\.]+/, '$' + formatNumberShort(priceVal));
+      btn.innerText = newText;
+      // save rawText so future patches won't break formatting
+      btn.dataset.rawText = text;
+    } else {
+      // As fallback: if button had no $ piece, leave it alone
+    }
+  });
+}
+
+function _formatCollectionCards(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const cards = container.querySelectorAll('.card');
+  cards.forEach(cardEl => {
+    // quantity label "xNNN"
+    const qEl = cardEl.querySelector('.quantity-label');
+    if (qEl) {
+      const v = _parseNumberFromText(qEl.innerText);
+      if (v !== null) qEl.innerText = 'x' + formatNumberShort(v);
+    }
+    // value paragraph: often "Value: $12345"
+    const ps = cardEl.querySelectorAll('p');
+    ps.forEach(p => {
+      const m = p.innerText.match(/\$[\s]*([0-9,\.]+)/);
+      if (m) {
+        const v = _parseNumberFromText(m[1]);
+        if (v !== null) {
+          p.innerText = p.innerText.replace(/\$[\s]*[0-9,\.]+/, '$' + formatNumberShort(v));
+        }
+      }
+    });
+
+    // opened-card area might include protection text like "Protection available in: 1m 20s" - leave
+    // mutation labels, etc - leave
+  });
+}
+
+function _formatOpenedCard() {
+  const opened = document.getElementById('openedCard');
+  if (!opened) return;
+  const card = opened.querySelector('.card');
+  if (!card) return;
+  // quantity label
+  const qEl = card.querySelector('.quantity-label');
+  if (qEl) {
+    const v = _parseNumberFromText(qEl.innerText);
+    if (v !== null) qEl.innerText = 'x' + formatNumberShort(v);
+  }
+  // p values showing price
+  const ps = card.querySelectorAll('p');
+  ps.forEach(p => {
+    const m = p.innerText.match(/\$[\s]*([0-9,\.]+)/);
+    if (m) {
+      const v = _parseNumberFromText(m[1]);
+      if (v !== null) p.innerText = p.innerText.replace(/\$[\s]*[0-9,\.]+/, '$' + formatNumberShort(v));
+    }
+  });
+}
+
+/* ------------------------------
+  Monkeypatch UI functions (safe, additive)
+  ------------------------------ */
+
+function installShortNumberPatcher() {
+  // patch updateUI if present
+  if (window.updateUI && !window.__patched_updateUI_short__) {
+    const _orig = window.updateUI;
+    window.updateUI = function(...args) {
+      const res = _orig.apply(this, args);
+      try {
+        // if your main code stored a raw balance in span dataset, keep it; otherwise convert displayed numeric
+        _formatBalanceSpan();
+        // format collection area
+        _formatCollectionCards('collection');
+        _formatCollectionCards('otherUserCollection');
+        _formatOpenedCard();
+        _formatPackButtons();
+      } catch (e) { console.warn('shortNumber patch during updateUI failed', e); }
+      return res;
+    };
+    window.__patched_updateUI_short__ = true;
+  } else {
+    // if updateUI not present yet, ensure we still run formatting periodically (fallback)
+    if (!window.__short_fallback_interval__) {
+      window.__short_fallback_interval__ = setInterval(() => {
+        _formatBalanceSpan(); _formatCollectionCards('collection'); _formatCollectionCards('otherUserCollection'); _formatOpenedCard(); _formatPackButtons();
+      }, 1000);
+    }
+  }
+
+  // patch updatePackChances specifically (so buttons show formatted $price)
+  if (window.updatePackChances && !window.__patched_updatePackChances_short__) {
+    const _orig = window.updatePackChances;
+    window.updatePackChances = function(...args) {
+      const res = _orig.apply(this, args);
+      try { _formatPackButtons(); } catch(e){ console.warn('patch updatePackChances err', e); }
+      return res;
+    };
+    window.__patched_updatePackChances_short__ = true;
+  }
+
+  // patch openPack to ensure openedCard uses formatted price/quantity
+  if (window.openPack && !window.__patched_openPack_short__) {
+    const _orig = window.openPack;
+    window.openPack = async function(...args) {
+      const res = await _orig.apply(this, args);
+      try { _formatBalanceSpan(); _formatOpenedCard(); _formatPackButtons(); } catch(e){ console.warn('openPack post-format err', e); }
+      return res;
+    };
+    window.__patched_openPack_short__ = true;
+  }
+
+  // patch sellCard to show formatted amount in message
+  if (window.sellCard && !window.__patched_sellCard_short__) {
+    const _orig = window.sellCard;
+    window.sellCard = function(cardId) {
+      // grab price now (if present)
+      const c = (window.collection && window.collection[cardId]) || (window.lockedCards && window.lockedCards[cardId]);
+      const price = c ? (c.currentPrice || c.basePrice || 0) : null;
+      const res = _orig.apply(this, [cardId]);
+      try {
+        if (price !== null && price !== undefined) {
+          showMessage && showMessage(`Sold card "${c.name}" for $${formatNumberShort(price)}.`);
+        }
+        _formatBalanceSpan();
+      } catch(e){ console.warn('sellCard post-format err', e); }
+      return res;
+    };
+    window.__patched_sellCard_short__ = true;
+  }
+
+  // also patch sendCardToRecipient to refresh UI formatting after send
+  if (window.sendCardToRecipient && !window.__patched_sendCard_short__) {
+    const _orig = window.sendCardToRecipient;
+    window.sendCardToRecipient = async function(...args) {
+      const res = await _orig.apply(this, args);
+      try { _formatBalanceSpan(); _formatCollectionCards('collection'); _formatCollectionCards('otherUserCollection'); } catch(e){ console.warn('sendCard post-format err', e); }
+      return res;
+    };
+    window.__patched_sendCard_short__ = true;
+  }
+}
+
+/* ------------------------------
+  Run installer once DOM is ready
+  ------------------------------ */
+document.addEventListener('DOMContentLoaded', () => {
+  // store raw numeric balance if present (optional)
+  const balEl = document.getElementById('balance');
+  if (balEl) {
+    const n = _parseNumberFromText(balEl.innerText);
+    if (n !== null) balEl.dataset.rawValue = String(n);
+  }
+
+  // run initial formatting
+  _formatBalanceSpan();
+  _formatPackButtons();
+  _formatCollectionCards('collection');
+  _formatCollectionCards('otherUserCollection');
+  _formatOpenedCard();
+
+  // install monkeypatchers so future updates are automatically formatted
+  installShortNumberPatcher();
+});
+</script>
 
 </body>
+</html>
