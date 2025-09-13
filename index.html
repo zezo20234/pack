@@ -1378,259 +1378,95 @@ window.addEventListener('beforeunload', () => { try { if (currentUser) db.ref(`p
 })();
 </script>
 <!-- END ORPHAN / GOLD-GLITTER CARD HIGHLIGHTER -->
-  <script>
-/* ------------------------------
-  Number short formatter (drop-in)
-  ------------------------------ */
+<script>
+/* Auto-format #balance on any change using MutationObserver.
+   Safe: prevents infinite loops and preserves raw numeric value in dataset.rawValue.
+*/
 
-function formatNumberShort(num, digits = 1) {
-  // handles null/undefined, non-number inputs gracefully
-  if (num === null || num === undefined) return '0';
-  const n = Number(num);
-  if (!isFinite(n)) return String(num);
-
-  const abs = Math.abs(n);
-  const sign = n < 0 ? '-' : '';
-
-  if (abs < 1000) {
-    // show integer for small numbers (no decimals)
-    return sign + (Math.round(n) === n ? String(Math.round(n)) : String(n));
-  }
-  const units = [
-    { value: 1e12, symbol: 'T' },
-    { value: 1e9, symbol: 'B' },
-    { value: 1e6, symbol: 'M' },
-    { value: 1e3, symbol: 'K' }
-  ];
-
-  for (const u of units) {
-    if (abs >= u.value) {
-      const formatted = (abs / u.value).toFixed(digits);
-      // remove trailing .0 if present
-      const clean = formatted.replace(/\.0+$/, '');
-      return sign + clean + u.symbol;
-    }
-  }
-  return String(n);
-}
-
-function formatCurrencyShort(num, digits=1){
-  return formatNumberShort(num, digits); // your UI already shows "$" prefix outside span
-}
-
-/* ------------------------------
-  Helpers: rewrite numeric text nodes
-  ------------------------------ */
-
-function _parseNumberFromText(txt) {
-  // remove commas, dollar sign, x prefix and whitespace
-  if (!txt && txt !== 0) return null;
-  const s = String(txt).replace(/[, \$x]/g,'').trim();
-  if (s === '') return null;
-  const v = Number(s);
-  return Number.isNaN(v) ? null : v;
-}
-
-function _formatBalanceSpan() {
+(function installBalanceObserver() {
   const el = document.getElementById('balance');
-  if (!el) return;
-  const raw = el.dataset.rawValue;
-  if (raw !== undefined) {
-    // if script or other code stored rawValue, use it
-    el.innerText = formatNumberShort(Number(raw));
-  } else {
-    const n = _parseNumberFromText(el.innerText);
-    if (n !== null) el.innerText = formatNumberShort(n);
-  }
-}
+  if (!el) return console.warn('Balance element not found for observer.');
 
-function _formatPackButtons() {
-  const mapping = {
-    buyCommonBtn: 'common',
-    buyRareBtn: 'rare',
-    buyEpicBtn: 'epic',
-    buyLegendaryBtn: 'legendary',
-    buyMythicalBtn: 'mythical',
-    buyDivineBtn: 'divine',
-    buyPristimaticBtn: 'pristimatic',
-    buySecretBtn: 'secret'
-  };
-  Object.keys(mapping).forEach(btnId => {
-    const btn = document.getElementById(btnId);
-    if (!btn) return;
-    // parse existing innerText to extract chance part and replace numeric price
-    // Expected format previously: "Buy Common Pack (100%) ($100)" or similar
-    const text = btn.dataset.rawText || btn.innerText;
-    // try to find price inside parentheses with $ or trailing $...
-    const priceMatch = text.match(/\$\s*([0-9,\.]+)/);
-    const priceVal = priceMatch ? _parseNumberFromText(priceMatch[1]) : null;
-    if (priceVal !== null) {
-      // replace price in the string with formatted
-      const newText = text.replace(/\$\s*[0-9,\.]+/, '$' + formatNumberShort(priceVal));
-      btn.innerText = newText;
-      // save rawText so future patches won't break formatting
-      btn.dataset.rawText = text;
-    } else {
-      // As fallback: if button had no $ piece, leave it alone
-    }
-  });
-}
-
-function _formatCollectionCards(containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  const cards = container.querySelectorAll('.card');
-  cards.forEach(cardEl => {
-    // quantity label "xNNN"
-    const qEl = cardEl.querySelector('.quantity-label');
-    if (qEl) {
-      const v = _parseNumberFromText(qEl.innerText);
-      if (v !== null) qEl.innerText = 'x' + formatNumberShort(v);
-    }
-    // value paragraph: often "Value: $12345"
-    const ps = cardEl.querySelectorAll('p');
-    ps.forEach(p => {
-      const m = p.innerText.match(/\$[\s]*([0-9,\.]+)/);
-      if (m) {
-        const v = _parseNumberFromText(m[1]);
-        if (v !== null) {
-          p.innerText = p.innerText.replace(/\$[\s]*[0-9,\.]+/, '$' + formatNumberShort(v));
-        }
+  // Same formatter you used earlier (1K, 1.2M, etc.)
+  function formatNumberShort(num, digits = 1) {
+    if (num === null || num === undefined) return '0';
+    const n = Number(num);
+    if (!isFinite(n)) return String(num);
+    const abs = Math.abs(n);
+    const sign = n < 0 ? '-' : '';
+    if (abs < 1000) return sign + (Math.round(n) === n ? String(Math.round(n)) : String(n));
+    const units = [
+      { value: 1e12, symbol: 'T' },
+      { value: 1e9, symbol: 'B' },
+      { value: 1e6, symbol: 'M' },
+      { value: 1e3, symbol: 'K' }
+    ];
+    for (const u of units) {
+      if (abs >= u.value) {
+        const formatted = (abs / u.value).toFixed(digits);
+        const clean = formatted.replace(/\.0+$/, '');
+        return sign + clean + u.symbol;
       }
-    });
-
-    // opened-card area might include protection text like "Protection available in: 1m 20s" - leave
-    // mutation labels, etc - leave
-  });
-}
-
-function _formatOpenedCard() {
-  const opened = document.getElementById('openedCard');
-  if (!opened) return;
-  const card = opened.querySelector('.card');
-  if (!card) return;
-  // quantity label
-  const qEl = card.querySelector('.quantity-label');
-  if (qEl) {
-    const v = _parseNumberFromText(qEl.innerText);
-    if (v !== null) qEl.innerText = 'x' + formatNumberShort(v);
-  }
-  // p values showing price
-  const ps = card.querySelectorAll('p');
-  ps.forEach(p => {
-    const m = p.innerText.match(/\$[\s]*([0-9,\.]+)/);
-    if (m) {
-      const v = _parseNumberFromText(m[1]);
-      if (v !== null) p.innerText = p.innerText.replace(/\$[\s]*[0-9,\.]+/, '$' + formatNumberShort(v));
     }
-  });
-}
+    return String(n);
+  }
 
-/* ------------------------------
-  Monkeypatch UI functions (safe, additive)
-  ------------------------------ */
+  function parseNumberFromText(txt) {
+    if (txt === null || txt === undefined) return null;
+    const s = String(txt).replace(/[, \$x]/g,'').trim();
+    if (s === '') return null;
+    const v = Number(s);
+    return Number.isNaN(v) ? null : v;
+  }
 
-function installShortNumberPatcher() {
-  // patch updateUI if present
-  if (window.updateUI && !window.__patched_updateUI_short__) {
-    const _orig = window.updateUI;
-    window.updateUI = function(...args) {
-      const res = _orig.apply(this, args);
-      try {
-        // if your main code stored a raw balance in span dataset, keep it; otherwise convert displayed numeric
-        _formatBalanceSpan();
-        // format collection area
-        _formatCollectionCards('collection');
-        _formatCollectionCards('otherUserCollection');
-        _formatOpenedCard();
-        _formatPackButtons();
-      } catch (e) { console.warn('shortNumber patch during updateUI failed', e); }
-      return res;
-    };
-    window.__patched_updateUI_short__ = true;
-  } else {
-    // if updateUI not present yet, ensure we still run formatting periodically (fallback)
-    if (!window.__short_fallback_interval__) {
-      window.__short_fallback_interval__ = setInterval(() => {
-        _formatBalanceSpan(); _formatCollectionCards('collection'); _formatCollectionCards('otherUserCollection'); _formatOpenedCard(); _formatPackButtons();
-      }, 1000);
+  // Perform the formatting once (initial)
+  function doFormat() {
+    // read freshest text in DOM
+    let n = parseNumberFromText(el.innerText);
+    // if not parseable, try dataset.rawValue
+    if (n === null && el.dataset.rawValue !== undefined) {
+      const rv = Number(el.dataset.rawValue);
+      if (!Number.isNaN(rv)) n = rv;
+    }
+    if (n !== null) {
+      // store the raw numeric value (string) for other logic to use
+      el.dataset.rawValue = String(n);
+      // write the short form to the DOM
+      el.innerText = formatNumberShort(n);
     }
   }
 
-  // patch updatePackChances specifically (so buttons show formatted $price)
-  if (window.updatePackChances && !window.__patched_updatePackChances_short__) {
-    const _orig = window.updatePackChances;
-    window.updatePackChances = function(...args) {
-      const res = _orig.apply(this, args);
-      try { _formatPackButtons(); } catch(e){ console.warn('patch updatePackChances err', e); }
-      return res;
-    };
-    window.__patched_updatePackChances_short__ = true;
-  }
+  // Observer callback (disconnects when updating to avoid loops)
+  const mo = new MutationObserver(mutations => {
+    // If change came from our own formatting, skip or handle safely.
+    // Disconnect observer while we reformat to avoid recursion.
+    try {
+      mo.disconnect();
+      doFormat();
+    } catch (e) {
+      console.warn('balance formatting error', e);
+    } finally {
+      // observe again for future changes
+      mo.observe(el, { childList: true, characterData: true, subtree: true });
+    }
+  });
 
-  // patch openPack to ensure openedCard uses formatted price/quantity
-  if (window.openPack && !window.__patched_openPack_short__) {
-    const _orig = window.openPack;
-    window.openPack = async function(...args) {
-      const res = await _orig.apply(this, args);
-      try { _formatBalanceSpan(); _formatOpenedCard(); _formatPackButtons(); } catch(e){ console.warn('openPack post-format err', e); }
-      return res;
-    };
-    window.__patched_openPack_short__ = true;
-  }
+  // Start observing and do an initial format
+  mo.observe(el, { childList: true, characterData: true, subtree: true });
+  // Run immediately so current raw value (e.g. "1000") becomes "1K"
+  doFormat();
 
-  // patch sellCard to show formatted amount in message
-  if (window.sellCard && !window.__patched_sellCard_short__) {
-    const _orig = window.sellCard;
-    window.sellCard = function(cardId) {
-      // grab price now (if present)
-      const c = (window.collection && window.collection[cardId]) || (window.lockedCards && window.lockedCards[cardId]);
-      const price = c ? (c.currentPrice || c.basePrice || 0) : null;
-      const res = _orig.apply(this, [cardId]);
-      try {
-        if (price !== null && price !== undefined) {
-          showMessage && showMessage(`Sold card "${c.name}" for $${formatNumberShort(price)}.`);
-        }
-        _formatBalanceSpan();
-      } catch(e){ console.warn('sellCard post-format err', e); }
-      return res;
-    };
-    window.__patched_sellCard_short__ = true;
-  }
+  // Expose helper to force refresh from JS if you ever want:
+  window.__refreshFormattedBalance = function(digits) {
+    const n = parseNumberFromText(el.innerText) ?? (el.dataset.rawValue ? Number(el.dataset.rawValue) : null);
+    if (n !== null) {
+      el.dataset.rawValue = String(n);
+      el.innerText = formatNumberShort(n, digits === undefined ? 1 : digits);
+    }
+  };
 
-  // also patch sendCardToRecipient to refresh UI formatting after send
-  if (window.sendCardToRecipient && !window.__patched_sendCard_short__) {
-    const _orig = window.sendCardToRecipient;
-    window.sendCardToRecipient = async function(...args) {
-      const res = await _orig.apply(this, args);
-      try { _formatBalanceSpan(); _formatCollectionCards('collection'); _formatCollectionCards('otherUserCollection'); } catch(e){ console.warn('sendCard post-format err', e); }
-      return res;
-    };
-    window.__patched_sendCard_short__ = true;
-  }
-}
-
-/* ------------------------------
-  Run installer once DOM is ready
-  ------------------------------ */
-document.addEventListener('DOMContentLoaded', () => {
-  // store raw numeric balance if present (optional)
-  const balEl = document.getElementById('balance');
-  if (balEl) {
-    const n = _parseNumberFromText(balEl.innerText);
-    if (n !== null) balEl.dataset.rawValue = String(n);
-  }
-
-  // run initial formatting
-  _formatBalanceSpan();
-  _formatPackButtons();
-  _formatCollectionCards('collection');
-  _formatCollectionCards('otherUserCollection');
-  _formatOpenedCard();
-
-  // install monkeypatchers so future updates are automatically formatted
-  installShortNumberPatcher();
-});
+  console.log('Balance observer installed.');
+})();
 </script>
 
 </body>
