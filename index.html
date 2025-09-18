@@ -1483,7 +1483,7 @@ window.addEventListener('beforeunload', () => { try { if (currentUser) db.ref(`p
   };
   const COMPAT_APP = 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js';
   const COMPAT_DB  = 'https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js';
-  const TEN_MIN = 1 * 60 * 1000;
+  const TEN_MIN = 12 * 60 * 1000;
 
   // ---------- load firebase compat libs if needed ----------
   function loadScriptOnce(src){
