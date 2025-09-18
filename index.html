@@ -1468,6 +1468,154 @@ window.addEventListener('beforeunload', () => { try { if (currentUser) db.ref(`p
   console.log('Balance observer installed.');
 })();
 </script>
+<script>
+(async function(){
+  // ---------- CONFIG ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyDclp6rqCZRVreOzTcxv840mXcl6nDKAv8",
+    authDomain: "pack-f76c3.firebaseapp.com",
+    databaseURL: "https://pack-f76c3-default-rtdb.firebaseio.com",
+    projectId: "pack-f76c3",
+    storageBucket: "pack-f76c3.firebasestorage.app",
+    messagingSenderId: "694325056042",
+    appId: "1:694325056042:web:aae383919a2ce159892953",
+    measurementId: "G-07WXQ7YQ4M"
+  };
+  const COMPAT_APP = 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js';
+  const COMPAT_DB  = 'https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js';
+  const TEN_MIN = 1 * 60 * 1000;
+
+  // ---------- load firebase compat libs if needed ----------
+  function loadScriptOnce(src){
+    return new Promise((resolve,reject)=>{
+      if (document.querySelector(`script[src="${src}"]`)) return resolve();
+      const s = document.createElement('script');
+      s.src = src; s.onload = () => resolve(); s.onerror = () => reject(new Error('load fail ' + src));
+      document.head.appendChild(s);
+    });
+  }
+  if (typeof firebase === 'undefined' || !firebase.database) {
+    try { await loadScriptOnce(COMPAT_APP); await loadScriptOnce(COMPAT_DB); }
+    catch(e){ console.error('Could not load Firebase libs', e); return; }
+  }
+
+  // ---------- init ----------
+  if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const nextRefillRef = db.ref('meta/nextRefill');
+  const logsRef = db.ref('meta/refillLogs');
+
+  // ---------- tiny UI (top-left) ----------
+  const box = document.createElement('div');
+  Object.assign(box.style, {
+    position: 'fixed', left: '8px', top: '8px', zIndex: 99999,
+    background: 'rgba(0,0,0,0.55)', color: '#fff',
+    padding: '6px 8px', borderRadius: '6px',
+    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, Arial',
+    fontSize: '11px', minWidth: '88px', textAlign: 'center',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.25)', backdropFilter: 'blur(4px)'
+  });
+  box.innerHTML = `<span id="refill-count-small">—</span>`;
+  document.body.appendChild(box);
+  const el = document.getElementById('refill-count-small');
+
+  // ---------- placeholder refillStocks (keeps user's function if defined) ----------
+  if (typeof window.refillStocks !== 'function') {
+    window.refillStocks = async function refillStocks(){
+      console.log('[refillStocks] placeholder called', new Date().toISOString());
+      // implement actual DB stock writes here
+    };
+  }
+
+  // ---------- keep latest nextRefill and server offset ----------
+  let latestNextRefill = null;
+  let serverOffset = 0; // ms
+
+  // listen for serverTimeOffset changes (keeps offset fresh)
+  db.ref('.info/serverTimeOffset').on('value', snap => { serverOffset = snap.val() || 0; });
+
+  // listen for nextRefill updates
+  nextRefillRef.on('value', snap => {
+    const v = snap.val();
+    latestNextRefill = (typeof v === 'number') ? v : null;
+  });
+
+  // ---------- ensure nextRefill exists ----------
+  async function ensureNextRefill(){
+    try {
+      const snap = await nextRefillRef.once('value');
+      if (!snap.exists() || typeof snap.val() !== 'number') {
+        const serverNow = Date.now() + (await db.ref('.info/serverTimeOffset').once('value')).val() || 0;
+        await nextRefillRef.set(serverNow + TEN_MIN);
+      }
+    } catch(e){ console.error('ensureNextRefill error', e); }
+  }
+
+  // ---------- small helper to get serverNow (reads fresh offset) ----------
+  async function getServerNow(){
+    const offSnap = await db.ref('.info/serverTimeOffset').once('value');
+    const off = offSnap.val() || 0;
+    return Date.now() + off;
+  }
+
+  // ---------- countdown updater (mins & secs only) ----------
+  function formatMinSec(ms){
+    if (ms <= 0) return '0m 0s';
+    const totalSec = Math.floor(ms/1000);
+    const m = Math.floor(totalSec/60);
+    const s = totalSec % 60;
+    return `${m}m ${s}s`;
+  }
+  setInterval(() => {
+    // use locally-cached serverOffset for responsiveness (updated by listener)
+    if (!latestNextRefill) { el.textContent = '—'; return; }
+    const serverNow = Date.now() + serverOffset;
+    const diff = latestNextRefill - serverNow;
+    el.textContent = `in ${formatMinSec(diff)}`;
+  }, 1000);
+
+  // ---------- claim loop (transactional) ----------
+  async function tryClaimAndRun(){
+    try {
+      const serverNow = await getServerNow();
+      nextRefillRef.transaction(curr => {
+        if (!curr || curr <= serverNow) return serverNow + TEN_MIN;
+        return; // abort
+      }, async (err, committed, snapshot) => {
+        if (err) { console.error('[refill] tx err', err); return; }
+        if (!committed) return;
+        // we claimed it
+        const newNext = snapshot.val();
+        try {
+          await Promise.resolve(window.refillStocks());
+        } catch(e){ console.error('[refill] refillStocks error', e); }
+        try { await logsRef.push({ at: serverNow, nextScheduled: newNext, by:'client' }); }
+        catch(e){ console.error('[refill] log write failed', e); }
+      }, false);
+    } catch(e){ console.error('[refill] claim error', e); }
+  }
+
+  // ---------- start ----------
+  await ensureNextRefill();
+  tryClaimAndRun();
+  const claimInterval = setInterval(tryClaimAndRun, 5000);
+
+  // ---------- test helpers ----------
+  window.forceRefillNow = async function(){
+    const sn = await getServerNow();
+    await nextRefillRef.set(sn);
+    console.log('forceRefillNow ->', new Date(sn).toISOString());
+  };
+  window.stopRefillLoop = function(){
+    clearInterval(claimInterval);
+    nextRefillRef.off();
+    db.ref('.info/serverTimeOffset').off();
+    console.log('Stopped refill loop.');
+  };
+
+  console.log('Tiny refill scheduler started.');
+})();
+</script>
 
 </body>
 </html>
