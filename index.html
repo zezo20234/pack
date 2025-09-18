@@ -1616,6 +1616,142 @@ window.addEventListener('beforeunload', () => { try { if (currentUser) db.ref(`p
   console.log('Tiny refill scheduler started.');
 })();
 </script>
+<script>
+/* SHORTEN ALL NUMBERS ON PAGE (safe, dynamic)
+   - Replaces numbers with 4+ digits across visible text nodes
+   - Skips SCRIPT, STYLE, CODE, PRE, TEXTAREA and elements with data-preserve="true"
+   - Updates common display attributes: title, alt, placeholder, aria-label, input/textarea values
+   - Observes DOM changes and auto-updates newly inserted content
+*/
+
+/* ---------- formatting ---------- */
+function formatNumber(n) {
+  if (!isFinite(n)) return String(n);
+  n = Number(n);
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1).replace(/\.0$/, "") + "B";
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+  return String(n);
+}
+
+/* ---------- helpers ---------- */
+const SKIP_TAGS = new Set(['SCRIPT','STYLE','CODE','PRE','TEXTAREA']);
+const ATTRS_TO_UPDATE = ['title','alt','placeholder','aria-label','value'];
+
+function shouldSkipNode(node) {
+  if (!node || !node.parentElement) return false;
+  const tag = node.parentElement.tagName;
+  if (SKIP_TAGS.has(tag)) return true;
+  // preserve if developer explicitly requested
+  if (node.parentElement.closest && node.parentElement.closest('[data-preserve="true"]')) return true;
+  return false;
+}
+
+/* Regex matches numbers >= 1000 (with optional commas and decimals)
+   - matches: 5000, 1,500,000, 1500000, 12345.67
+*/
+const NUMBER_REGEX = /(\d{1,3}(?:,\d{3})+|\d{4,})(\.\d+)?/g;
+
+function shortenText(str) {
+  return str.replace(NUMBER_REGEX, (match) => {
+    const raw = match.replace(/,/g, '');
+    const num = Number(raw);
+    if (isNaN(num)) return match;
+    return formatNumber(num);
+  });
+}
+
+/* ---------- text nodes traversal ---------- */
+function processTextNodes(root = document.body) {
+  if (!root) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+  let node;
+  while ((node = walker.nextNode())) {
+    if (!node.nodeValue || shouldSkipNode(node)) continue;
+    const newText = shortenText(node.nodeValue);
+    if (newText !== node.nodeValue) node.nodeValue = newText;
+  }
+}
+
+/* ---------- attributes (title, alt, placeholder, aria-label, value) ---------- */
+function processAttributes(root = document.body) {
+  const elements = root.querySelectorAll('*:not(script):not(style):not(code):not(pre):not(textarea)');
+  elements.forEach(el => {
+    if (el.closest && el.closest('[data-preserve="true"]')) return;
+    ATTRS_TO_UPDATE.forEach(attr => {
+      if (el.hasAttribute && el.hasAttribute(attr)) {
+        try {
+          const val = el.getAttribute(attr);
+          if (!val) return;
+          const newVal = shortenText(val);
+          if (newVal !== val) el.setAttribute(attr, newVal);
+        } catch (e) {
+          // ignore read-only attributes or unexpected exceptions
+        }
+      } else if (attr === 'value' && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+        // update visible text-type inputs (avoid changing input[type=number], radios, checkboxes)
+        if (el.type && ['number','checkbox','radio','submit','button','file','hidden'].includes(el.type)) return;
+        const val = el.value;
+        if (!val) return;
+        const newVal = shortenText(val);
+        if (newVal !== val) el.value = newVal;
+      }
+    });
+  });
+}
+
+/* ---------- run once / safe init ---------- */
+function shortenAllNumbers(root = document.body) {
+  try {
+    processTextNodes(root);
+    processAttributes(root);
+  } catch (err) {
+    console.error('shortenAllNumbers error:', err);
+  }
+}
+
+/* ---------- observe DOM for changes (dynamic updates) ---------- */
+let mutationObserver = null;
+function startObserving() {
+  if (mutationObserver) return;
+  mutationObserver = new MutationObserver(mutations => {
+    // throttle: collect affected nodes and process them in batch
+    const roots = new Set();
+    for (const m of mutations) {
+      if (m.addedNodes && m.addedNodes.length) {
+        m.addedNodes.forEach(n => { if (n.nodeType === 1) roots.add(n); });
+      }
+      if (m.target && m.target.nodeType === 1) roots.add(m.target);
+    }
+    // process each root separately to avoid rewalking entire document for every mutation
+    roots.forEach(r => shortenAllNumbers(r));
+  });
+  mutationObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+    attributes: false
+  });
+}
+
+/* ---------- execute on load ---------- */
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    shortenAllNumbers();
+    startObserving();
+  });
+} else {
+  shortenAllNumbers();
+  startObserving();
+}
+
+/* ---------- optional: public helper to revert/refresh ---------- */
+window.__shortenNumbers = {
+  run: shortenAllNumbers,
+  disconnectObserver: () => { if (mutationObserver) { mutationObserver.disconnect(); mutationObserver = null; } },
+  reconnectObserver: startObserving
+};
+</script>
 
 </body>
 </html>
