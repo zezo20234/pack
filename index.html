@@ -310,10 +310,10 @@ let cardPools = {
   */
   secret: [
     { name: "SECRET PEPSI", quantity: 0, chance: 0.20, price: 55000 },
-    { name: "SECRET ASSER", quantity: 1, chance: 0.20, price: 55000 },
+    { name: "SECRET ASSER", quantity: 0, chance: 0.20, price: 55000 },
     { name: "SECRET PS5", quantity: 0, chance: 0.15, price: 54000 },
     { name: "SECRET PHONE", quantity: 0, chance: 0.15, price: 54000 },
-    { name: "SECRET TWINKIES", quantity: 0, chance: 0.15, price: 58000 },
+    { name: "SECRET TWINKIES", quantity: 1, chance: 0.15, price: 58000 },
     { name: "SECRET HOHOS", quantity: 0, chance: 0.15, price: 59000 }
   ]
 };
@@ -1483,7 +1483,7 @@ window.addEventListener('beforeunload', () => { try { if (currentUser) db.ref(`p
   };
   const COMPAT_APP = 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js';
   const COMPAT_DB  = 'https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js';
-  const TEN_MIN = 12 * 60 * 1000;
+  const TEN_MIN = 10* 60 * 1000;
 
   // ---------- load firebase compat libs if needed ----------
   function loadScriptOnce(src){
