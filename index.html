@@ -308,7 +308,7 @@
     <button class="btn btn-blue" onclick="showUserCollection('zezo')">Zezo</button>
     <button class="btn btn-blue" onclick="showUserCollection('lilly')">lilly</button>
     <button class="btn btn-blue" onclick="showUserCollection('asser')">Asser</button>
-    <button class="btn btn-blue" onclick="showUserCollection('AB')">AB</button>
+    <button class="btn btn-blue" onclick="showUserCollection('ab')">AB</button>
     <button class="btn btn-purple" onclick="showMyCollection()">My Base</button>
   </div>
 
@@ -392,7 +392,7 @@ function generateCardId() { return Date.now().toString() + Math.random().toStrin
 /* --------------------
    Game data
    -------------------- */
-const accounts = { zezo: "000", asser: "230", lilly: "246", AB: "123", layan: "123" };
+const accounts = { zezo: "000", asser: "230", lilly: "246", ab: "123", layan: "123" };
 
 const MUTATION_TIERS = { common: {chance:0.5}, uncommon:{chance:0.24}, rare:{chance:0.15}, veryHard:{chance:0.08}, ultra:{chance:0.03} };
 const MUTATIONS = { plasma:{priceIncrease:400,tier:'uncommon'}, bloom:{priceIncrease:400,tier:'common'}, choc:{priceIncrease:450,tier:'common'}, shocked:{priceIncrease:650,tier:'rare'}, rainbow:{priceIncrease:450,tier:'uncommon'}, burnt:{priceIncrease:550,tier:'uncommon'}, chilled:{priceIncrease:650,tier:'rare'}, CHOCOLATE:{priceIncrease:750,tier:'rare'}, frozen:{priceIncrease:500,tier:'common'}, brainrot:{priceIncrease:1000,tier:'veryHard'}, zezoplot:{priceIncrease:1200,tier:'veryHard'}, KHALTO:{priceIncrease:3000,tier:'veryHard'}, aurora:{priceIncrease:4000,tier:'ultra'}, EGYPT:{priceIncrease:5000,tier:'ultra'} };
