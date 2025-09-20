@@ -394,7 +394,7 @@ function generateCardId() { return Date.now().toString() + Math.random().toStrin
 const accounts = { zezo: "000", asser: "230", lilly: "246", baraa: "123", layan: "123" };
 
 const MUTATION_TIERS = { common: {chance:0.5}, uncommon:{chance:0.24}, rare:{chance:0.15}, veryHard:{chance:0.08}, ultra:{chance:0.03} };
-const MUTATIONS = { plasma:{priceIncrease:400,tier:'uncommon'}, bloom:{priceIncrease:300,tier:'common'}, choc:{priceIncrease:350,tier:'common'}, shocked:{priceIncrease:450,tier:'rare'}, rainbow:{priceIncrease:350,tier:'uncommon'}, burnt:{priceIncrease:300,tier:'uncommon'}, chilled:{priceIncrease:450,tier:'rare'}, frozen:{priceIncrease:150,tier:'common'}, brainrot:{priceIncrease:650,tier:'veryHard'}, zezoplot:{priceIncrease:700,tier:'veryHard'}, KHALTO:{priceIncrease:2500,tier:'veryHard'}, aurora:{priceIncrease:1100,tier:'ultra'}, EGYPT:{priceIncrease:3000,tier:'ultra'} };
+const MUTATIONS = { plasma:{priceIncrease:400,tier:'uncommon'}, bloom:{priceIncrease:400,tier:'common'}, choc:{priceIncrease:450,tier:'common'}, shocked:{priceIncrease:650,tier:'rare'}, rainbow:{priceIncrease:450,tier:'uncommon'}, burnt:{priceIncrease:550,tier:'uncommon'}, chilled:{priceIncrease:650,tier:'rare'}, CHOCOLATE:{priceIncrease:750,tier:'rare'}, frozen:{priceIncrease:500,tier:'common'}, brainrot:{priceIncrease:1000,tier:'veryHard'}, zezoplot:{priceIncrease:1200,tier:'veryHard'}, KHALTO:{priceIncrease:3000,tier:'veryHard'}, aurora:{priceIncrease:4000,tier:'ultra'}, EGYPT:{priceIncrease:5000,tier:'ultra'} };
 
 let cardPools = {
   common: [
@@ -1275,7 +1275,7 @@ async function refillStocks() { const payload = {}; for (const name in INITIAL_Q
    -------------------- */
 document.getElementById("welcome-btn").addEventListener("click", () => {
   document.getElementById("welcome-container").style.display = "none";
-  if (!window.gAudio) { window.gAudio = new Audio('brainrot.mp3'); window.gAudio.loop = true; window.gAudio.preload = 'auto'; window.gAudio.volume = 0.9; }
+  if (!window.gAudio) { window.gAudio = new Audio('tung.mp3'); window.gAudio.loop = true; window.gAudio.preload = 'auto'; window.gAudio.volume = 0.9; }
   if (window.gAudio.paused) window.gAudio.play().catch(()=>{});
 });
 
