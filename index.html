@@ -1,7 +1,10 @@
 <head>
 <meta charset="UTF-8">
 <title>Pack Opening Game with Mutations + Protect</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Prevent zooming on mobile -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
 <link rel="apple-touch-icon" href="foot.jpeg">
 <meta name="apple-mobile-web-app-title" content="YourAppName">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,7 +13,16 @@
 <link rel="apple-touch-icon" sizes="152x152" href="foot.jpeg">
 <link rel="apple-touch-icon" sizes="120x120" href="foot.jpeg">
 
+<meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- kept for compatibility, but effective viewport is the first one above -->
+
 <style>
+  html, body {
+    /* allow vertical pan/scroll but avoid gestures that allow pinch-zoom */
+    touch-action: pan-y;
+    -ms-touch-action: pan-y;
+    overscroll-behavior-y: contain;
+  }
+
   body {
     font-family: 'Inter', sans-serif;
     text-align: center;
@@ -274,7 +286,71 @@
   }, { once: true });
 })();
 </script>
+
+<!-- No-zoom / pinch-prevent script -->
+<script>
+(function(){
+  // Prevent multi-touch pinch zooms and double-tap zooms on mobile,
+  // and block ctrl/meta + wheel or +/-, 0 on desktops.
+  // Note: these listeners are non-passive to allow preventDefault.
+
+  // block pinch by preventing touchstart/touchmove with >1 touches
+  function onTouchStart(e) {
+    if (e.touches && e.touches.length > 1) {
+      e.preventDefault();
+    }
+  }
+  function onTouchMove(e) {
+    if (e.touches && e.touches.length > 1) {
+      e.preventDefault();
+    }
+    // some browsers set e.scale for gesture events
+    if (typeof e.scale === 'number' && e.scale !== 1) {
+      e.preventDefault();
+    }
+  }
+
+  // prevent double-tap zoom (simple heuristic)
+  let lastTouchTime = 0;
+  function onTouchEnd(e) {
+    const now = Date.now();
+    if (now - lastTouchTime <= 300) {
+      e.preventDefault();
+    }
+    lastTouchTime = now;
+  }
+
+  // iOS gesturestart
+  function onGestureStart(e) {
+    e.preventDefault();
+  }
+
+  // prevent ctrl/cmd + wheel zoom
+  function onWheel(e) {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+    }
+  }
+
+  // prevent keyboard zoom (Ctrl/Cmd + + / - / = / 0)
+  function onKeyDown(e) {
+    if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+      e.preventDefault();
+    }
+  }
+
+  // attach listeners with passive:false so preventDefault works
+  document.addEventListener('touchstart', onTouchStart, { passive: false });
+  document.addEventListener('touchmove', onTouchMove, { passive: false });
+  document.addEventListener('touchend', onTouchEnd, { passive: false });
+  document.addEventListener('gesturestart', onGestureStart, { passive: false });
+  window.addEventListener('wheel', onWheel, { passive: false });
+  window.addEventListener('keydown', onKeyDown, { passive: false });
+})();
+</script>
+
 </head>
+
 
 
 <body>
