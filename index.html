@@ -468,7 +468,7 @@ let cardPools = {
   */
   secret: [
     { name: "SECRET PEPSI", quantity: 0, chance: 0.20, price: 55000 },
-    { name: "SECRET ASSER", quantity: 1, chance: 0.20, price: 55000 },
+    { name: "SECRET ASSER", quantity: 0, chance: 0.20, price: 55000 },
     { name: "SECRET PS5", quantity: 0, chance: 0.15, price: 54000 },
     { name: "SECRET PHONE", quantity: 0, chance: 0.15, price: 54000 },
     { name: "SECRET TWINKIES", quantity: 0, chance: 0.15, price: 58000 },
@@ -1940,6 +1940,477 @@ window.__shortenNumbers = {
   disconnectObserver: () => { if (mutationObserver) { mutationObserver.disconnect(); mutationObserver = null; } },
   reconnectObserver: startObserving
 };
+</script>
+<!-- ===== Admin message widget (no 'seen', name + message only) - paste before </body> ===== -->
+<!-- Firebase compat SDKs (required for DB) -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+<style>
+  /* container for incoming messages (top-center) */
+  #adminMessagesContainer{
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(920px, calc(100% - 24px));
+    z-index: 2147483646;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .adminMsg {
+    pointer-events: auto;
+    width: 100%;
+    background: #000; /* black background */
+    color: #fff;
+    padding: 14px 18px;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    transform-origin: top center;
+    animation: slideDown 320ms cubic-bezier(.2,.9,.2,1);
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    justify-content: space-between;
+    box-sizing: border-box;
+  }
+
+  .adminMsg .left {
+    display:flex;
+    gap:16px;
+    align-items:flex-start;
+    flex:1;
+    min-width:0; /* allow text to wrap */
+  }
+
+  .adminMsg .avatar {
+    min-width:48px;
+    height:48px;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    color:#fff;
+    background: rgba(255,255,255,0.06);
+    flex: 0 0 48px;
+    font-size:16px;
+  }
+
+  .adminMsg .meta {
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    min-width:0;
+  }
+
+  .adminMsg .meta .who {
+    font-weight:800;
+    font-size:15px;
+    line-height:1;
+    color: #ffffff;
+    word-break: break-word;
+  }
+
+  .adminMsg .meta .text {
+    font-size:15px;
+    line-height:1.35;
+    white-space: pre-wrap;      /* preserves newlines */
+    word-break: break-word;     /* long words will wrap */
+    overflow-wrap: anywhere;
+    color: inherit;             /* will use provided color */
+  }
+
+  .adminMsg .right {
+    display:flex;
+    gap:8px;
+    align-items:flex-start;
+    margin-left: 8px;
+  }
+
+  .adminMsg .closeBtn {
+    background:transparent;
+    border:1px solid rgba(255,255,255,0.12);
+    padding:6px 10px;
+    border-radius:8px;
+    color:inherit;
+    cursor:pointer;
+    font-size:13px;
+  }
+
+  @keyframes slideDown {
+    from { transform: translateY(-12px) scale(.99); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+  }
+
+  /* admin floating button */
+  #adminOpenBtn{
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 2147483647;
+    background: #0b1220;
+    color: #fff;
+    border-radius: 12px;
+    padding: 10px 14px;
+    box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+    cursor:pointer;
+    border: none;
+    font-weight:800;
+  }
+
+  /* FULL-SCREEN overlay + panel */
+  #adminOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(2,6,23,0.78);
+    backdrop-filter: blur(4px);
+    z-index: 2147483646;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+  }
+
+  #adminPanel {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    border-radius: 8px;
+    background: linear-gradient(180deg,#071122,#091426 60%);
+    color: #fff;
+    padding: 22px;
+    box-shadow: 0 20px 60px rgba(2,6,23,0.6);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: auto;
+    position: relative;
+  }
+
+  /* header */
+  #adminPanelHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  #adminPanelHeader .title { font-size:20px; font-weight:900; }
+  #adminPanelHeader .sub { color:#9aa4b2; font-size:13px; }
+
+  /* form controls */
+  #adminForm { display:flex; gap:12px; flex-direction:column; width:100%; }
+  .formRow { display:flex; gap:12px; align-items:flex-start; }
+  .formCol { flex:1; min-width:0; }
+  input[type="text"], input[type="number"], textarea, input[type="color"] {
+    width:100%;
+    box-sizing:border-box;
+    padding:12px 14px;
+    border-radius:10px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    color: #fff;
+    outline: none;
+    font-size:15px;
+    resize: vertical;
+  }
+
+  .controls { display:flex; gap:12px; margin-top:6px; }
+  .controls button { padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:800; }
+  .btnPrimary { background: linear-gradient(90deg,#06b6d4,#0ea5b3); color:#04121a; }
+  .btnGhost { background:transparent; border:1px solid rgba(255,255,255,0.08); color:#fff; }
+
+  #adminPanelFooter { margin-top:auto; color:#9aa4b2; font-size:13px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+
+  #closeAdminPanel { background:transparent; color:#9aa4b2; border:none; font-size:20px; cursor:pointer; }
+
+  @media (max-width:720px) {
+    #adminPanel { padding: 12px; }
+    .formRow { flex-direction: column; }
+    .adminMsg { padding:12px; gap:12px; }
+    .adminMsg .avatar { min-width:40px; height:40px; flex:0 0 40px; }
+  }
+</style>
+
+<div id="adminMessagesContainer" aria-live="polite"></div>
+
+<button id="adminOpenBtn" title="Admin">Admin</button>
+
+<!-- Fullscreen overlay -->
+<div id="adminOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+  <div id="adminPanel" role="document" aria-label="Admin panel">
+    <div id="adminPanelHeader">
+      <div>
+        <div class="title">Admin — Post message</div>
+        <div class="sub">Enter code to open. Messages saved to <code>adminMessages</code>.</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="closeAdminPanel" title="Close">✕</button>
+      </div>
+    </div>
+
+    <form id="adminForm" onsubmit="return false;">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <label style="color:#9aa4b2;font-size:13px;min-width:72px">Name</label>
+        <input id="adminName" type="text" class="formCol" placeholder="e.g. zezo" />
+      </div>
+
+      <div style="display:flex;gap:12px;">
+        <label style="color:#9aa4b2;font-size:13px;min-width:72px;align-self:flex-start">Message</label>
+        <textarea id="adminMsg" rows="6" class="formCol" placeholder="Your message..."></textarea>
+      </div>
+
+      <div class="formRow">
+        <div class="formCol" style="max-width:220px;">
+          <label style="color:#9aa4b2;font-size:13px">Duration (seconds)</label>
+          <input id="adminDuration" type="number" min="1" value="6" />
+        </div>
+        <div class="formCol" style="max-width:160px;">
+          <label style="color:#9aa4b2;font-size:13px">Text color</label>
+          <input id="adminColor" type="color" value="#ffffff" />
+        </div>
+        <div class="formCol" style="max-width:140px;">
+          <label style="color:#9aa4b2;font-size:13px">Target (optional)</label>
+          <input id="adminTarget" type="text" placeholder="leave blank = all users" />
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="postAdminMsg" class="btnPrimary" type="button">Post message</button>
+        <button id="showPreview" class="btnGhost" type="button">Preview (local)</button>
+        <button id="clearAll" class="btnGhost" type="button">Clear visible (local)</button>
+      </div>
+    </form>
+
+    <div id="adminPanelFooter">
+      <div>Messages are posted to your Firebase Realtime DB at <code>adminMessages</code>.</div>
+      <div style="opacity:0.9">
+        <small style="color:#9aa4b2">Tip: press <kbd>Esc</kbd> to close</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // ---------- YOUR firebaseConfig (from your message) ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyDclp6rqCZRVreOzTcxv840mXcl6nDKAv8",
+    authDomain: "pack-f76c3.firebaseapp.com",
+    databaseURL: "https://pack-f76c3-default-rtdb.firebaseio.com",
+    projectId: "pack-f76c3",
+    storageBucket: "pack-f76c3.firebasestorage.app",
+    messagingSenderId: "694325056042",
+    appId: "1:694325056042:web:aae383919a2ce159892953",
+    measurementId: "G-07WXQ7YQ4M"
+  };
+
+  // Initialize Firebase
+  let firebaseAvailable = false;
+  try {
+    if (firebaseConfig && firebaseConfig.apiKey) {
+      if (typeof firebase !== 'undefined' && firebase.initializeApp) {
+        firebase.initializeApp(firebaseConfig);
+        if (firebase.database) firebaseAvailable = true;
+      } else {
+        console.warn('Firebase SDK loaded but "firebase" is undefined or missing initializeApp.');
+      }
+    }
+  } catch (err) {
+    console.error('Firebase init error:', err);
+  }
+
+  // ------------------ UI elements -------------------
+  const adminBtn = document.getElementById('adminOpenBtn');
+  const adminOverlay = document.getElementById('adminOverlay');
+  const adminPanel = document.getElementById('adminPanel');
+  const closeAdminPanel = document.getElementById('closeAdminPanel');
+  const postBtn = document.getElementById('postAdminMsg');
+  const previewBtn = document.getElementById('showPreview');
+  const clearAllBtn = document.getElementById('clearAll');
+  const container = document.getElementById('adminMessagesContainer');
+
+  // Panel open/close
+  function openPanel() {
+    adminOverlay.style.display = 'flex';
+    adminOverlay.setAttribute('aria-hidden','false');
+    setTimeout(()=> document.getElementById('adminName').focus(), 120);
+  }
+  function closePanel() {
+    adminOverlay.style.display = 'none';
+    adminOverlay.setAttribute('aria-hidden','true');
+  }
+
+  // Password flow: require 246
+  adminBtn.addEventListener('click', () => {
+    try {
+      const code = prompt('Enter admin code (required):');
+      if (code === null) return;
+      if (String(code).trim() === '246') {
+        openPanel();
+      } else {
+        alert('Wrong code.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('An error occurred, check console.');
+    }
+  });
+
+  adminBtn.addEventListener('dblclick', () => {
+    if (adminOverlay.style.display === 'flex') closePanel(); else openPanel();
+  });
+
+  closeAdminPanel.addEventListener('click', closePanel);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+
+  clearAllBtn.addEventListener('click', () => {
+    if (confirm('Remove all visible message elements from this page (local only)?')) {
+      // remove all children of container
+      while (container.firstChild) container.removeChild(container.firstChild);
+    }
+  });
+
+  // --------------- Post message to Firebase ----------------
+  postBtn.addEventListener('click', async () => {
+    const name = document.getElementById('adminName').value.trim() || 'Admin';
+    const msg = document.getElementById('adminMsg').value.trim();
+    const duration = parseInt(document.getElementById('adminDuration').value,10) || 6;
+    const color = document.getElementById('adminColor').value || '#ffffff';
+    const target = document.getElementById('adminTarget').value.trim() || '';
+
+    if (!msg) { alert('Please enter a message.'); return; }
+
+    const payload = {
+      name,
+      text: msg,
+      duration,
+      color,
+      target,
+      createdAt: Date.now()
+    };
+
+    if (firebaseAvailable) {
+      try {
+        await firebase.database().ref('adminMessages').push(payload);
+        document.getElementById('adminMsg').value = '';
+        alert('Message posted to Firebase.');
+      } catch (err) {
+        console.error(err);
+        alert('Failed to post message to Firebase. See console.');
+      }
+    } else {
+      console.warn('Firebase not available - showing message locally only.');
+      const pseudoId = 'local-' + Date.now() + '-' + Math.floor(Math.random()*10000);
+      showMessage(pseudoId, payload);
+      alert('Message shown locally (not persisted).');
+    }
+  });
+
+  // Preview button (local-only)
+  previewBtn.addEventListener('click', () => {
+    const name = document.getElementById('adminName').value.trim() || 'Admin';
+    const msg = document.getElementById('adminMsg').value.trim() || 'Preview message';
+    const duration = parseInt(document.getElementById('adminDuration').value,10) || 6;
+    const color = document.getElementById('adminColor').value || '#ffffff';
+    const payload = { name, text: msg, duration, color, createdAt: Date.now() };
+    const pseudoId = 'preview-' + Date.now();
+    showMessage(pseudoId, payload);
+  });
+
+  // --------------- Displaying incoming messages (no seen tracking) ----------------
+  function buildMessageElement(id, data) {
+    const el = document.createElement('div');
+    el.className = 'adminMsg';
+    el.dataset.msgId = id;
+
+    const left = document.createElement('div');
+    left.className = 'left';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.textContent = (data.name || 'A').slice(0,2).toUpperCase();
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const who = document.createElement('div');
+    who.className = 'who';
+    who.textContent = (data.name ? data.name : 'Admin');
+    const text = document.createElement('div');
+    text.className = 'text';
+    text.innerText = data.text || '';
+    text.style.color = data.color || '#ffffff';
+
+    meta.appendChild(who);
+    meta.appendChild(text);
+    left.appendChild(avatar);
+    left.appendChild(meta);
+
+    const right = document.createElement('div');
+    right.className = 'right';
+
+    // OPTIONAL close button (local only) - does not mark as seen on server
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'closeBtn';
+    closeBtn.textContent = 'Close';
+    closeBtn.addEventListener('click', () => {
+      // just remove from DOM locally
+      el.style.transition = 'opacity .25s, transform .25s';
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-8px) scale(.99)';
+      setTimeout(()=> el.remove(), 260);
+    });
+    right.appendChild(closeBtn);
+
+    el.appendChild(left);
+    el.appendChild(right);
+
+    return el;
+  }
+
+  // Show message: prepend so newest on top
+  function showMessage(id, data) {
+    // If target is set on message, and adminTarget on panel is set, you could filter.
+    // Currently show to all users (no targeting enforced client-side)
+    const el = buildMessageElement(id, data);
+    container.prepend(el);
+
+    // Let long messages expand naturally (no max-height).
+    // Auto-remove after duration if provided and >0
+    const dur = (data.duration && Number(data.duration)) ? Number(data.duration) * 1000 : 0;
+    if (dur > 0) {
+      setTimeout(() => {
+        if (document.body.contains(el)) {
+          el.style.transition = 'opacity .25s, transform .25s';
+          el.style.opacity = '0';
+          el.style.transform = 'translateY(-8px) scale(.99)';
+          setTimeout(()=> { if (el.remove) el.remove(); }, 260);
+        }
+      }, dur);
+    }
+  }
+
+  // --------------- Firebase listener for child_added (no seen marking) ----------------
+  if (firebaseAvailable) {
+    try {
+      const ref = firebase.database().ref('adminMessages').limitToLast(200);
+      ref.on('child_added', snapshot => {
+        const id = snapshot.key;
+        const data = snapshot.val();
+        if (!data || !data.text) return;
+        try { showMessage(id, data); } catch (e) { console.error('showMessage err', e); }
+      });
+    } catch (e) {
+      console.error('Firebase listener setup failed:', e);
+    }
+  } else {
+    // no firebase: preview still works
+  }
+
+  // Expose debug helpers
+  window._adminMessages = { showMessage };
+
+}); // DOMContentLoaded
 </script>
 
 </body>
