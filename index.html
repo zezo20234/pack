@@ -1276,7 +1276,7 @@ async function refillStocks() { const payload = {}; for (const name in INITIAL_Q
    -------------------- */
 document.getElementById("welcome-btn").addEventListener("click", () => {
   document.getElementById("welcome-container").style.display = "none";
-  if (!window.gAudio) { window.gAudio = new Audio('tung.mp3'); window.gAudio.loop = true; window.gAudio.preload = 'auto'; window.gAudio.volume = 0.9; }
+  if (!window.gAudio) { window.gAudio = new Audio('tun.mp3'); window.gAudio.loop = true; window.gAudio.preload = 'auto'; window.gAudio.volume = 0.9; }
   if (window.gAudio.paused) window.gAudio.play().catch(()=>{});
 });
 
@@ -1941,7 +1941,7 @@ window.__shortenNumbers = {
   reconnectObserver: startObserving
 };
 </script>
-<!-- ===== Admin message widget (no 'seen', name + message only) - paste before </body> ===== -->
+<!-- ===== Admin message widget (saves seen messages in localStorage) - paste before </body> ===== -->
 <!-- Firebase compat SDKs (required for DB) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -2178,7 +2178,7 @@ window.__shortenNumbers = {
       <div class="controls">
         <button id="postAdminMsg" class="btnPrimary" type="button">Post message</button>
         <button id="showPreview" class="btnGhost" type="button">Preview (local)</button>
-        <button id="clearAll" class="btnGhost" type="button">Clear visible (local)</button>
+        <button id="clearSeenLocal" class="btnGhost" type="button">Clear Seen (local)</button>
       </div>
     </form>
 
@@ -2220,6 +2220,37 @@ document.addEventListener('DOMContentLoaded', function () {
     console.error('Firebase init error:', err);
   }
 
+  // ------------------ Seen state in localStorage -------------------
+  const SEEN_KEY = 'adminMessagesSeen_v2';
+  function getSeenSet() {
+    try {
+      const raw = localStorage.getItem(SEEN_KEY) || '[]';
+      return new Set(JSON.parse(raw));
+    } catch (e) {
+      return new Set();
+    }
+  }
+  function saveSeenSet(set) {
+    try { localStorage.setItem(SEEN_KEY, JSON.stringify([...set])); } catch(e){}
+  }
+  function hasSeen(id) {
+    return getSeenSet().has(id);
+  }
+  function addSeen(id) {
+    if (!id) return;
+    const s = getSeenSet();
+    if (!s.has(id)) {
+      s.add(id);
+      saveSeenSet(s);
+    }
+  }
+  function clearSeenLocal() {
+    if (confirm('Clear locally saved seen messages? Users will see messages again after refresh.')) {
+      localStorage.removeItem(SEEN_KEY);
+      alert('Local seen list cleared.');
+    }
+  }
+
   // ------------------ UI elements -------------------
   const adminBtn = document.getElementById('adminOpenBtn');
   const adminOverlay = document.getElementById('adminOverlay');
@@ -2227,7 +2258,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const closeAdminPanel = document.getElementById('closeAdminPanel');
   const postBtn = document.getElementById('postAdminMsg');
   const previewBtn = document.getElementById('showPreview');
-  const clearAllBtn = document.getElementById('clearAll');
+  const clearSeenBtn = document.getElementById('clearSeenLocal');
   const container = document.getElementById('adminMessagesContainer');
 
   // Panel open/close
@@ -2264,12 +2295,7 @@ document.addEventListener('DOMContentLoaded', function () {
   closeAdminPanel.addEventListener('click', closePanel);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
 
-  clearAllBtn.addEventListener('click', () => {
-    if (confirm('Remove all visible message elements from this page (local only)?')) {
-      // remove all children of container
-      while (container.firstChild) container.removeChild(container.firstChild);
-    }
-  });
+  clearSeenBtn.addEventListener('click', clearSeenLocal);
 
   // --------------- Post message to Firebase ----------------
   postBtn.addEventListener('click', async () => {
@@ -2303,6 +2329,8 @@ document.addEventListener('DOMContentLoaded', function () {
       console.warn('Firebase not available - showing message locally only.');
       const pseudoId = 'local-' + Date.now() + '-' + Math.floor(Math.random()*10000);
       showMessage(pseudoId, payload);
+      // mark seen immediately (since user saw it)
+      addSeen(pseudoId);
       alert('Message shown locally (not persisted).');
     }
   });
@@ -2316,9 +2344,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const payload = { name, text: msg, duration, color, createdAt: Date.now() };
     const pseudoId = 'preview-' + Date.now();
     showMessage(pseudoId, payload);
+    // mark preview as seen so it won't reappear on refresh
+    addSeen(pseudoId);
   });
 
-  // --------------- Displaying incoming messages (no seen tracking) ----------------
+  // --------------- Displaying incoming messages (with local seen tracking) ----------------
   function buildMessageElement(id, data) {
     const el = document.createElement('div');
     el.className = 'adminMsg';
@@ -2349,12 +2379,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const right = document.createElement('div');
     right.className = 'right';
 
-    // OPTIONAL close button (local only) - does not mark as seen on server
+    // Close button: remove locally and mark as seen so it won't reappear
     const closeBtn = document.createElement('button');
     closeBtn.className = 'closeBtn';
     closeBtn.textContent = 'Close';
     closeBtn.addEventListener('click', () => {
-      // just remove from DOM locally
+      addSeen(id);
       el.style.transition = 'opacity .25s, transform .25s';
       el.style.opacity = '0';
       el.style.transform = 'translateY(-8px) scale(.99)';
@@ -2368,19 +2398,23 @@ document.addEventListener('DOMContentLoaded', function () {
     return el;
   }
 
-  // Show message: prepend so newest on top
+  // Show message: prepend so newest on top, skip if seen
   function showMessage(id, data) {
-    // If target is set on message, and adminTarget on panel is set, you could filter.
-    // Currently show to all users (no targeting enforced client-side)
+    if (!id) id = 'msg-' + Date.now();
+    if (hasSeen(id)) return; // skip if locally seen already
+
     const el = buildMessageElement(id, data);
     container.prepend(el);
 
-    // Let long messages expand naturally (no max-height).
-    // Auto-remove after duration if provided and >0
+    // mark as seen shortly after it appears (user has "seen" it)
+    setTimeout(() => addSeen(id), 400);
+
+    // Auto-remove after duration if provided and >0; when removed, ensure marked seen
     const dur = (data.duration && Number(data.duration)) ? Number(data.duration) * 1000 : 0;
     if (dur > 0) {
       setTimeout(() => {
         if (document.body.contains(el)) {
+          addSeen(id);
           el.style.transition = 'opacity .25s, transform .25s';
           el.style.opacity = '0';
           el.style.transform = 'translateY(-8px) scale(.99)';
@@ -2390,7 +2424,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // --------------- Firebase listener for child_added (no seen marking) ----------------
+  // --------------- Firebase listener for child_added (skip seen) ----------------
   if (firebaseAvailable) {
     try {
       const ref = firebase.database().ref('adminMessages').limitToLast(200);
@@ -2404,14 +2438,21 @@ document.addEventListener('DOMContentLoaded', function () {
       console.error('Firebase listener setup failed:', e);
     }
   } else {
-    // no firebase: preview still works
+    // no firebase: preview and local posting still work
   }
 
   // Expose debug helpers
-  window._adminMessages = { showMessage };
+  window._adminMessages = {
+    showMessage,
+    hasSeen,
+    addSeen,
+    getSeenSet: () => Array.from(getSeenSet()),
+    clearSeenLocal
+  };
 
 }); // DOMContentLoaded
 </script>
+
 
 </body>
 </html>
