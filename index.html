@@ -1,4 +1,3 @@
-
 <head>
 <meta charset="UTF-8">
 <title>Pack Opening Game with Mutations + Protect</title>
@@ -422,7 +421,7 @@ let cardPools = {
     { name: "lilly happy", quantity: 50, chance: 0.15, price: 380 },
     { name: "lilly sleep", quantity: 50, chance: 0.10, price: 370 },
     { name: "lilly", quantity: 50, chance: 0.25, price: 355 },
-    { name: "Lilly study", quantity: 12, chance: 0.10, price: 600 }
+    { name: "Lilly Bomba", quantity: 12, chance: 0.10, price: 600 }
   ],
   legendary: [
     { name: "Lilly laugh", quantity: 20, chance: 0.40, price: 1550 },
@@ -432,7 +431,7 @@ let cardPools = {
   ],
   mythical: [
     { name: "lilly PS5", quantity: 17, chance: 0.25, price: 3500 },
-    { name: "asser study", quantity: 15, chance: 0.25, price: 4000 },
+    { name: "asser bomba", quantity: 15, chance: 0.25, price: 4000 },
     { name: "asser gamer", quantity: 17, chance: 0.25, price: 4500 },
     { name: "PS5 CONTROLLER", quantity: 15, chance: 0.15, price: 5000 },
     { name: "asser farted", quantity: 15, chance: 0.10, price: 5000 }
@@ -462,11 +461,6 @@ let cardPools = {
     { name: "galaxy M&MS", quantity: 1, chance: 0.02, price: 900000 },
     { name: "galaxy LILLY", quantity: 0, chance: 0.03, price: 900000 },
     { name: "galaxy LEGO", quantity: 0, chance: 0.03, price: 900000 },
-    { name: "galaxy LA GRANDE", quantity: 0, chance: 0.03, price: 900000 },
-    { name: "galaxy LA VACA", quantity: 0, chance: 0.03, price: 900000 },
-    { name: "galaxy ODIN DIN DON", quantity: 0, chance: 0.03, price: 900000 },
-    { name: "galaxy TUNG TUNG SAHUR", quantity: 0, chance: 0.03, price: 900000 },
-    { name: "galaxy LUCKY BLOCK", quantity: 0, chance: 0.03, price: 0 },
     { name: "galaxy NOOBINI PIZZANINI", quantity: 0, chance: 0.01, price: 900000 }
   ],
 
@@ -474,12 +468,12 @@ let cardPools = {
      Names are placeholder keys so DB paths remain valid. Replace names/quantities/chances later as desired.
   */
   secret: [
-    { name: "SECRET PEPSI", quantity: 1, chance: 0.20, price: 55000 },
-    { name: "SECRET ASSER", quantity: 1, chance: 0.20, price: 55000 },
-    { name: "SECRET PS5", quantity: 0, chance: 0.15, price: 54000 },
-    { name: "SECRET PHONE", quantity: 0, chance: 0.15, price: 54000 },
-    { name: "SECRET TWINKIES", quantity: 1, chance: 0.15, price: 58000 },
-    { name: "SECRET HOHOS", quantity: 1, chance: 0.15, price: 59000 }
+    { name: "SECRET KHALTO", quantity: 0, chance: 0.20, price: 55000 },
+    { name: "SECRET SA7EL", quantity: 0, chance: 0.20, price: 55000 },
+    { name: "SECRET TANTA", quantity: 0, chance: 0.15, price: 54000 },
+    { name: "SECRET NADDY", quantity: 0, chance: 0.15, price: 54000 },
+    { name: "SECRET TWINKIES", quantity: 0, chance: 0.15, price: 58000 },
+    { name: "SECRET HOHOS", quantity: 0, chance: 0.15, price: 59000 }
   ]
 };
 
@@ -1283,7 +1277,7 @@ async function refillStocks() { const payload = {}; for (const name in INITIAL_Q
    -------------------- */
 document.getElementById("welcome-btn").addEventListener("click", () => {
   document.getElementById("welcome-container").style.display = "none";
-  if (!window.gAudio) { window.gAudio = new Audio('egy1.mp3'); window.gAudio.loop = true; window.gAudio.preload = 'auto'; window.gAudio.volume = 0.9; }
+  if (!window.gAudio) { window.gAudio = new Audio('tung.mp3'); window.gAudio.loop = true; window.gAudio.preload = 'auto'; window.gAudio.volume = 0.9; }
   if (window.gAudio.paused) window.gAudio.play().catch(()=>{});
 });
 
