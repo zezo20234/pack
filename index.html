@@ -5,13 +5,13 @@
 <!-- Prevent zooming on mobile -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
 <meta name="format-detection" content="telephone=no">
-<link rel="apple-touch-icon" href="trala.png">
+<link rel="apple-touch-icon" href="foot.jpeg">
 <meta name="apple-mobile-web-app-title" content="YourAppName">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" sizes="180x180" href="trala.png">
-<link rel="apple-touch-icon" sizes="152x152" href="trala.png">
-<link rel="apple-touch-icon" sizes="120x120" href="trala.png">
+<link rel="apple-touch-icon" sizes="180x180" href="foot.jpeg">
+<link rel="apple-touch-icon" sizes="152x152" href="foot.jpeg">
+<link rel="apple-touch-icon" sizes="120x120" href="foot.jpeg">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- kept for compatibility, but effective viewport is the first one above -->
 
@@ -136,11 +136,11 @@
     box-shadow: 0 6px 20px rgba(2,6,15,0.6);
   }
 
-  /* ---------- brainrot CARD: light-blue, water-like moving effect ---------- */
-  .brainrot-card {
-    background: linear-gradient(180deg, #ff0000 0%, #d90c0c 35%, #db0b0b 60%, #c21010 100%);
-    border-color: #ea2a08;
-    color: #ff0000;
+  /* ---------- galaxy CARD: light-blue, water-like moving effect ---------- */
+  .galaxy-card {
+    background: linear-gradient(180deg, #ee00ff 0%, #a301f4 35%, #e500fa 60%, #9e03ce 100%);
+    border-color: #c008ea;
+    color: #ee00ff;
     box-shadow: inset 0 -6px 30px rgba(157, 5, 228, 0.06), 0 10px 30px rgba(193, 1, 246, 0.08);
     position: relative;
     overflow: hidden;
@@ -148,7 +148,7 @@
   }
 
   /* subtle flowing highlight layer */
-  .brainrot-card::before {
+  .galaxy-card::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -164,7 +164,7 @@
   }
 
   /* moving wave stripe for water flow */
-  .brainrot-card::after {
+  .galaxy-card::after {
     content: "";
     position: absolute;
     left: -60%;
@@ -185,16 +185,16 @@
     animation: waveMove 8.5s linear infinite;
   }
 
-  /* text polish for headings inside an brainrot card */
-  .brainrot-card h3,
-  .brainrot-card .card-title {
+  /* text polish for headings inside an galaxy card */
+  .galaxy-card h3,
+  .galaxy-card .card-title {
     color: #022c3a;
     text-shadow: 0 1px 0 rgba(255,255,255,0.5);
     font-weight: 800;
   }
 
   /* optional little floating bubbles to add life */
-  .brainrot-card .brainrot-bubble {
+  .galaxy-card .galaxy-bubble {
     position: absolute;
     border-radius: 50%;
     background: rgba(255,255,255,0.14);
@@ -222,9 +222,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .brainrot-card::before,
-    .brainrot-card::after,
-    .brainrot-card .brainrot-bubble {
+    .galaxy-card::before,
+    .galaxy-card::after,
+    .galaxy-card .galaxy-bubble {
       animation: none !important;
     }
   }
@@ -232,9 +232,9 @@
 
 <script>
 /**
- * markbrainrotCardsByName(names)
+ * markgalaxyCardsByName(names)
  * - names: string or array of strings (exact card name match, case-insensitive)
- * Adds the .brainrot-card class to matching card DOM nodes and adds decorative bubbles.
+ * Adds the .galaxy-card class to matching card DOM nodes and adds decorative bubbles.
  *
  * This script is safe to include in <head> — it waits for DOMContentLoaded before acting.
  */
@@ -247,10 +247,10 @@
 
   function addBubbles(cardEl, count) {
     // avoid duplicate bubble groups
-    if (cardEl.querySelector('.brainrot-bubble')) return;
+    if (cardEl.querySelector('.galaxy-bubble')) return;
     for (let i = 0; i < count; i++) {
       const b = document.createElement('div');
-      b.className = 'brainrot-bubble';
+      b.className = 'galaxy-bubble';
       const size = 8 + Math.round(Math.random() * 26);
       b.style.width = b.style.height = size + 'px';
       b.style.left = (8 + Math.random() * 84) + '%';
@@ -261,7 +261,7 @@
     }
   }
 
-  window.markbrainrotCardsByName = function(names, bubbleCount = 3) {
+  window.markgalaxyCardsByName = function(names, bubbleCount = 3) {
     if (!names) return;
     const arr = Array.isArray(names) ? names.slice() : [names];
     const targets = arr.map(s => String(s || '').trim().toLowerCase());
@@ -269,20 +269,20 @@
       const h3 = card.querySelector('h3');
       const name = h3 ? String(h3.innerText || '').trim().toLowerCase() : '';
       if (isMatch(name, targets)) {
-        card.classList.add('brainrot-card');
+        card.classList.add('galaxy-card');
         addBubbles(card, bubbleCount || 2);
       } else {
-        // remove brainrot visuals if present and not matched
-        card.classList.remove('brainrot-card');
-        card.querySelectorAll('.brainrot-bubble').forEach(n => n.remove());
+        // remove galaxy visuals if present and not matched
+        card.classList.remove('galaxy-card');
+        card.querySelectorAll('.galaxy-bubble').forEach(n => n.remove());
       }
     });
   };
 
   // convenience: mark a default name on load if present in the DOM
   document.addEventListener('DOMContentLoaded', function(){
-    // auto-mark cards named "brainrot CARD" and "brainrot" (case-insensitive)
-    markbrainrotCardsByName(['brainrot card','brainrot']);
+    // auto-mark cards named "galaxy CARD" and "galaxy" (case-insensitive)
+    markgalaxyCardsByName(['galaxy card','galaxy']);
   }, { once: true });
 })();
 </script>
@@ -398,7 +398,7 @@
     <button id="buyPristimaticBtn" class="btn btn-pristimatic" onclick="openPack('pristimatic')">Buy Pristimatic Pack (100%) ($7500)</button>
     <!-- SECRET pack button (50,000) -->
     <button id="buySecretBtn" class="btn btn-secret" onclick="openPack('secret')">Buy SECRET Pack (0%) ($50,000)</button>
-    <button id="buybrainrotBtn" class="btn btn-brainrot" onclick="openPack('brainrot')">Buy brainrot Pack (0%) ($1000000)</button>
+    <button id="buygalaxyBtn" class="btn btn-galaxy" onclick="openPack('galaxy')">Buy galaxy Pack (0%) ($1000000)</button>
   </div>
 
   <div id="openedCard"></div>
@@ -451,7 +451,7 @@
 const firebaseConfig = {
   apiKey: "AIzaSyDclp6rqCZRVreOzTcxv840mXcl6nDKAv8",
   authDomain: "pack-f76c3.firebaseapp.com",
-  databaseURL: "https://pack-f76c3-default-rtdb.firebaseio.com",
+  databaseURL: "https://pack-f76c3-default-rtdb.firebaseio.com/",
   projectId: "pack-f76c3",
   storageBucket: "pack-f76c3.firebasestorage.app",
   messagingSenderId: "694325056042",
@@ -486,7 +486,7 @@ let cardPools = {
   rare: [
     { name: "Blue Asser", quantity: 70, chance: 0.30, price: 260 },
     { name: "Asser Dragon", quantity: 50, chance: 0.25, price: 280 },
-    { name: "Asser brainrot", quantity: 40, chance: 0.20, price: 300 },
+    { name: "Asser Galaxy", quantity: 40, chance: 0.20, price: 300 },
     { name: "Asser Legend", quantity: 40, chance: 0.15, price: 350 },
     { name: "Asser Mythic", quantity: 40, chance: 0.10, price: 400 }
   ],
@@ -532,17 +532,12 @@ let cardPools = {
     { name: "Zezo SECRET", quantity: 10, chance: 0.05, price: 13500 }
   ],
 
-  /* NEW: brainrot pack — very low quantities, extremely rare */
-  brainrot: [
-    { name: "LOS TRALALITOS", quantity: 0, chance: 0.02, price: 900000 },
-    { name: "ASSERINI TA3BANINI", quantity: 0, chance: 0.02, price: 900000 },
-    { name: "BOMBARIDINO CROCODILO", quantity: 0, chance: 0.03, price: 900000 },
-    { name: "TRALALELO TRALALA", quantity: 0, chance: 0.03, price: 1000000 },
-    { name: "TE TE TE SAHUR", quantity: 0, chance: 0.03, price: 900000 },
-    { name: "LOS MATTEOS", quantity: 0, chance: 0.03, price: 900000 },
-    { name: "MATTEO", quantity: 0, chance: 0.03, price: 900000 },
-    { name: "COCOFANTO ELEPHANTO", quantity: 1, chance: 0.03, price: 900000 },
-    { name: "Karkerkar Kurkur", quantity: 0, chance: 0.01, price: 1500000 }
+  /* NEW: galaxy pack — very low quantities, extremely rare */
+  galaxy: [
+    { name: "galaxy M&MS", quantity: 1, chance: 0.02, price: 900000 },
+    { name: "galaxy LILLY", quantity: 0, chance: 0.03, price: 900000 },
+    { name: "galaxy LEGO", quantity: 0, chance: 0.03, price: 900000 },
+    { name: "galaxy NOOBINI PIZZANINI", quantity: 0, chance: 0.01, price: 900000 }
   ],
 
   /* SECRET pack placeholders — slots intentionally left with 0 quantity so you can fill later.
@@ -600,7 +595,7 @@ function getCardType(cardName) {
   if (cardPools.mythical && cardPools.mythical.some(c=>c.name===cardName)) return 'mythical';
   if (cardPools.divine.some(c=>c.name===cardName)) return 'divine';
   if (cardPools.pristimatic.some(c=>c.name===cardName)) return 'pristimatic';
-  if (cardPools.brainrot && cardPools.brainrot.some(c=>c.name===cardName)) return 'brainrot';
+  if (cardPools.galaxy && cardPools.galaxy.some(c=>c.name===cardName)) return 'galaxy';
   if (cardPools.secret && cardPools.secret.some(c=>c.name===cardName)) return 'secret';
   return '';
 }
@@ -613,7 +608,7 @@ function getBaseCardPrice(cardName) {
     ...(cardPools.mythical||[]),
     ...cardPools.divine,
     ...cardPools.pristimatic,
-    ...(cardPools.brainrot||[]),
+    ...(cardPools.galaxy||[]),
     ...(cardPools.secret||[])
   ];
   const c = all.find(x=>x.name===cardName);
@@ -628,7 +623,7 @@ function getCardQuantity(cardName) {
     ...(cardPools.mythical||[]),
     ...cardPools.divine,
     ...cardPools.pristimatic,
-    ...(cardPools.brainrot||[]),
+    ...(cardPools.galaxy||[]),
     ...(cardPools.secret||[])
   ];
   const c = all.find(x=>x.name===cardName);
@@ -977,7 +972,7 @@ function updatePackChances() {
     { type: 'mythical', pool: cardPools.mythical, buttonId: 'buyMythicalBtn' },
     { type: 'divine', pool: cardPools.divine, buttonId: 'buyDivineBtn' },
     { type: 'pristimatic', pool: cardPools.pristimatic, buttonId: 'buyPristimaticBtn' },
-    { type: 'brainrot', pool: cardPools.brainrot, buttonId: 'buybrainrotBtn' }, // <-- brainrot added
+    { type: 'galaxy', pool: cardPools.galaxy, buttonId: 'buygalaxyBtn' }, // <-- galaxy added
     { type: 'secret', pool: cardPools.secret, buttonId: 'buySecretBtn' }
   ];
   packs.forEach(pack=>{
@@ -985,7 +980,7 @@ function updatePackChances() {
     const availableCards = (pack.pool || []).filter(card => getCardQuantity(card.name) > 0);
     availableCards.forEach(card => totalChance += card.chance);
     const chanceText = `(${Math.round(totalChance*100)}%)`;
-    const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='mythical'?3000:pack.type==='divine'?5000:pack.type==='pristimatic'?7500:(pack.type==='secret'?50000:(pack.type==='brainrot'?1000000:0));
+    const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='mythical'?3000:pack.type==='divine'?5000:pack.type==='pristimatic'?7500:(pack.type==='secret'?50000:(pack.type==='galaxy'?1000000:0));
     const btn = document.getElementById(pack.buttonId);
     if (btn) {
       btn.innerText = `Buy ${pack.type.charAt(0).toUpperCase()+pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
@@ -1039,7 +1034,7 @@ async function openPack(type) {
   else if (type === "mythical") { packPrice = 3000; pool = cardPools.mythical; }
   else if (type === "divine") { packPrice = 5000; pool = cardPools.divine; }
   else if (type === "pristimatic") { packPrice = 7500; pool = cardPools.pristimatic; }
-  else if (type === "brainrot") { packPrice = 50000; pool = cardPools.brainrot; } // <-- brainrot support
+  else if (type === "galaxy") { packPrice = 50000; pool = cardPools.galaxy; } // <-- galaxy support
   else if (type === "secret") { packPrice = 50000; pool = cardPools.secret; }
 
   if (balance < packPrice) { showMessage("You don't have enough money to buy this pack."); return; }
