@@ -2539,6 +2539,140 @@ document.addEventListener('DOMContentLoaded', function () {
 
 }); // DOMContentLoaded
 </script>
+<script>
+/*
+  Pack game: listen to /topNotices and display top banner
+  - Paste this exactly before </body> in your pack game page.
+  - Requires firebase.database() available (your pack already does).
+  - Shows the stored `.text` for each notice; notices are removed when expireAt passes.
+*/
+(function(){
+  const _db = (typeof db !== 'undefined') ? db : (window.firebase && firebase.database ? firebase.database() : null);
+  if (!_db) { console.warn('[topNotices] Firebase DB not found.'); return; }
+
+  // create top banner UI if not already present
+  function ensureUI(){
+    let wrapper = document.getElementById('globalTopNoticeWrap');
+    if (wrapper) return { wrapper, textEl: wrapper.querySelector('.notice-text') };
+    wrapper = document.createElement('div');
+    wrapper.id = 'globalTopNoticeWrap';
+    Object.assign(wrapper.style, {
+      position:'fixed', top:'10px', left:'50%', transform:'translateX(-50%)',
+      zIndex:2147483647, display:'none', pointerEvents:'none'
+    });
+    const box = document.createElement('div');
+    box.className = 'notice-box';
+    Object.assign(box.style, {
+      background:'#000', color:'#fff', padding:'10px 16px', borderRadius:'10px',
+      fontWeight:700, boxShadow:'0 8px 30px rgba(0,0,0,0.35)', pointerEvents:'auto',
+      maxWidth:'92vw', textAlign:'center', fontFamily:'Inter, system-ui, Arial, sans-serif'
+    });
+    const text = document.createElement('div'); text.className = 'notice-text';
+    box.appendChild(text);
+    wrapper.appendChild(box);
+    document.body.appendChild(wrapper);
+    return { wrapper, textEl: text };
+  }
+
+  const { wrapper: noticeWrap, textEl: noticeText } = ensureUI();
+  const active = {}; // key -> { val, timeoutId }
+
+  function show(text){
+    noticeText.innerText = text;
+    noticeWrap.style.display = 'block';
+    noticeWrap.style.opacity = '1';
+  }
+  function hide(){
+    noticeWrap.style.opacity = '0';
+    setTimeout(()=> { try { noticeWrap.style.display = 'none'; } catch(e){} }, 260);
+  }
+
+  async function scheduleRemove(key, val){
+    try {
+      if (!val || !val.expireAt) return;
+      const msLeft = Number(val.expireAt) - Date.now();
+      if (msLeft <= 0) {
+        try { await _db.ref('topNotices/' + key).remove().catch(()=>{}); } catch(e){}
+        return;
+      }
+      if (active[key] && active[key].timeoutId) clearTimeout(active[key].timeoutId);
+      active[key] = active[key] || {};
+      active[key].timeoutId = setTimeout(async () => {
+        try {
+          const ref = _db.ref('topNotices/' + key);
+          const snap = await ref.once('value');
+          const node = snap.val();
+          if (node && node.expireAt && Number(node.expireAt) <= Date.now()) {
+            await ref.remove().catch(()=>{});
+          }
+        } catch(e) { console.warn('[topNotices] scheduled removal failed', e); }
+      }, msLeft + 50);
+    } catch(e){ console.warn('[topNotices] scheduleRemove err', e); }
+  }
+
+  function pickTop(){
+    let best = null;
+    for (const k in active){
+      const it = active[k];
+      if (!it || !it.val) continue;
+      const exp = Number(it.val.expireAt || 0);
+      if (!best || exp > Number(best.val.expireAt || 0)) best = { key: k, val: it.val };
+    }
+    return best;
+  }
+
+  function renderActive(){
+    const top = pickTop();
+    if (!top) { hide(); return; }
+    const secLeft = Math.max(0, Math.ceil((Number(top.val.expireAt) - Date.now()) / 1000));
+    show(`${top.val.text}${secLeft>0 ? ` — ${secLeft}s` : ''}`);
+  }
+
+  const ref = _db.ref('topNotices');
+
+  ref.on('child_added', snap => {
+    try {
+      const k = snap.key; const v = snap.val(); if (!v) return;
+      active[k] = active[k] || {};
+      active[k].val = v;
+      scheduleRemove(k, v);
+      renderActive();
+    } catch(e){ console.error('[topNotices] child_added', e); }
+  });
+
+  ref.on('child_changed', snap => {
+    try {
+      const k = snap.key; const v = snap.val(); active[k] = active[k] || {}; active[k].val = v;
+      scheduleRemove(k, v);
+      renderActive();
+    } catch(e){ console.error('[topNotices] child_changed', e); }
+  });
+
+  ref.on('child_removed', snap => {
+    try {
+      const k = snap.key;
+      if (active[k] && active[k].timeoutId) clearTimeout(active[k].timeoutId);
+      delete active[k];
+      renderActive();
+    } catch(e){ console.error('[topNotices] child_removed', e); }
+  });
+
+  // refresh UI once per second for countdown
+  setInterval(renderActive, 1000);
+
+  // expose helpers for debugging
+  window._topNoticesLocal = {
+    active,
+    publishLocal: async (text, seconds = 7) => {
+      const now = Date.now(); const expireAt = now + seconds*1000;
+      await _db.ref('topNotices').push({ text, createdAt: now, expireAt, source: 'game-console' });
+    },
+    removeByKey: async (k) => { await _db.ref('topNotices/' + k).remove().catch(()=>{}); }
+  };
+
+  console.log('[topNotices] listener active (showing DB text exactly as stored).');
+})();
+</script>
 
 </body>
 </html>
