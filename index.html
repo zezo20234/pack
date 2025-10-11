@@ -2671,6 +2671,430 @@ document.addEventListener('DOMContentLoaded', function () {
   console.log('[topNotices] listener active (showing DB text exactly as stored).');
 })();
 </script>
+<!-- Rewards widget (with two redeem options) — paste before </body> -->
+<style>
+  #rewardsOpenBtn {
+    position: fixed;
+    left: 18px;
+    bottom: 18px;
+    z-index: 2147483647;
+    background: linear-gradient(90deg,#0ea5b3,#06b6d4);
+    color: #04121a;
+    border-radius: 12px;
+    padding: 10px 14px;
+    box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+    cursor:pointer;
+    border: none;
+    font-weight:800;
+  }
+  #rewardsOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(2,6,23,0.78);
+    backdrop-filter: blur(4px);
+    z-index: 2147483646;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+  }
+  #rewardsPanel {
+    width: 540px;
+    max-width: calc(100% - 34px);
+    border-radius: 12px;
+    background: linear-gradient(180deg,#0b1220,#091426 60%);
+    color: #fff;
+    padding: 18px;
+    box-shadow: 0 20px 60px rgba(2,6,23,0.6);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  #rewardsHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  #rewardsHeader h3 { margin:0; font-size:18px; }
+  .rewardsRow { display:flex; gap:12px; align-items:center; }
+  .rewardsBig { font-size:22px; font-weight:900; }
+  input[type="text"], select, input[type="number"] { padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); width:100%; background: rgba(255,255,255,0.02); color:#fff; }
+  .rewardsControls { display:flex; gap:8px; }
+  .rewardsBtn { padding:10px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:800; }
+  .btn-start { background: #10b981; color:#042a1f; }
+  .btn-stop { background: #ef4444; color:#fff; }
+  .btn-redeem { background: #f59e0b; color:#111; }
+  .smallNote { font-size:12px; color:#9aa4b2; }
+  .redeem-grid { display:grid; grid-template-columns: 1fr 1fr; gap:8px; align-items:center; }
+  .redeem-card { background: rgba(255,255,255,0.02); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); }
+  .redeem-card h4 { margin:0 0 6px 0; font-size:14px; }
+</style>
+
+<button id="rewardsOpenBtn" title="Rewards">🏆 Rewards</button>
+
+<div id="rewardsOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+  <div id="rewardsPanel" role="document" aria-label="Rewards panel">
+    <div id="rewardsHeader">
+      <div>
+        <h3>Rewards</h3>
+        <div class="smallNote">Earn points while online — 25 points every minute</div>
+      </div>
+      <div>
+        <button id="closeRewardsPanel" style="background:transparent;border:none;color:#9aa4b2;font-size:20px;cursor:pointer;">✕</button>
+      </div>
+    </div>
+
+    <div class="rewardsRow" style="justify-content:space-between;">
+      <div>
+        <div class="smallNote">Your points</div>
+        <div id="rewardsPointsDisplay" class="rewardsBig">—</div>
+      </div>
+      <div style="min-width:200px;">
+        <div class="smallNote">Earning status</div>
+        <div id="rewardsStatus" style="font-weight:800;color:#9aa4b2;">Stopped</div>
+      </div>
+    </div>
+
+    <div class="rewardsRow">
+      <div class="rewardsControls">
+        <button id="startEarningBtn" class="rewardsBtn btn-start">Start Earning</button>
+        <button id="stopEarningBtn" class="rewardsBtn btn-stop" disabled>Stop</button>
+      </div>
+      <div style="margin-left:auto;" class="smallNote">Requires being online (presence)</div>
+    </div>
+
+    <hr style="border:none;height:1px;background:rgba(255,255,255,0.04);margin:6px 0 8px;">
+
+    <div>
+      <div class="smallNote">Redeem options: choose one then enter recipient username in other game</div>
+      <div style="margin-top:8px;">
+        <div class="redeem-grid">
+          <div class="redeem-card">
+            <h4>Redeem A</h4>
+            <div class="smallNote">Cost: <strong>6500</strong> → Credit <strong>2000</strong></div>
+            <div style="margin-top:8px;"><button class="rewardsBtn btn-redeem" data-redeem="a" id="redeemA">Redeem 6500 → 2000</button></div>
+          </div>
+          <div class="redeem-card">
+            <h4>Redeem B</h4>
+            <div class="smallNote">Cost: <strong>10000</strong> → Credit <strong>4500</strong></div>
+            <div style="margin-top:8px;"><button class="rewardsBtn btn-redeem" data-redeem="b" id="redeemB">Redeem 10000 → 4500</button></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <input id="redeemRecipient" type="text" placeholder="Recipient username in other game (exact)" />
+          <button id="redeemConfirmBtn" class="rewardsBtn" style="background:#0ea5b3;color:#04121a;font-weight:900;">Confirm</button>
+        </div>
+
+        <div id="redeemHint" class="smallNote" style="margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+      <div class="smallNote">Note: points earn only while you're online (presence).</div>
+      <div>
+        <button id="rewardsHelp" class="rewardsBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:#fff;">Help</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // external Firebase config (sharplabubu)
+  const externalConfig = {
+    apiKey: "AIzaSyAjeXycCBhYoAU-0iiC4LbSTylKrrThN8Y",
+    authDomain: "sharplabubu.firebaseapp.com",
+    databaseURL: "https://sharplabubu-default-rtdb.firebaseio.com",
+    projectId: "sharplabubu",
+    storageBucket: "sharplabubu.firebasestorage.app",
+    messagingSenderId: "596148393481",
+    appId: "1:596148393481:web:4f822d86c44a13bd810ad8",
+    measurementId: "G-4M25R3BF08"
+  };
+
+  // UI elements
+  const openBtn = document.getElementById('rewardsOpenBtn');
+  const overlay = document.getElementById('rewardsOverlay');
+  const closeBtn = document.getElementById('closeRewardsPanel');
+  const pointsDisplay = document.getElementById('rewardsPointsDisplay');
+  const statusEl = document.getElementById('rewardsStatus');
+  const startBtn = document.getElementById('startEarningBtn');
+  const stopBtn = document.getElementById('stopEarningBtn');
+  const redeemA = document.getElementById('redeemA');
+  const redeemB = document.getElementById('redeemB');
+  const redeemConfirmBtn = document.getElementById('redeemConfirmBtn');
+  const recipientInput = document.getElementById('redeemRecipient');
+  const redeemHint = document.getElementById('redeemHint');
+  const helpBtn = document.getElementById('rewardsHelp');
+
+  // Redeem definitions
+  const REDEEMS = {
+    a: { cost: 6500, give: 2000 },
+    b: { cost:10000, give: 4500 }
+  };
+
+  let selectedRedeem = 'a'; // default
+  let earnInterval = null;
+  let pointsRef = null;
+  let pointsListenerAttached = false;
+  let externalDB = null;
+  let externalApp = null;
+  let presWatchRef = null;
+
+  // helper: showMessage uses your existing function if present else alert
+  function localNotify(msg) { try { if (typeof showMessage === 'function') return showMessage(msg); } catch (e) {} alert(msg); }
+
+  // basic UI open/close
+  openBtn.addEventListener('click', () => {
+    overlay.style.display = 'flex';
+    overlay.setAttribute('aria-hidden','false');
+    attachRewardsListenerIfNeeded();
+    watchPresence();
+  });
+  closeBtn.addEventListener('click', () => {
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden','true');
+  });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) { overlay.style.display = 'none'; overlay.setAttribute('aria-hidden','true'); } });
+
+  helpBtn.addEventListener('click', () => {
+    localNotify('Start earning will add 25 points every 60s while you are online. Use Redeem A to spend 6500 (gives 2000 to recipient). Use Redeem B to spend 10000 (gives 4500 to recipient). Enter the recipient username in the other game, then press Confirm.');
+  });
+
+  // redeem selection handlers
+  redeemA.addEventListener('click', () => { selectedRedeem = 'a'; redeemA.style.boxShadow = '0 4px 18px rgba(0,0,0,0.4) inset'; redeemB.style.boxShadow='none'; redeemHint.innerText = `Selected Redeem A: cost ${REDEEMS.a.cost} → give ${REDEEMS.a.give}`; });
+  redeemB.addEventListener('click', () => { selectedRedeem = 'b'; redeemB.style.boxShadow = '0 4px 18px rgba(0,0,0,0.4) inset'; redeemA.style.boxShadow='none'; redeemHint.innerText = `Selected Redeem B: cost ${REDEEMS.b.cost} → give ${REDEEMS.b.give}`; });
+
+  // initialize default highlight
+  redeemA.click();
+
+  // External DB init (lazy) — create separate app to avoid colliding with the page app
+  function ensureExternalDB() {
+    try {
+      if (externalDB) return externalDB;
+      const appName = 'sharplabubuApp';
+      // try reusing app if created before
+      const exApp = (firebase.apps || []).find(a => a.name === appName);
+      if (exApp) {
+        externalApp = exApp;
+      } else {
+        externalApp = firebase.initializeApp(externalConfig, appName);
+      }
+      externalDB = firebase.database(externalApp);
+      return externalDB;
+    } catch (e) {
+      console.error('external db init err', e);
+      return null;
+    }
+  }
+
+  // Attach a realtime listener to the current user's "points" in THIS game's DB.
+  function attachRewardsListenerIfNeeded() {
+    try {
+      if (typeof currentUser === 'undefined' || !currentUser) { pointsDisplay.innerText = '—'; return; }
+      if (typeof db === 'undefined' || !db || !db.ref) { console.warn('Local firebase "db" not found'); pointsDisplay.innerText = '—'; return; }
+      if (pointsListenerAttached && pointsRef) return;
+      pointsRef = db.ref(`users/${currentUser}/points`);
+      pointsRef.on('value', snap => {
+        const v = snap.val();
+        pointsDisplay.innerText = (v === null || v === undefined) ? '0' : String(v);
+      });
+      pointsListenerAttached = true;
+      pointsRef.once('value').then(snap => { pointsDisplay.innerText = String(snap.val() || 0); }).catch(()=>{});
+    } catch (e) {
+      console.error('attachRewardsListener err', e);
+    }
+  }
+  function detachRewardsListener() {
+    if (pointsRef) { try { pointsRef.off(); } catch(e){} pointsRef = null; pointsListenerAttached = false; }
+  }
+
+  // Earning loop
+  async function startEarning() {
+    try {
+      if (typeof currentUser === 'undefined' || !currentUser) { localNotify('Please log in first.'); return; }
+      if (typeof db === 'undefined' || !db) { localNotify('Database not available.'); return; }
+      const presSnap = await db.ref(`presence/${currentUser}`).once('value');
+      if (!presSnap.exists()) { localNotify('You are offline (presence missing). Ensure you are online to earn points.'); return; }
+      if (earnInterval) return;
+      statusEl.innerText = 'Running';
+      startBtn.disabled = true; stopBtn.disabled = false;
+      award25PointsOnce().catch(e=>console.error(e));
+      earnInterval = setInterval(async () => { await award25PointsOnce().catch(e=>console.error(e)); }, 60 * 1000);
+      document.addEventListener('visibilitychange', visibilityHandler);
+    } catch (e) {
+      console.error('startEarning err', e);
+      localNotify('Could not start earning. See console.');
+    }
+  }
+  function stopEarning() {
+    if (earnInterval) { clearInterval(earnInterval); earnInterval = null; }
+    statusEl.innerText = 'Stopped';
+    startBtn.disabled = false; stopBtn.disabled = true;
+    document.removeEventListener('visibilitychange', visibilityHandler);
+  }
+  function visibilityHandler() {
+    if (document.hidden && earnInterval) {
+      stopEarning();
+      localNotify('Earning paused because the page became hidden.');
+    }
+  }
+  async function award25PointsOnce() {
+    try {
+      if (typeof currentUser === 'undefined' || !currentUser) return stopEarning();
+      if (typeof db === 'undefined' || !db) return stopEarning();
+      const presSnap = await db.ref(`presence/${currentUser}`).once('value');
+      if (!presSnap.exists()) { stopEarning(); localNotify('You appeared offline — earning stopped.'); return; }
+      const ref = db.ref(`users/${currentUser}/points`);
+      await ref.transaction(curr => ((curr||0) + 25));
+    } catch (e) { console.error('award25PointsOnce err', e); }
+  }
+
+  // Redeem confirm: deduct local cost then credit external recipient
+  redeemConfirmBtn.addEventListener('click', async () => {
+    try {
+      if (typeof currentUser === 'undefined' || !currentUser) { localNotify('Please log in first.'); return; }
+      if (typeof db === 'undefined' || !db) { localNotify('Database not available.'); return; }
+
+      const recipient = (recipientInput.value || '').trim();
+      if (!recipient) { redeemHint.innerText = 'Enter a recipient username.'; return; }
+
+      const sel = (selectedRedeem && REDEEMS[selectedRedeem]) ? selectedRedeem : 'a';
+      const { cost, give } = REDEEMS[sel];
+      redeemHint.innerText = `Processing redeem (cost ${cost} → give ${give})...`;
+
+      const localRef = db.ref(`users/${currentUser}/points`);
+
+      // Step 1: deduct locally with transaction
+      const deductResult = await new Promise((res) => {
+        localRef.transaction(curr => {
+          const c = Number(curr || 0);
+          if (c < cost) return; // abort
+          return c - cost;
+        }, (err, committed, snap) => {
+          res({ err, committed, snap });
+        }, false);
+      });
+
+      if (deductResult.err) {
+        console.error('deduct tx err', deductResult.err);
+        redeemHint.innerText = 'Error during deduction. See console.';
+        return;
+      }
+      if (!deductResult.committed) {
+        redeemHint.innerText = 'Not enough points to redeem.';
+        return;
+      }
+
+      // Step 2: credit recipient on external DB
+      const ext = ensureExternalDB();
+      if (!ext) {
+        // refund local points
+        await localRef.transaction(curr => ((curr||0) + cost));
+        redeemHint.innerText = 'Could not connect to external DB. Refund issued.';
+        return;
+      }
+
+      try {
+        const recipientRef = externalDB.ref(`users/${recipient}/points`);
+        const addResult = await new Promise((res) => {
+          recipientRef.transaction(curr => ((curr||0) + give), (err, committed, snap) => {
+            res({ err, committed, snap });
+          }, false);
+        });
+
+        if (addResult.err || !addResult.committed) {
+          // external failed -> refund local
+          await localRef.transaction(curr => ((curr||0) + cost));
+          redeemHint.innerText = 'Failed to credit recipient - your points were refunded.';
+          console.error('external add failed', addResult.err);
+          return;
+        }
+
+        // success
+        redeemHint.innerText = `Success! ${recipient} received ${give} points. You lost ${cost} points.`;
+        localNotify(`Redeemed: ${recipient} received ${give} points.`);
+        try { await externalDB.ref(`notifications/${recipient}`).push(`${currentUser} redeemed and gave you ${give} points.`).catch(()=>{}); } catch(e){}
+
+      } catch (e) {
+        console.error('external db op error', e);
+        // refund local
+        await localRef.transaction(curr => ((curr||0) + cost));
+        redeemHint.innerText = 'Error while contacting recipient DB - refund issued.';
+      }
+
+    } catch (e) {
+      console.error('redeem err', e);
+      redeemHint.innerText = 'Redeem failed. See console.';
+    }
+  });
+
+  // Start / Stop handlers
+  startBtn.addEventListener('click', () => startEarning().catch(e=>{ console.error(e); }));
+  stopBtn.addEventListener('click', () => stopEarning());
+
+  // Keep UI in-sync with login/logout
+  function onLoginStateChange() {
+    if (typeof currentUser !== 'undefined' && currentUser) {
+      attachRewardsListenerIfNeeded();
+      watchPresence();
+      if (pointsRef) pointsRef.once('value').then(snap => { pointsDisplay.innerText = String(snap.val() || 0); }).catch(()=>{});
+    } else {
+      detachRewardsListener();
+      stopEarning();
+      pointsDisplay.innerText = '—';
+    }
+  }
+
+  // Patch login/logout safely to update rewards UI
+  if (window.login && !window.__rewards_wrapped_login) {
+    const _login = window.login;
+    window.login = async function(...args) {
+      const res = await _login.apply(this, args);
+      setTimeout(onLoginStateChange, 250);
+      return res;
+    };
+    window.__rewards_wrapped_login = true;
+  }
+  if (window.logout && !window.__rewards_wrapped_logout) {
+    const _logout = window.logout;
+    window.logout = async function(...args) {
+      try { stopEarning(); detachRewardsListener(); if (presWatchRef) presWatchRef.off(); } catch(e){}
+      const res = await _logout.apply(this, args);
+      setTimeout(onLoginStateChange, 100);
+      return res;
+    };
+    window.__rewards_wrapped_logout = true;
+  }
+
+  // Presence watch stops earning if presence removed
+  function watchPresence() {
+    try {
+      if (typeof db === 'undefined' || typeof currentUser === 'undefined' || !currentUser) return;
+      if (presWatchRef) { try { presWatchRef.off(); } catch(e){} presWatchRef = null; }
+      presWatchRef = db.ref(`presence/${currentUser}`);
+      presWatchRef.on('value', snap => {
+        if (!snap.exists()) {
+          if (earnInterval) { stopEarning(); localNotify('You went offline — earning stopped.'); }
+        }
+      });
+    } catch (e) { console.warn('watchPresence err', e); }
+  }
+
+  // Clean up on page unload
+  window.addEventListener('beforeunload', () => { try { stopEarning(); detachRewardsListener(); if (presWatchRef) presWatchRef.off(); } catch(e){} });
+
+  // initial state
+  try { if (typeof currentUser !== 'undefined' && currentUser) attachRewardsListenerIfNeeded(); } catch(e){}
+
+  // helpers exposed for debugging
+  window._rewardsWidget = {
+    start: startEarning,
+    stop: stopEarning,
+    attach: attachRewardsListenerIfNeeded,
+    detach: detachRewardsListener,
+    ensureExternalDB
+  };
+
+})();
+</script>
 
 </body>
 </html>
