@@ -2026,652 +2026,7 @@ window.__shortenNumbers = {
   reconnectObserver: startObserving
 };
 </script>
-<!-- ===== Admin message widget (saves seen messages in localStorage) - paste before </body> ===== -->
-<!-- Firebase compat SDKs (required for DB) -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
-<style>
-  /* container for incoming messages (top-center) */
-  #adminMessagesContainer{
-    position: fixed;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(920px, calc(100% - 24px));
-    z-index: 2147483646;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    align-items: center;
-    pointer-events: none;
-  }
-
-  .adminMsg {
-    pointer-events: auto;
-    width: 100%;
-    background: #000; /* black background */
-    color: #fff;
-    padding: 14px 18px;
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-    transform-origin: top center;
-    animation: slideDown 320ms cubic-bezier(.2,.9,.2,1);
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-    justify-content: space-between;
-    box-sizing: border-box;
-  }
-
-  .adminMsg .left {
-    display:flex;
-    gap:16px;
-    align-items:flex-start;
-    flex:1;
-    min-width:0; /* allow text to wrap */
-  }
-
-  .adminMsg .avatar {
-    min-width:48px;
-    height:48px;
-    border-radius:8px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-weight:700;
-    color:#fff;
-    background: rgba(255,255,255,0.06);
-    flex: 0 0 48px;
-    font-size:16px;
-  }
-
-  .adminMsg .meta {
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    min-width:0;
-  }
-
-  .adminMsg .meta .who {
-    font-weight:800;
-    font-size:15px;
-    line-height:1;
-    color: #ffffff;
-    word-break: break-word;
-  }
-
-  .adminMsg .meta .text {
-    font-size:15px;
-    line-height:1.35;
-    white-space: pre-wrap;      /* preserves newlines */
-    word-break: break-word;     /* long words will wrap */
-    overflow-wrap: anywhere;
-    color: inherit;             /* will use provided color */
-  }
-
-  .adminMsg .right {
-    display:flex;
-    gap:8px;
-    align-items:flex-start;
-    margin-left: 8px;
-  }
-
-  .adminMsg .closeBtn {
-    background:transparent;
-    border:1px solid rgba(255,255,255,0.12);
-    padding:6px 10px;
-    border-radius:8px;
-    color:inherit;
-    cursor:pointer;
-    font-size:13px;
-  }
-
-  @keyframes slideDown {
-    from { transform: translateY(-12px) scale(.99); opacity: 0; }
-    to { transform: translateY(0) scale(1); opacity: 1; }
-  }
-
-  /* admin floating button */
-  #adminOpenBtn{
-    position: fixed;
-    right: 18px;
-    bottom: 18px;
-    z-index: 2147483647;
-    background: #0b1220;
-    color: #fff;
-    border-radius: 12px;
-    padding: 10px 14px;
-    box-shadow: 0 10px 30px rgba(2,6,23,0.6);
-    cursor:pointer;
-    border: none;
-    font-weight:800;
-  }
-
-  /* FULL-SCREEN overlay + panel */
-  #adminOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(2,6,23,0.78);
-    backdrop-filter: blur(4px);
-    z-index: 2147483646;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 18px;
-  }
-
-  #adminPanel {
-    width: 100%;
-    height: 100%;
-    max-width: none;
-    max-height: none;
-    border-radius: 8px;
-    background: linear-gradient(180deg,#071122,#091426 60%);
-    color: #fff;
-    padding: 22px;
-    box-shadow: 0 20px 60px rgba(2,6,23,0.6);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    overflow: auto;
-    position: relative;
-  }
-
-  /* header */
-  #adminPanelHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-  #adminPanelHeader .title { font-size:20px; font-weight:900; }
-  #adminPanelHeader .sub { color:#9aa4b2; font-size:13px; }
-
-  /* form controls */
-  #adminForm { display:flex; gap:12px; flex-direction:column; width:100%; }
-  .formRow { display:flex; gap:12px; align-items:flex-start; }
-  .formCol { flex:1; min-width:0; }
-  input[type="text"], input[type="number"], textarea, input[type="color"] {
-    width:100%;
-    box-sizing:border-box;
-    padding:12px 14px;
-    border-radius:10px;
-    border: 1px solid rgba(255,255,255,0.06);
-    background: rgba(255,255,255,0.02);
-    color: #fff;
-    outline: none;
-    font-size:15px;
-    resize: vertical;
-  }
-
-  .controls { display:flex; gap:12px; margin-top:6px; }
-  .controls button { padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:800; }
-  .btnPrimary { background: linear-gradient(90deg,#06b6d4,#0ea5b3); color:#04121a; }
-  .btnGhost { background:transparent; border:1px solid rgba(255,255,255,0.08); color:#fff; }
-
-  #adminPanelFooter { margin-top:auto; color:#9aa4b2; font-size:13px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-
-  #closeAdminPanel { background:transparent; color:#9aa4b2; border:none; font-size:20px; cursor:pointer; }
-
-  @media (max-width:720px) {
-    #adminPanel { padding: 12px; }
-    .formRow { flex-direction: column; }
-    .adminMsg { padding:12px; gap:12px; }
-    .adminMsg .avatar { min-width:40px; height:40px; flex:0 0 40px; }
-  }
-</style>
-
-<div id="adminMessagesContainer" aria-live="polite"></div>
-
-<button id="adminOpenBtn" title="Admin">Admin</button>
-
-<!-- Fullscreen overlay -->
-<div id="adminOverlay" role="dialog" aria-modal="true" aria-hidden="true">
-  <div id="adminPanel" role="document" aria-label="Admin panel">
-    <div id="adminPanelHeader">
-      <div>
-        <div class="title">Admin — Post message</div>
-        <div class="sub">Enter code to open. Messages saved to <code>adminMessages</code>.</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button id="closeAdminPanel" title="Close">✕</button>
-      </div>
-    </div>
-
-    <form id="adminForm" onsubmit="return false;">
-      <div style="display:flex;gap:12px;align-items:center;">
-        <label style="color:#9aa4b2;font-size:13px;min-width:72px">Name</label>
-        <input id="adminName" type="text" class="formCol" placeholder="e.g. zezo" />
-      </div>
-
-      <div style="display:flex;gap:12px;">
-        <label style="color:#9aa4b2;font-size:13px;min-width:72px;align-self:flex-start">Message</label>
-        <textarea id="adminMsg" rows="6" class="formCol" placeholder="Your message..."></textarea>
-      </div>
-
-      <div class="formRow">
-        <div class="formCol" style="max-width:220px;">
-          <label style="color:#9aa4b2;font-size:13px">Duration (seconds)</label>
-          <input id="adminDuration" type="number" min="1" value="6" />
-        </div>
-        <div class="formCol" style="max-width:160px;">
-          <label style="color:#9aa4b2;font-size:13px">Text color</label>
-          <input id="adminColor" type="color" value="#ffffff" />
-        </div>
-        <div class="formCol" style="max-width:140px;">
-          <label style="color:#9aa4b2;font-size:13px">Target (optional)</label>
-          <input id="adminTarget" type="text" placeholder="leave blank = all users" />
-        </div>
-      </div>
-
-      <div class="controls">
-        <button id="postAdminMsg" class="btnPrimary" type="button">Post message</button>
-        <button id="showPreview" class="btnGhost" type="button">Preview (local)</button>
-        <button id="clearSeenLocal" class="btnGhost" type="button">Clear Seen (local)</button>
-      </div>
-    </form>
-
-    <div id="adminPanelFooter">
-      <div>Messages are posted to your Firebase Realtime DB at <code>adminMessages</code>.</div>
-      <div style="opacity:0.9">
-        <small style="color:#9aa4b2">Tip: press <kbd>Esc</kbd> to close</small>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  // ---------- YOUR firebaseConfig (from your message) ----------
-  const firebaseConfig = {
-    apiKey: "AIzaSyDclp6rqCZRVreOzTcxv840mXcl6nDKAv8",
-    authDomain: "pack-f76c3.firebaseapp.com",
-    databaseURL: "https://pack-f76c3-default-rtdb.firebaseio.com",
-    projectId: "pack-f76c3",
-    storageBucket: "pack-f76c3.firebasestorage.app",
-    messagingSenderId: "694325056042",
-    appId: "1:694325056042:web:aae383919a2ce159892953",
-    measurementId: "G-07WXQ7YQ4M"
-  };
-
-  // Initialize Firebase
-  let firebaseAvailable = false;
-  try {
-    if (firebaseConfig && firebaseConfig.apiKey) {
-      if (typeof firebase !== 'undefined' && firebase.initializeApp) {
-        firebase.initializeApp(firebaseConfig);
-        if (firebase.database) firebaseAvailable = true;
-      } else {
-        console.warn('Firebase SDK loaded but "firebase" is undefined or missing initializeApp.');
-      }
-    }
-  } catch (err) {
-    console.error('Firebase init error:', err);
-  }
-
-  // ------------------ Seen state in localStorage -------------------
-  const SEEN_KEY = 'adminMessagesSeen_v2';
-  function getSeenSet() {
-    try {
-      const raw = localStorage.getItem(SEEN_KEY) || '[]';
-      return new Set(JSON.parse(raw));
-    } catch (e) {
-      return new Set();
-    }
-  }
-  function saveSeenSet(set) {
-    try { localStorage.setItem(SEEN_KEY, JSON.stringify([...set])); } catch(e){}
-  }
-  function hasSeen(id) {
-    return getSeenSet().has(id);
-  }
-  function addSeen(id) {
-    if (!id) return;
-    const s = getSeenSet();
-    if (!s.has(id)) {
-      s.add(id);
-      saveSeenSet(s);
-    }
-  }
-  function clearSeenLocal() {
-    if (confirm('Clear locally saved seen messages? Users will see messages again after refresh.')) {
-      localStorage.removeItem(SEEN_KEY);
-      alert('Local seen list cleared.');
-    }
-  }
-
-  // ------------------ UI elements -------------------
-  const adminBtn = document.getElementById('adminOpenBtn');
-  const adminOverlay = document.getElementById('adminOverlay');
-  const adminPanel = document.getElementById('adminPanel');
-  const closeAdminPanel = document.getElementById('closeAdminPanel');
-  const postBtn = document.getElementById('postAdminMsg');
-  const previewBtn = document.getElementById('showPreview');
-  const clearSeenBtn = document.getElementById('clearSeenLocal');
-  const container = document.getElementById('adminMessagesContainer');
-
-  // Panel open/close
-  function openPanel() {
-    adminOverlay.style.display = 'flex';
-    adminOverlay.setAttribute('aria-hidden','false');
-    setTimeout(()=> document.getElementById('adminName').focus(), 120);
-  }
-  function closePanel() {
-    adminOverlay.style.display = 'none';
-    adminOverlay.setAttribute('aria-hidden','true');
-  }
-
-  // Password flow: require 246
-  adminBtn.addEventListener('click', () => {
-    try {
-      const code = prompt('Enter admin code (required):');
-      if (code === null) return;
-      if (String(code).trim() === '246') {
-        openPanel();
-      } else {
-        alert('Wrong code.');
-      }
-    } catch (e) {
-      console.error(e);
-      alert('An error occurred, check console.');
-    }
-  });
-
-  adminBtn.addEventListener('dblclick', () => {
-    if (adminOverlay.style.display === 'flex') closePanel(); else openPanel();
-  });
-
-  closeAdminPanel.addEventListener('click', closePanel);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
-
-  clearSeenBtn.addEventListener('click', clearSeenLocal);
-
-  // --------------- Post message to Firebase ----------------
-  postBtn.addEventListener('click', async () => {
-    const name = document.getElementById('adminName').value.trim() || 'Admin';
-    const msg = document.getElementById('adminMsg').value.trim();
-    const duration = parseInt(document.getElementById('adminDuration').value,10) || 6;
-    const color = document.getElementById('adminColor').value || '#ffffff';
-    const target = document.getElementById('adminTarget').value.trim() || '';
-
-    if (!msg) { alert('Please enter a message.'); return; }
-
-    const payload = {
-      name,
-      text: msg,
-      duration,
-      color,
-      target,
-      createdAt: Date.now()
-    };
-
-    if (firebaseAvailable) {
-      try {
-        await firebase.database().ref('adminMessages').push(payload);
-        document.getElementById('adminMsg').value = '';
-        alert('Message posted to Firebase.');
-      } catch (err) {
-        console.error(err);
-        alert('Failed to post message to Firebase. See console.');
-      }
-    } else {
-      console.warn('Firebase not available - showing message locally only.');
-      const pseudoId = 'local-' + Date.now() + '-' + Math.floor(Math.random()*10000);
-      showMessage(pseudoId, payload);
-      // mark seen immediately (since user saw it)
-      addSeen(pseudoId);
-      alert('Message shown locally (not persisted).');
-    }
-  });
-
-  // Preview button (local-only)
-  previewBtn.addEventListener('click', () => {
-    const name = document.getElementById('adminName').value.trim() || 'Admin';
-    const msg = document.getElementById('adminMsg').value.trim() || 'Preview message';
-    const duration = parseInt(document.getElementById('adminDuration').value,10) || 6;
-    const color = document.getElementById('adminColor').value || '#ffffff';
-    const payload = { name, text: msg, duration, color, createdAt: Date.now() };
-    const pseudoId = 'preview-' + Date.now();
-    showMessage(pseudoId, payload);
-    // mark preview as seen so it won't reappear on refresh
-    addSeen(pseudoId);
-  });
-
-  // --------------- Displaying incoming messages (with local seen tracking) ----------------
-  function buildMessageElement(id, data) {
-    const el = document.createElement('div');
-    el.className = 'adminMsg';
-    el.dataset.msgId = id;
-
-    const left = document.createElement('div');
-    left.className = 'left';
-
-    const avatar = document.createElement('div');
-    avatar.className = 'avatar';
-    avatar.textContent = (data.name || 'A').slice(0,2).toUpperCase();
-
-    const meta = document.createElement('div');
-    meta.className = 'meta';
-    const who = document.createElement('div');
-    who.className = 'who';
-    who.textContent = (data.name ? data.name : 'Admin');
-    const text = document.createElement('div');
-    text.className = 'text';
-    text.innerText = data.text || '';
-    text.style.color = data.color || '#ffffff';
-
-    meta.appendChild(who);
-    meta.appendChild(text);
-    left.appendChild(avatar);
-    left.appendChild(meta);
-
-    const right = document.createElement('div');
-    right.className = 'right';
-
-    // Close button: remove locally and mark as seen so it won't reappear
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'closeBtn';
-    closeBtn.textContent = 'Close';
-    closeBtn.addEventListener('click', () => {
-      addSeen(id);
-      el.style.transition = 'opacity .25s, transform .25s';
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(-8px) scale(.99)';
-      setTimeout(()=> el.remove(), 260);
-    });
-    right.appendChild(closeBtn);
-
-    el.appendChild(left);
-    el.appendChild(right);
-
-    return el;
-  }
-
-  // Show message: prepend so newest on top, skip if seen
-  function showMessage(id, data) {
-    if (!id) id = 'msg-' + Date.now();
-    if (hasSeen(id)) return; // skip if locally seen already
-
-    const el = buildMessageElement(id, data);
-    container.prepend(el);
-
-    // mark as seen shortly after it appears (user has "seen" it)
-    setTimeout(() => addSeen(id), 400);
-
-    // Auto-remove after duration if provided and >0; when removed, ensure marked seen
-    const dur = (data.duration && Number(data.duration)) ? Number(data.duration) * 1000 : 0;
-    if (dur > 0) {
-      setTimeout(() => {
-        if (document.body.contains(el)) {
-          addSeen(id);
-          el.style.transition = 'opacity .25s, transform .25s';
-          el.style.opacity = '0';
-          el.style.transform = 'translateY(-8px) scale(.99)';
-          setTimeout(()=> { if (el.remove) el.remove(); }, 260);
-        }
-      }, dur);
-    }
-  }
-
-  // --------------- Firebase listener for child_added (skip seen) ----------------
-  if (firebaseAvailable) {
-    try {
-      const ref = firebase.database().ref('adminMessages').limitToLast(200);
-      ref.on('child_added', snapshot => {
-        const id = snapshot.key;
-        const data = snapshot.val();
-        if (!data || !data.text) return;
-        try { showMessage(id, data); } catch (e) { console.error('showMessage err', e); }
-      });
-    } catch (e) {
-      console.error('Firebase listener setup failed:', e);
-    }
-  } else {
-    // no firebase: preview and local posting still work
-  }
-
-  // Expose debug helpers
-  window._adminMessages = {
-    showMessage,
-    hasSeen,
-    addSeen,
-    getSeenSet: () => Array.from(getSeenSet()),
-    clearSeenLocal
-  };
-
-}); // DOMContentLoaded
-</script>
-<script>
-/*
-  Pack game: listen to /topNotices and display top banner
-  - Paste this exactly before </body> in your pack game page.
-  - Requires firebase.database() available (your pack already does).
-  - Shows the stored `.text` for each notice; notices are removed when expireAt passes.
-*/
-(function(){
-  const _db = (typeof db !== 'undefined') ? db : (window.firebase && firebase.database ? firebase.database() : null);
-  if (!_db) { console.warn('[topNotices] Firebase DB not found.'); return; }
-
-  // create top banner UI if not already present
-  function ensureUI(){
-    let wrapper = document.getElementById('globalTopNoticeWrap');
-    if (wrapper) return { wrapper, textEl: wrapper.querySelector('.notice-text') };
-    wrapper = document.createElement('div');
-    wrapper.id = 'globalTopNoticeWrap';
-    Object.assign(wrapper.style, {
-      position:'fixed', top:'10px', left:'50%', transform:'translateX(-50%)',
-      zIndex:2147483647, display:'none', pointerEvents:'none'
-    });
-    const box = document.createElement('div');
-    box.className = 'notice-box';
-    Object.assign(box.style, {
-      background:'#000', color:'#fff', padding:'10px 16px', borderRadius:'10px',
-      fontWeight:700, boxShadow:'0 8px 30px rgba(0,0,0,0.35)', pointerEvents:'auto',
-      maxWidth:'92vw', textAlign:'center', fontFamily:'Inter, system-ui, Arial, sans-serif'
-    });
-    const text = document.createElement('div'); text.className = 'notice-text';
-    box.appendChild(text);
-    wrapper.appendChild(box);
-    document.body.appendChild(wrapper);
-    return { wrapper, textEl: text };
-  }
-
-  const { wrapper: noticeWrap, textEl: noticeText } = ensureUI();
-  const active = {}; // key -> { val, timeoutId }
-
-  function show(text){
-    noticeText.innerText = text;
-    noticeWrap.style.display = 'block';
-    noticeWrap.style.opacity = '1';
-  }
-  function hide(){
-    noticeWrap.style.opacity = '0';
-    setTimeout(()=> { try { noticeWrap.style.display = 'none'; } catch(e){} }, 260);
-  }
-
-  async function scheduleRemove(key, val){
-    try {
-      if (!val || !val.expireAt) return;
-      const msLeft = Number(val.expireAt) - Date.now();
-      if (msLeft <= 0) {
-        try { await _db.ref('topNotices/' + key).remove().catch(()=>{}); } catch(e){}
-        return;
-      }
-      if (active[key] && active[key].timeoutId) clearTimeout(active[key].timeoutId);
-      active[key] = active[key] || {};
-      active[key].timeoutId = setTimeout(async () => {
-        try {
-          const ref = _db.ref('topNotices/' + key);
-          const snap = await ref.once('value');
-          const node = snap.val();
-          if (node && node.expireAt && Number(node.expireAt) <= Date.now()) {
-            await ref.remove().catch(()=>{});
-          }
-        } catch(e) { console.warn('[topNotices] scheduled removal failed', e); }
-      }, msLeft + 50);
-    } catch(e){ console.warn('[topNotices] scheduleRemove err', e); }
-  }
-
-  function pickTop(){
-    let best = null;
-    for (const k in active){
-      const it = active[k];
-      if (!it || !it.val) continue;
-      const exp = Number(it.val.expireAt || 0);
-      if (!best || exp > Number(best.val.expireAt || 0)) best = { key: k, val: it.val };
-    }
-    return best;
-  }
-
-  function renderActive(){
-    const top = pickTop();
-    if (!top) { hide(); return; }
-    const secLeft = Math.max(0, Math.ceil((Number(top.val.expireAt) - Date.now()) / 1000));
-    show(`${top.val.text}${secLeft>0 ? ` — ${secLeft}s` : ''}`);
-  }
-
-  const ref = _db.ref('topNotices');
-
-  ref.on('child_added', snap => {
-    try {
-      const k = snap.key; const v = snap.val(); if (!v) return;
-      active[k] = active[k] || {};
-      active[k].val = v;
-      scheduleRemove(k, v);
-      renderActive();
-    } catch(e){ console.error('[topNotices] child_added', e); }
-  });
-
-  ref.on('child_changed', snap => {
-    try {
-      const k = snap.key; const v = snap.val(); active[k] = active[k] || {}; active[k].val = v;
-      scheduleRemove(k, v);
-      renderActive();
-    } catch(e){ console.error('[topNotices] child_changed', e); }
-  });
-
-  ref.on('child_removed', snap => {
-    try {
-      const k = snap.key;
-      if (active[k] && active[k].timeoutId) clearTimeout(active[k].timeoutId);
-      delete active[k];
-      renderActive();
-    } catch(e){ console.error('[topNotices] child_removed', e); }
-  });
-
-  // refresh UI once per second for countdown
-  setInterval(renderActive, 1000);
-
-  // expose helpers for debugging
-  window._topNoticesLocal = {
-    active,
-    publishLocal: async (text, seconds = 7) => {
-      const now = Date.now(); const expireAt = now + seconds*1000;
-      await _db.ref('topNotices').push({ text, createdAt: now, expireAt, source: 'game-console' });
-    },
-    removeByKey: async (k) => { await _db.ref('topNotices/' + k).remove().catch(()=>{}); }
-  };
-
-  console.log('[topNotices] listener active (showing DB text exactly as stored).');
-})();
-</script>
-<!-- Rewards widget (with two redeem options) — paste before </body> -->
+<!-- ===== External "Coins → Points" Rewards Widget (Sharplabubu accounts) ===== -->
 <style>
   #rewardsOpenBtn {
     position: fixed;
@@ -2724,16 +2079,17 @@ document.addEventListener('DOMContentLoaded', function () {
   .redeem-grid { display:grid; grid-template-columns: 1fr 1fr; gap:8px; align-items:center; }
   .redeem-card { background: rgba(255,255,255,0.02); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); }
   .redeem-card h4 { margin:0 0 6px 0; font-size:14px; }
+  @media (max-width:640px){ #rewardsPanel { width: calc(100% - 36px); padding:12px; } .redeem-grid { grid-template-columns: 1fr; } }
 </style>
 
-<button id="rewardsOpenBtn" title="Rewards">🏆 Rewards</button>
+<button id="rewardsOpenBtn" title="Rewards">Rewards</button>
 
 <div id="rewardsOverlay" role="dialog" aria-modal="true" aria-hidden="true">
   <div id="rewardsPanel" role="document" aria-label="Rewards panel">
     <div id="rewardsHeader">
       <div>
         <h3>Rewards</h3>
-        <div class="smallNote">Earn points while online — 25 points every minute</div>
+        <div class="smallNote">Earn coins while online — +25 coins every minute. Redeem coins → points.</div>
       </div>
       <div>
         <button id="closeRewardsPanel" style="background:transparent;border:none;color:#9aa4b2;font-size:20px;cursor:pointer;">✕</button>
@@ -2742,8 +2098,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     <div class="rewardsRow" style="justify-content:space-between;">
       <div>
-        <div class="smallNote">Your points</div>
-        <div id="rewardsPointsDisplay" class="rewardsBig">—</div>
+        <div class="smallNote">Your coins (external accounts/{username}/coins)</div>
+        <div id="rewardsCoinsDisplay" class="rewardsBig">—</div>
       </div>
       <div style="min-width:200px;">
         <div class="smallNote">Earning status</div>
@@ -2756,29 +2112,29 @@ document.addEventListener('DOMContentLoaded', function () {
         <button id="startEarningBtn" class="rewardsBtn btn-start">Start Earning</button>
         <button id="stopEarningBtn" class="rewardsBtn btn-stop" disabled>Stop</button>
       </div>
-      <div style="margin-left:auto;" class="smallNote">Requires being online (presence)</div>
+      <div style="margin-left:auto;" class="smallNote">Requires being online (presence in your game's DB)</div>
     </div>
 
     <hr style="border:none;height:1px;background:rgba(255,255,255,0.04);margin:6px 0 8px;">
 
     <div>
-      <div class="smallNote">Redeem options: choose one then enter recipient username in other game</div>
+      <div class="smallNote">Redeem options: choose one then enter recipient username in the external accounts DB (points will go into external <code>users/{username}/points</code>).</div>
       <div style="margin-top:8px;">
         <div class="redeem-grid">
           <div class="redeem-card">
             <h4>Redeem A</h4>
-            <div class="smallNote">Cost: <strong>6500</strong> → Credit <strong>2000</strong></div>
+            <div class="smallNote">Cost: <strong>6500</strong> coins → Credit <strong>2000</strong> points</div>
             <div style="margin-top:8px;"><button class="rewardsBtn btn-redeem" data-redeem="a" id="redeemA">Redeem 6500 → 2000</button></div>
           </div>
           <div class="redeem-card">
             <h4>Redeem B</h4>
-            <div class="smallNote">Cost: <strong>10000</strong> → Credit <strong>4500</strong></div>
+            <div class="smallNote">Cost: <strong>10000</strong> coins → Credit <strong>4500</strong> points</div>
             <div style="margin-top:8px;"><button class="rewardsBtn btn-redeem" data-redeem="b" id="redeemB">Redeem 10000 → 4500</button></div>
           </div>
         </div>
 
         <div style="display:flex;gap:8px;margin-top:12px;">
-          <input id="redeemRecipient" type="text" placeholder="Recipient username in other game (exact)" />
+          <input id="redeemRecipient" type="text" placeholder="Recipient username in external users DB (exact)" />
           <button id="redeemConfirmBtn" class="rewardsBtn" style="background:#0ea5b3;color:#04121a;font-weight:900;">Confirm</button>
         </div>
 
@@ -2787,7 +2143,7 @@ document.addEventListener('DOMContentLoaded', function () {
     </div>
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
-      <div class="smallNote">Note: points earn only while you're online (presence).</div>
+      <div class="smallNote">Note: coins are stored under <code>accounts/{username}/coins</code>, redeemed points will be stored under <code>users/{username}/points</code> in the external DB.</div>
       <div>
         <button id="rewardsHelp" class="rewardsBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:#fff;">Help</button>
       </div>
@@ -2797,7 +2153,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <script>
 (function(){
-  // external Firebase config (sharplabubu)
+  // Sharplabubu external DB config
   const externalConfig = {
     apiKey: "AIzaSyAjeXycCBhYoAU-0iiC4LbSTylKrrThN8Y",
     authDomain: "sharplabubu.firebaseapp.com",
@@ -2813,7 +2169,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const openBtn = document.getElementById('rewardsOpenBtn');
   const overlay = document.getElementById('rewardsOverlay');
   const closeBtn = document.getElementById('closeRewardsPanel');
-  const pointsDisplay = document.getElementById('rewardsPointsDisplay');
+  const coinsDisplay = document.getElementById('rewardsCoinsDisplay');
   const statusEl = document.getElementById('rewardsStatus');
   const startBtn = document.getElementById('startEarningBtn');
   const stopBtn = document.getElementById('stopEarningBtn');
@@ -2830,22 +2186,22 @@ document.addEventListener('DOMContentLoaded', function () {
     b: { cost:10000, give: 4500 }
   };
 
-  let selectedRedeem = 'a'; // default
+  let selectedRedeem = 'a';
   let earnInterval = null;
-  let pointsRef = null;
-  let pointsListenerAttached = false;
-  let externalDB = null;
   let externalApp = null;
+  let externalDB = null;
+  let coinsRef = null;
+  let coinsListenerAttached = false;
   let presWatchRef = null;
 
-  // helper: showMessage uses your existing function if present else alert
+  // helper to show messages (use existing showMessage if present)
   function localNotify(msg) { try { if (typeof showMessage === 'function') return showMessage(msg); } catch (e) {} alert(msg); }
 
-  // basic UI open/close
+  // UI open/close
   openBtn.addEventListener('click', () => {
     overlay.style.display = 'flex';
     overlay.setAttribute('aria-hidden','false');
-    attachRewardsListenerIfNeeded();
+    attachCoinsListener();
     watchPresence();
   });
   closeBtn.addEventListener('click', () => {
@@ -2855,69 +2211,70 @@ document.addEventListener('DOMContentLoaded', function () {
   overlay.addEventListener('click', (e) => { if (e.target === overlay) { overlay.style.display = 'none'; overlay.setAttribute('aria-hidden','true'); } });
 
   helpBtn.addEventListener('click', () => {
-    localNotify('Start earning will add 25 points every 60s while you are online. Use Redeem A to spend 6500 (gives 2000 to recipient). Use Redeem B to spend 10000 (gives 4500 to recipient). Enter the recipient username in the other game, then press Confirm.');
+    localNotify('Earning: +25 coins every 60s while online. Redeem: spend coins to credit points to an external user (accounts coins; users points). You may redeem to yourself or others.');
   });
 
-  // redeem selection handlers
-  redeemA.addEventListener('click', () => { selectedRedeem = 'a'; redeemA.style.boxShadow = '0 4px 18px rgba(0,0,0,0.4) inset'; redeemB.style.boxShadow='none'; redeemHint.innerText = `Selected Redeem A: cost ${REDEEMS.a.cost} → give ${REDEEMS.a.give}`; });
-  redeemB.addEventListener('click', () => { selectedRedeem = 'b'; redeemB.style.boxShadow = '0 4px 18px rgba(0,0,0,0.4) inset'; redeemA.style.boxShadow='none'; redeemHint.innerText = `Selected Redeem B: cost ${REDEEMS.b.cost} → give ${REDEEMS.b.give}`; });
-
-  // initialize default highlight
+  redeemA.addEventListener('click', () => { selectedRedeem = 'a'; redeemA.style.boxShadow = '0 4px 18px rgba(0,0,0,0.4) inset'; redeemB.style.boxShadow='none'; redeemHint.innerText = `Selected: cost ${REDEEMS.a.cost} → give ${REDEEMS.a.give}`; });
+  redeemB.addEventListener('click', () => { selectedRedeem = 'b'; redeemB.style.boxShadow = '0 4px 18px rgba(0,0,0,0.4) inset'; redeemA.style.boxShadow='none'; redeemHint.innerText = `Selected: cost ${REDEEMS.b.cost} → give ${REDEEMS.b.give}`; });
   redeemA.click();
 
-  // External DB init (lazy) — create separate app to avoid colliding with the page app
+  // initialize external DB (separate named app)
   function ensureExternalDB() {
     try {
       if (externalDB) return externalDB;
       const appName = 'sharplabubuApp';
-      // try reusing app if created before
-      const exApp = (firebase.apps || []).find(a => a.name === appName);
-      if (exApp) {
-        externalApp = exApp;
+      const existing = (firebase.apps || []).find(a => a.name === appName);
+      if (existing) {
+        externalApp = existing;
       } else {
         externalApp = firebase.initializeApp(externalConfig, appName);
       }
       externalDB = firebase.database(externalApp);
       return externalDB;
     } catch (e) {
-      console.error('external db init err', e);
+      console.error('ensureExternalDB err', e);
       return null;
     }
   }
 
-  // Attach a realtime listener to the current user's "points" in THIS game's DB.
-  function attachRewardsListenerIfNeeded() {
+  // attach listener to external accounts/{currentUser}/coins
+  function attachCoinsListener() {
     try {
-      if (typeof currentUser === 'undefined' || !currentUser) { pointsDisplay.innerText = '—'; return; }
-      if (typeof db === 'undefined' || !db || !db.ref) { console.warn('Local firebase "db" not found'); pointsDisplay.innerText = '—'; return; }
-      if (pointsListenerAttached && pointsRef) return;
-      pointsRef = db.ref(`users/${currentUser}/points`);
-      pointsRef.on('value', snap => {
-        const v = snap.val();
-        pointsDisplay.innerText = (v === null || v === undefined) ? '0' : String(v);
+      if (typeof currentUser === 'undefined' || !currentUser) { coinsDisplay.innerText = '—'; return; }
+      const dbEx = ensureExternalDB();
+      if (!dbEx) { coinsDisplay.innerText = '—'; return; }
+      if (coinsListenerAttached && coinsRef) return;
+      coinsRef = dbEx.ref(`accounts/${currentUser}/coins`);
+      coinsRef.on('value', snap => {
+        coinsDisplay.innerText = String(snap.val() || 0);
       });
-      pointsListenerAttached = true;
-      pointsRef.once('value').then(snap => { pointsDisplay.innerText = String(snap.val() || 0); }).catch(()=>{});
+      coinsListenerAttached = true;
+      // preload
+      coinsRef.once('value').then(snap => { coinsDisplay.innerText = String(snap.val() || 0); }).catch(()=>{});
     } catch (e) {
-      console.error('attachRewardsListener err', e);
+      console.error('attachCoinsListener err', e);
+      coinsDisplay.innerText = '—';
     }
   }
-  function detachRewardsListener() {
-    if (pointsRef) { try { pointsRef.off(); } catch(e){} pointsRef = null; pointsListenerAttached = false; }
+  function detachCoinsListener() {
+    try { if (coinsRef) { coinsRef.off(); coinsRef = null; } coinsListenerAttached = false; } catch(e){console.warn(e);}
   }
 
-  // Earning loop
+  // Earning flow: award 25 coins every 60s while online (presence check against local db if available)
   async function startEarning() {
     try {
       if (typeof currentUser === 'undefined' || !currentUser) { localNotify('Please log in first.'); return; }
-      if (typeof db === 'undefined' || !db) { localNotify('Database not available.'); return; }
-      const presSnap = await db.ref(`presence/${currentUser}`).once('value');
-      if (!presSnap.exists()) { localNotify('You are offline (presence missing). Ensure you are online to earn points.'); return; }
+      const exDB = ensureExternalDB(); if (!exDB) { localNotify('External DB not available'); return; }
+      // presence check in your main game DB if available
+      if (typeof db !== 'undefined' && db && db.ref) {
+        const presSnap = await db.ref(`presence/${currentUser}`).once('value');
+        if (!presSnap.exists()) { localNotify('You appear offline in the game — go online to earn.'); return; }
+      }
       if (earnInterval) return;
       statusEl.innerText = 'Running';
       startBtn.disabled = true; stopBtn.disabled = false;
-      award25PointsOnce().catch(e=>console.error(e));
-      earnInterval = setInterval(async () => { await award25PointsOnce().catch(e=>console.error(e)); }, 60 * 1000);
+      awardCoinsOnce().catch(e=>console.error(e));
+      earnInterval = setInterval(async () => { await awardCoinsOnce().catch(e=>console.error(e)); }, 60 * 1000);
       document.addEventListener('visibilitychange', visibilityHandler);
     } catch (e) {
       console.error('startEarning err', e);
@@ -2936,89 +2293,87 @@ document.addEventListener('DOMContentLoaded', function () {
       localNotify('Earning paused because the page became hidden.');
     }
   }
-  async function award25PointsOnce() {
+  async function awardCoinsOnce() {
     try {
       if (typeof currentUser === 'undefined' || !currentUser) return stopEarning();
-      if (typeof db === 'undefined' || !db) return stopEarning();
-      const presSnap = await db.ref(`presence/${currentUser}`).once('value');
-      if (!presSnap.exists()) { stopEarning(); localNotify('You appeared offline — earning stopped.'); return; }
-      const ref = db.ref(`users/${currentUser}/points`);
-      await ref.transaction(curr => ((curr||0) + 25));
-    } catch (e) { console.error('award25PointsOnce err', e); }
+      const exDB = ensureExternalDB(); if (!exDB) return stopEarning();
+      // ensure presence if local db exists
+      if (typeof db !== 'undefined' && db && db.ref) {
+        const presSnap = await db.ref(`presence/${currentUser}`).once('value');
+        if (!presSnap.exists()) { stopEarning(); localNotify('You appeared offline — earning stopped.'); return; }
+      }
+      const coinsRefTx = exDB.ref(`accounts/${currentUser}/coins`);
+      await new Promise((res) => {
+        coinsRefTx.transaction(curr => {
+          return (Number(curr || 0) + 25);
+        }, (err, committed, snap) => { if (err) console.error('awardCoins tx err', err); res({err,committed,snap}); }, false);
+      });
+    } catch (e) { console.error('awardCoinsOnce err', e); }
   }
 
-  // Redeem confirm: deduct local cost then credit external recipient
+  // Redeem: deduct coins from accounts/{currentUser}/coins and credit users/{recipient}/points
   redeemConfirmBtn.addEventListener('click', async () => {
     try {
-      if (typeof currentUser === 'undefined' || !currentUser) { localNotify('Please log in first.'); return; }
-      if (typeof db === 'undefined' || !db) { localNotify('Database not available.'); return; }
-
+      if (typeof currentUser === 'undefined' || !currentUser) { redeemHint.innerText = 'Please log in first.'; return; }
       const recipient = (recipientInput.value || '').trim();
-      if (!recipient) { redeemHint.innerText = 'Enter a recipient username.'; return; }
-
+      if (!recipient) { redeemHint.innerText = 'Enter recipient username.'; return; }
       const sel = (selectedRedeem && REDEEMS[selectedRedeem]) ? selectedRedeem : 'a';
       const { cost, give } = REDEEMS[sel];
-      redeemHint.innerText = `Processing redeem (cost ${cost} → give ${give})...`;
+      redeemHint.innerText = `Processing redeem (cost ${cost} coins → give ${give} points to ${recipient})...`;
 
-      const localRef = db.ref(`users/${currentUser}/points`);
+      const exDB = ensureExternalDB();
+      if (!exDB) { redeemHint.innerText = 'External DB not available.'; return; }
 
-      // Step 1: deduct locally with transaction
-      const deductResult = await new Promise((res) => {
-        localRef.transaction(curr => {
+      const userCoinsRef = exDB.ref(`accounts/${currentUser}/coins`);
+      // Step 1: deduct coins with transaction (atomic)
+      const deduct = await new Promise(res => {
+        userCoinsRef.transaction(curr => {
           const c = Number(curr || 0);
           if (c < cost) return; // abort
           return c - cost;
-        }, (err, committed, snap) => {
-          res({ err, committed, snap });
-        }, false);
+        }, (err, committed, snap) => res({ err, committed, snap }), false);
       });
 
-      if (deductResult.err) {
-        console.error('deduct tx err', deductResult.err);
-        redeemHint.innerText = 'Error during deduction. See console.';
+      if (deduct.err) {
+        console.error('deduct tx err', deduct.err);
+        redeemHint.innerText = 'Deduction error. See console.';
         return;
       }
-      if (!deductResult.committed) {
-        redeemHint.innerText = 'Not enough points to redeem.';
-        return;
-      }
-
-      // Step 2: credit recipient on external DB
-      const ext = ensureExternalDB();
-      if (!ext) {
-        // refund local points
-        await localRef.transaction(curr => ((curr||0) + cost));
-        redeemHint.innerText = 'Could not connect to external DB. Refund issued.';
+      if (!deduct.committed) {
+        redeemHint.innerText = 'Not enough coins to redeem.';
         return;
       }
 
+      // Step 2: credit points to recipient in external DB under users/{recipient}/points
+      const recipientPointsRef = exDB.ref(`users/${recipient}/points`);
+      const addRes = await new Promise(res => {
+        recipientPointsRef.transaction(curr => {
+          return Number(curr || 0) + give;
+        }, (err, committed, snap) => res({ err, committed, snap }), false);
+      });
+
+      if (addRes.err || !addRes.committed) {
+        // external credit failed; refund coins
+        try { await userCoinsRef.transaction(curr => Number(curr || 0) + cost); } catch(e){ console.error('refund failed', e); }
+        redeemHint.innerText = 'Failed to credit recipient — refund issued.';
+        return;
+      }
+
+      // Attempt to push a notification to external notifications/{recipient}; if that fails, say "No notification in firebase"
+      let notified = true;
       try {
-        const recipientRef = externalDB.ref(`users/${recipient}/points`);
-        const addResult = await new Promise((res) => {
-          recipientRef.transaction(curr => ((curr||0) + give), (err, committed, snap) => {
-            res({ err, committed, snap });
-          }, false);
-        });
-
-        if (addResult.err || !addResult.committed) {
-          // external failed -> refund local
-          await localRef.transaction(curr => ((curr||0) + cost));
-          redeemHint.innerText = 'Failed to credit recipient - your points were refunded.';
-          console.error('external add failed', addResult.err);
-          return;
-        }
-
-        // success
-        redeemHint.innerText = `Success! ${recipient} received ${give} points. You lost ${cost} points.`;
-        localNotify(`Redeemed: ${recipient} received ${give} points.`);
-        try { await externalDB.ref(`notifications/${recipient}`).push(`${currentUser} redeemed and gave you ${give} points.`).catch(()=>{}); } catch(e){}
-
+        await exDB.ref(`notifications/${recipient}`).push(`${currentUser} redeemed and gave you ${give} points.`);
       } catch (e) {
-        console.error('external db op error', e);
-        // refund local
-        await localRef.transaction(curr => ((curr||0) + cost));
-        redeemHint.innerText = 'Error while contacting recipient DB - refund issued.';
+        console.warn('notify push failed', e);
+        notified = false;
       }
+
+      // success
+      redeemHint.innerText = `Success: ${recipient} received ${give} points. You spent ${cost} coins.` + (notified ? '' : ' (No notification in firebase)');
+      localNotify(`Redeemed: ${recipient} got ${give} points.`);
+
+      // refresh coins display by fetching the current value once (listener also updates)
+      try { exDB.ref(`accounts/${currentUser}/coins`).once('value').then(s => { coinsDisplay.innerText = String(s.val() || 0); }).catch(()=>{}); } catch(e){}
 
     } catch (e) {
       console.error('redeem err', e);
@@ -3026,45 +2381,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // Start / Stop handlers
-  startBtn.addEventListener('click', () => startEarning().catch(e=>{ console.error(e); }));
+  // Start / stop handlers
+  startBtn.addEventListener('click', () => startEarning().catch(e=>console.error(e)));
   stopBtn.addEventListener('click', () => stopEarning());
 
-  // Keep UI in-sync with login/logout
-  function onLoginStateChange() {
-    if (typeof currentUser !== 'undefined' && currentUser) {
-      attachRewardsListenerIfNeeded();
-      watchPresence();
-      if (pointsRef) pointsRef.once('value').then(snap => { pointsDisplay.innerText = String(snap.val() || 0); }).catch(()=>{});
-    } else {
-      detachRewardsListener();
-      stopEarning();
-      pointsDisplay.innerText = '—';
-    }
-  }
-
-  // Patch login/logout safely to update rewards UI
-  if (window.login && !window.__rewards_wrapped_login) {
-    const _login = window.login;
-    window.login = async function(...args) {
-      const res = await _login.apply(this, args);
-      setTimeout(onLoginStateChange, 250);
-      return res;
-    };
-    window.__rewards_wrapped_login = true;
-  }
-  if (window.logout && !window.__rewards_wrapped_logout) {
-    const _logout = window.logout;
-    window.logout = async function(...args) {
-      try { stopEarning(); detachRewardsListener(); if (presWatchRef) presWatchRef.off(); } catch(e){}
-      const res = await _logout.apply(this, args);
-      setTimeout(onLoginStateChange, 100);
-      return res;
-    };
-    window.__rewards_wrapped_logout = true;
-  }
-
-  // Presence watch stops earning if presence removed
+  // Presence watch: if presence removed from your game's DB, stop earning
   function watchPresence() {
     try {
       if (typeof db === 'undefined' || typeof currentUser === 'undefined' || !currentUser) return;
@@ -3078,23 +2399,56 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (e) { console.warn('watchPresence err', e); }
   }
 
-  // Clean up on page unload
-  window.addEventListener('beforeunload', () => { try { stopEarning(); detachRewardsListener(); if (presWatchRef) presWatchRef.off(); } catch(e){} });
+  // cleanup
+  window.addEventListener('beforeunload', () => { try { stopEarning(); detachCoinsListener(); if (presWatchRef) presWatchRef.off(); } catch(e){} });
 
-  // initial state
-  try { if (typeof currentUser !== 'undefined' && currentUser) attachRewardsListenerIfNeeded(); } catch(e){}
+  // keep UI in-sync with login/logout by wrapping your login/logout if present
+  function onLoginStateChange() {
+    if (typeof currentUser !== 'undefined' && currentUser) {
+      attachCoinsListener();
+      watchPresence();
+      // quick fetch to display current coins
+      try { const exDB = ensureExternalDB(); if (exDB) exDB.ref(`accounts/${currentUser}/coins`).once('value').then(s => coinsDisplay.innerText = String(s.val()||0)).catch(()=>{}); } catch(e){}
+    } else {
+      stopEarning();
+      detachCoinsListener();
+      coinsDisplay.innerText = '—';
+    }
+  }
 
-  // helpers exposed for debugging
-  window._rewardsWidget = {
-    start: startEarning,
-    stop: stopEarning,
-    attach: attachRewardsListenerIfNeeded,
-    detach: detachRewardsListener,
-    ensureExternalDB
+  if (window.login && !window.__rewards_wrapped_login) {
+    const _login = window.login;
+    window.login = async function(...args) {
+      const res = await _login.apply(this, args);
+      setTimeout(onLoginStateChange, 250);
+      return res;
+    };
+    window.__rewards_wrapped_login = true;
+  }
+  if (window.logout && !window.__rewards_wrapped_logout) {
+    const _logout = window.logout;
+    window.logout = async function(...args) {
+      try { stopEarning(); detachCoinsListener(); if (presWatchRef) presWatchRef.off(); } catch(e){}
+      const res = await _logout.apply(this, args);
+      setTimeout(onLoginStateChange, 100);
+      return res;
+    };
+    window.__rewards_wrapped_logout = true;
+  }
+
+  // initial attempt to attach if already logged in
+  try { if (typeof currentUser !== 'undefined' && currentUser) onLoginStateChange(); } catch(e){}
+
+  // debug helpers
+  window._rewardsExternal = {
+    ensureExternalDB,
+    startEarning,
+    stopEarning
   };
 
 })();
 </script>
+
 
 </body>
 </html>
