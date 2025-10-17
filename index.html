@@ -2300,7 +2300,7 @@ window.__shortenNumbers = {
       const coinsRefTx = exDB.ref(`accounts/${currentUser}/coins`);
       await new Promise((res) => {
         coinsRefTx.transaction(curr => {
-          return (Number(curr || 0) + 250);
+          return (Number(curr || 0) + 25);
         }, (err, committed, snap) => { if (err) console.error('awardCoins tx err', err); res({err,committed,snap}); }, false);
       });
     } catch (e) { console.error('awardCoinsOnce err', e); }
