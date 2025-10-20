@@ -1039,7 +1039,7 @@ async function openPack(type) {
   else if (type === "mythical") { packPrice = 3000; pool = cardPools.mythical; }
   else if (type === "divine") { packPrice = 5000; pool = cardPools.divine; }
   else if (type === "pristimatic") { packPrice = 7500; pool = cardPools.pristimatic; }
-  else if (type === "LillySeason") { packPrice = 50000; pool = cardPools.LillySeason; } // <-- LillySeason support
+  else if (type === "LillySeason") { packPrice = 1000000; pool = cardPools.LillySeason; } // <-- LillySeason support
   else if (type === "secret") { packPrice = 50000; pool = cardPools.secret; }
 
   if (balance < packPrice) { showMessage("You don't have enough money to buy this pack."); return; }
@@ -2028,646 +2028,1121 @@ window.__shortenNumbers = {
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
-<style>
-  /* container for incoming messages (top-center) */
-  #adminMessagesContainer{
-    position: fixed;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(920px, calc(100% - 24px));
-    z-index: 2147483646;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    align-items: center;
-    pointer-events: none;
-  }
+  <style>
+    /* container for incoming messages (top-center) */
+    #adminMessagesContainer{
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(920px, calc(100% - 24px));
+      z-index: 2147483646;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+      pointer-events: none;
+    }
 
-  .adminMsg {
-    pointer-events: auto;
-    width: 100%;
-    background: #000; /* black background */
-    color: #fff;
-    padding: 14px 18px;
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-    transform-origin: top center;
-    animation: slideDown 320ms cubic-bezier(.2,.9,.2,1);
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-    justify-content: space-between;
-    box-sizing: border-box;
-  }
+    .adminMsg {
+      pointer-events: auto;
+      width: 100%;
+      background: #000; /* black background */
+      color: #fff;
+      padding: 14px 18px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      transform-origin: top center;
+      animation: slideDown 320ms cubic-bezier(.2,.9,.2,1);
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      justify-content: space-between;
+      box-sizing: border-box;
+    }
 
-  .adminMsg .left {
-    display:flex;
-    gap:16px;
-    align-items:flex-start;
-    flex:1;
-    min-width:0; /* allow text to wrap */
-  }
+    .adminMsg .left {
+      display:flex;
+      gap:16px;
+      align-items:flex-start;
+      flex:1;
+      min-width:0; /* allow text to wrap */
+    }
 
-  .adminMsg .avatar {
-    min-width:48px;
-    height:48px;
-    border-radius:8px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-weight:700;
-    color:#fff;
-    background: rgba(255,255,255,0.06);
-    flex: 0 0 48px;
-    font-size:16px;
-  }
+    .adminMsg .avatar {
+      min-width:48px;
+      height:48px;
+      border-radius:8px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      color:#fff;
+      background: rgba(255,255,255,0.06);
+      flex: 0 0 48px;
+      font-size:16px;
+    }
 
-  .adminMsg .meta {
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    min-width:0;
-  }
+    .adminMsg .meta {
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-width:0;
+    }
 
-  .adminMsg .meta .who {
-    font-weight:800;
-    font-size:15px;
-    line-height:1;
-    color: #ffffff;
-    word-break: break-word;
-  }
+    .adminMsg .meta .who {
+      font-weight:800;
+      font-size:15px;
+      line-height:1;
+      color: #ffffff;
+      word-break: break-word;
+    }
 
-  .adminMsg .meta .text {
-    font-size:15px;
-    line-height:1.35;
-    white-space: pre-wrap;      /* preserves newlines */
-    word-break: break-word;     /* long words will wrap */
-    overflow-wrap: anywhere;
-    color: inherit;             /* will use provided color */
-  }
+    .adminMsg .meta .text {
+      font-size:15px;
+      line-height:1.35;
+      white-space: pre-wrap;      /* preserves newlines */
+      word-break: break-word;     /* long words will wrap */
+      overflow-wrap: anywhere;
+      color: inherit;             /* will use provided color */
+    }
 
-  .adminMsg .right {
-    display:flex;
-    gap:8px;
-    align-items:flex-start;
-    margin-left: 8px;
-  }
+    .adminMsg .right {
+      display:flex;
+      gap:8px;
+      align-items:flex-start;
+      margin-left: 8px;
+    }
 
-  .adminMsg .closeBtn {
-    background:transparent;
-    border:1px solid rgba(255,255,255,0.12);
-    padding:6px 10px;
-    border-radius:8px;
-    color:inherit;
-    cursor:pointer;
-    font-size:13px;
-  }
+    .adminMsg .closeBtn {
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.12);
+      padding:6px 10px;
+      border-radius:8px;
+      color:inherit;
+      cursor:pointer;
+      font-size:13px;
+    }
 
-  @keyframes slideDown {
-    from { transform: translateY(-12px) scale(.99); opacity: 0; }
-    to { transform: translateY(0) scale(1); opacity: 1; }
-  }
+    @keyframes slideDown {
+      from { transform: translateY(-12px) scale(.99); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
 
-  /* admin floating button */
-  #adminOpenBtn{
-    position: fixed;
-    right: 18px;
-    bottom: 18px;
-    z-index: 2147483647;
-    background: #0b1220;
-    color: #fff;
-    border-radius: 12px;
-    padding: 10px 14px;
-    box-shadow: 0 10px 30px rgba(2,6,23,0.6);
-    cursor:pointer;
-    border: none;
-    font-weight:800;
-  }
+    /* admin floating button */
+    #adminOpenBtn{
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 2147483647;
+      background: #0b1220;
+      color: #fff;
+      border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+      cursor:pointer;
+      border: none;
+      font-weight:800;
+    }
 
-  /* FULL-SCREEN overlay + panel */
-  #adminOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(2,6,23,0.78);
-    backdrop-filter: blur(4px);
-    z-index: 2147483646;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 18px;
-  }
+    /* FULL-SCREEN overlay + panel */
+    #adminOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2,6,23,0.78);
+      backdrop-filter: blur(4px);
+      z-index: 2147483646;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
 
-  #adminPanel {
-    width: 100%;
-    height: 100%;
-    max-width: none;
-    max-height: none;
-    border-radius: 8px;
-    background: linear-gradient(180deg,#071122,#091426 60%);
-    color: #fff;
-    padding: 22px;
-    box-shadow: 0 20px 60px rgba(2,6,23,0.6);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    overflow: auto;
-    position: relative;
-  }
+    #adminPanel {
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      max-height: none;
+      border-radius: 8px;
+      background: linear-gradient(180deg,#071122,#091426 60%);
+      color: #fff;
+      padding: 22px;
+      box-shadow: 0 20px 60px rgba(2,6,23,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: auto;
+      position: relative;
+    }
 
-  /* header */
-  #adminPanelHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-  #adminPanelHeader .title { font-size:20px; font-weight:900; }
-  #adminPanelHeader .sub { color:#9aa4b2; font-size:13px; }
+    /* header */
+    #adminPanelHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    #adminPanelHeader .title { font-size:20px; font-weight:900; }
+    #adminPanelHeader .sub { color:#9aa4b2; font-size:13px; }
 
-  /* form controls */
-  #adminForm { display:flex; gap:12px; flex-direction:column; width:100%; }
-  .formRow { display:flex; gap:12px; align-items:flex-start; }
-  .formCol { flex:1; min-width:0; }
-  input[type="text"], input[type="number"], textarea, input[type="color"] {
-    width:100%;
-    box-sizing:border-box;
-    padding:12px 14px;
-    border-radius:10px;
-    border: 1px solid rgba(255,255,255,0.06);
-    background: rgba(255,255,255,0.02);
-    color: #fff;
-    outline: none;
-    font-size:15px;
-    resize: vertical;
-  }
+    /* form controls */
+    #adminForm { display:flex; gap:12px; flex-direction:column; width:100%; }
+    .formRow { display:flex; gap:12px; align-items:flex-start; }
+    .formCol { flex:1; min-width:0; }
+    input[type="text"], input[type="number"], textarea, input[type="color"] {
+      width:100%;
+      box-sizing:border-box;
+      padding:12px 14px;
+      border-radius:10px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+      color: #fff;
+      outline: none;
+      font-size:15px;
+      resize: vertical;
+    }
 
-  .controls { display:flex; gap:12px; margin-top:6px; }
-  .controls button { padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:800; }
-  .btnPrimary { background: linear-gradient(90deg,#06b6d4,#0ea5b3); color:#04121a; }
-  .btnGhost { background:transparent; border:1px solid rgba(255,255,255,0.08); color:#fff; }
+    .controls { display:flex; gap:12px; margin-top:6px; }
+    .controls button { padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:800; }
+    .btnPrimary { background: linear-gradient(90deg,#06b6d4,#0ea5b3); color:#04121a; }
+    .btnGhost { background:transparent; border:1px solid rgba(255,255,255,0.08); color:#fff; }
 
-  #adminPanelFooter { margin-top:auto; color:#9aa4b2; font-size:13px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    #adminPanelFooter { margin-top:auto; color:#9aa4b2; font-size:13px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
 
-  #closeAdminPanel { background:transparent; color:#9aa4b2; border:none; font-size:20px; cursor:pointer; }
+    #closeAdminPanel { background:transparent; color:#9aa4b2; border:none; font-size:20px; cursor:pointer; }
 
-  @media (max-width:720px) {
-    #adminPanel { padding: 12px; }
-    .formRow { flex-direction: column; }
-    .adminMsg { padding:12px; gap:12px; }
-    .adminMsg .avatar { min-width:40px; height:40px; flex:0 0 40px; }
-  }
-</style>
+    @media (max-width:720px) {
+      #adminPanel { padding: 12px; }
+      .formRow { flex-direction: column; }
+      .adminMsg { padding:12px; gap:12px; }
+      .adminMsg .avatar { min-width:40px; height:40px; flex:0 0 40px; }
+    }
+  </style>
 
-<div id="adminMessagesContainer" aria-live="polite"></div>
+  <div id="adminMessagesContainer" aria-live="polite"></div>
 
-<button id="adminOpenBtn" title="Admin">Admin</button>
+  <button id="adminOpenBtn" title="Admin">Admin</button>
 
-<!-- Fullscreen overlay -->
-<div id="adminOverlay" role="dialog" aria-modal="true" aria-hidden="true">
-  <div id="adminPanel" role="document" aria-label="Admin panel">
-    <div id="adminPanelHeader">
-      <div>
-        <div class="title">Admin — Post message</div>
-        <div class="sub">Enter code to open. Messages saved to <code>adminMessages</code>.</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button id="closeAdminPanel" title="Close">✕</button>
-      </div>
-    </div>
-
-    <form id="adminForm" onsubmit="return false;">
-      <div style="display:flex;gap:12px;align-items:center;">
-        <label style="color:#9aa4b2;font-size:13px;min-width:72px">Name</label>
-        <input id="adminName" type="text" class="formCol" placeholder="e.g. zezo" />
-      </div>
-
-      <div style="display:flex;gap:12px;">
-        <label style="color:#9aa4b2;font-size:13px;min-width:72px;align-self:flex-start">Message</label>
-        <textarea id="adminMsg" rows="6" class="formCol" placeholder="Your message..."></textarea>
-      </div>
-
-      <div class="formRow">
-        <div class="formCol" style="max-width:220px;">
-          <label style="color:#9aa4b2;font-size:13px">Duration (seconds)</label>
-          <input id="adminDuration" type="number" min="1" value="6" />
+  <!-- Fullscreen overlay -->
+  <div id="adminOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div id="adminPanel" role="document" aria-label="Admin panel">
+      <div id="adminPanelHeader">
+        <div>
+          <div class="title">Admin — Post message</div>
+          <div class="sub">Enter code to open. Messages saved to <code>adminMessages</code>.</div>
         </div>
-        <div class="formCol" style="max-width:160px;">
-          <label style="color:#9aa4b2;font-size:13px">Text color</label>
-          <input id="adminColor" type="color" value="#ffffff" />
-        </div>
-        <div class="formCol" style="max-width:140px;">
-          <label style="color:#9aa4b2;font-size:13px">Target (optional)</label>
-          <input id="adminTarget" type="text" placeholder="leave blank = all users" />
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button id="closeAdminPanel" title="Close">✕</button>
         </div>
       </div>
 
-      <div class="controls">
-        <button id="postAdminMsg" class="btnPrimary" type="button">Post message</button>
-        <button id="showPreview" class="btnGhost" type="button">Preview (local)</button>
-        <button id="clearSeenLocal" class="btnGhost" type="button">Clear Seen (local)</button>
-      </div>
-    </form>
+      <form id="adminForm" onsubmit="return false;">
+        <div style="display:flex;gap:12px;align-items:center;">
+          <label style="color:#9aa4b2;font-size:13px;min-width:72px">Name</label>
+          <input id="adminName" type="text" class="formCol" placeholder="e.g. zezo" />
+        </div>
 
-    <div id="adminPanelFooter">
-      <div>Messages are posted to your Firebase Realtime DB at <code>adminMessages</code>.</div>
-      <div style="opacity:0.9">
-        <small style="color:#9aa4b2">Tip: press <kbd>Esc</kbd> to close</small>
+        <div style="display:flex;gap:12px;">
+          <label style="color:#9aa4b2;font-size:13px;min-width:72px;align-self:flex-start">Message</label>
+          <textarea id="adminMsg" rows="6" class="formCol" placeholder="Your message..."></textarea>
+        </div>
+
+        <div class="formRow">
+          <div class="formCol" style="max-width:220px;">
+            <label style="color:#9aa4b2;font-size:13px">Duration (seconds)</label>
+            <input id="adminDuration" type="number" min="1" value="6" />
+          </div>
+          <div class="formCol" style="max-width:160px;">
+            <label style="color:#9aa4b2;font-size:13px">Text color</label>
+            <input id="adminColor" type="color" value="#ffffff" />
+          </div>
+          <div class="formCol" style="max-width:140px;">
+            <label style="color:#9aa4b2;font-size:13px">Target (optional)</label>
+            <input id="adminTarget" type="text" placeholder="leave blank = all users" />
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="postAdminMsg" class="btnPrimary" type="button">Post message</button>
+          <button id="showPreview" class="btnGhost" type="button">Preview (local)</button>
+          <button id="clearSeenLocal" class="btnGhost" type="button">Clear Seen (local)</button>
+        </div>
+      </form>
+
+      <div id="adminPanelFooter">
+        <div>Messages are posted to your Firebase Realtime DB at <code>adminMessages</code>.</div>
+        <div style="opacity:0.9">
+          <small style="color:#9aa4b2">Tip: press <kbd>Esc</kbd> to close</small>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  // ---------- YOUR firebaseConfig (from your message) ----------
-  const firebaseConfig = {
-    apiKey: "AIzaSyDclp6rqCZRVreOzTcxv840mXcl6nDKAv8",
-    authDomain: "pack-f76c3.firebaseapp.com",
-    databaseURL: "https://pack-f76c3-default-rtdb.firebaseio.com",
-    projectId: "pack-f76c3",
-    storageBucket: "pack-f76c3.firebasestorage.app",
-    messagingSenderId: "694325056042",
-    appId: "1:694325056042:web:aae383919a2ce159892953",
-    measurementId: "G-07WXQ7YQ4M"
-  };
-
-  // Initialize Firebase
-  let firebaseAvailable = false;
-  try {
-    if (firebaseConfig && firebaseConfig.apiKey) {
-      if (typeof firebase !== 'undefined' && firebase.initializeApp) {
-        firebase.initializeApp(firebaseConfig);
-        if (firebase.database) firebaseAvailable = true;
-      } else {
-        console.warn('Firebase SDK loaded but "firebase" is undefined or missing initializeApp.');
-      }
-    }
-  } catch (err) {
-    console.error('Firebase init error:', err);
-  }
-
-  // ------------------ Seen state in localStorage -------------------
-  const SEEN_KEY = 'adminMessagesSeen_v2';
-  function getSeenSet() {
-    try {
-      const raw = localStorage.getItem(SEEN_KEY) || '[]';
-      return new Set(JSON.parse(raw));
-    } catch (e) {
-      return new Set();
-    }
-  }
-  function saveSeenSet(set) {
-    try { localStorage.setItem(SEEN_KEY, JSON.stringify([...set])); } catch(e){}
-  }
-  function hasSeen(id) {
-    return getSeenSet().has(id);
-  }
-  function addSeen(id) {
-    if (!id) return;
-    const s = getSeenSet();
-    if (!s.has(id)) {
-      s.add(id);
-      saveSeenSet(s);
-    }
-  }
-  function clearSeenLocal() {
-    if (confirm('Clear locally saved seen messages? Users will see messages again after refresh.')) {
-      localStorage.removeItem(SEEN_KEY);
-      alert('Local seen list cleared.');
-    }
-  }
-
-  // ------------------ UI elements -------------------
-  const adminBtn = document.getElementById('adminOpenBtn');
-  const adminOverlay = document.getElementById('adminOverlay');
-  const adminPanel = document.getElementById('adminPanel');
-  const closeAdminPanel = document.getElementById('closeAdminPanel');
-  const postBtn = document.getElementById('postAdminMsg');
-  const previewBtn = document.getElementById('showPreview');
-  const clearSeenBtn = document.getElementById('clearSeenLocal');
-  const container = document.getElementById('adminMessagesContainer');
-
-  // Panel open/close
-  function openPanel() {
-    adminOverlay.style.display = 'flex';
-    adminOverlay.setAttribute('aria-hidden','false');
-    setTimeout(()=> document.getElementById('adminName').focus(), 120);
-  }
-  function closePanel() {
-    adminOverlay.style.display = 'none';
-    adminOverlay.setAttribute('aria-hidden','true');
-  }
-
-  // Password flow: require 246
-  adminBtn.addEventListener('click', () => {
-    try {
-      const code = prompt('Enter admin code (required):');
-      if (code === null) return;
-      if (String(code).trim() === '246') {
-        openPanel();
-      } else {
-        alert('Wrong code.');
-      }
-    } catch (e) {
-      console.error(e);
-      alert('An error occurred, check console.');
-    }
-  });
-
-  adminBtn.addEventListener('dblclick', () => {
-    if (adminOverlay.style.display === 'flex') closePanel(); else openPanel();
-  });
-
-  closeAdminPanel.addEventListener('click', closePanel);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
-
-  clearSeenBtn.addEventListener('click', clearSeenLocal);
-
-  // --------------- Post message to Firebase ----------------
-  postBtn.addEventListener('click', async () => {
-    const name = document.getElementById('adminName').value.trim() || 'Admin';
-    const msg = document.getElementById('adminMsg').value.trim();
-    const duration = parseInt(document.getElementById('adminDuration').value,10) || 6;
-    const color = document.getElementById('adminColor').value || '#ffffff';
-    const target = document.getElementById('adminTarget').value.trim() || '';
-
-    if (!msg) { alert('Please enter a message.'); return; }
-
-    const payload = {
-      name,
-      text: msg,
-      duration,
-      color,
-      target,
-      createdAt: Date.now()
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // ---------- YOUR firebaseConfig (from your message) ----------
+    const firebaseConfig = {
+      apiKey: "AIzaSyDclp6rqCZRVreOzTcxv840mXcl6nDKAv8",
+      authDomain: "pack-f76c3.firebaseapp.com",
+      databaseURL: "https://pack-f76c3-default-rtdb.firebaseio.com",
+      projectId: "pack-f76c3",
+      storageBucket: "pack-f76c3.firebasestorage.app",
+      messagingSenderId: "694325056042",
+      appId: "1:694325056042:web:aae383919a2ce159892953",
+      measurementId: "G-07WXQ7YQ4M"
     };
 
+    // Initialize Firebase
+    let firebaseAvailable = false;
+    try {
+      if (firebaseConfig && firebaseConfig.apiKey) {
+        if (typeof firebase !== 'undefined' && firebase.initializeApp) {
+          firebase.initializeApp(firebaseConfig);
+          if (firebase.database) firebaseAvailable = true;
+        } else {
+          console.warn('Firebase SDK loaded but "firebase" is undefined or missing initializeApp.');
+        }
+      }
+    } catch (err) {
+      console.error('Firebase init error:', err);
+    }
+
+    // ------------------ Seen state in localStorage -------------------
+    const SEEN_KEY = 'adminMessagesSeen_v2';
+    function getSeenSet() {
+      try {
+        const raw = localStorage.getItem(SEEN_KEY) || '[]';
+        return new Set(JSON.parse(raw));
+      } catch (e) {
+        return new Set();
+      }
+    }
+    function saveSeenSet(set) {
+      try { localStorage.setItem(SEEN_KEY, JSON.stringify([...set])); } catch(e){}
+    }
+    function hasSeen(id) {
+      return getSeenSet().has(id);
+    }
+    function addSeen(id) {
+      if (!id) return;
+      const s = getSeenSet();
+      if (!s.has(id)) {
+        s.add(id);
+        saveSeenSet(s);
+      }
+    }
+    function clearSeenLocal() {
+      if (confirm('Clear locally saved seen messages? Users will see messages again after refresh.')) {
+        localStorage.removeItem(SEEN_KEY);
+        alert('Local seen list cleared.');
+      }
+    }
+
+    // ------------------ UI elements -------------------
+    const adminBtn = document.getElementById('adminOpenBtn');
+    const adminOverlay = document.getElementById('adminOverlay');
+    const adminPanel = document.getElementById('adminPanel');
+    const closeAdminPanel = document.getElementById('closeAdminPanel');
+    const postBtn = document.getElementById('postAdminMsg');
+    const previewBtn = document.getElementById('showPreview');
+    const clearSeenBtn = document.getElementById('clearSeenLocal');
+    const container = document.getElementById('adminMessagesContainer');
+
+    // Panel open/close
+    function openPanel() {
+      adminOverlay.style.display = 'flex';
+      adminOverlay.setAttribute('aria-hidden','false');
+      setTimeout(()=> document.getElementById('adminName').focus(), 120);
+    }
+    function closePanel() {
+      adminOverlay.style.display = 'none';
+      adminOverlay.setAttribute('aria-hidden','true');
+    }
+
+    // Password flow: require 246
+    adminBtn.addEventListener('click', () => {
+      try {
+        const code = prompt('Enter admin code (required):');
+        if (code === null) return;
+        if (String(code).trim() === '246') {
+          openPanel();
+        } else {
+          alert('Wrong code.');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('An error occurred, check console.');
+      }
+    });
+
+    adminBtn.addEventListener('dblclick', () => {
+      if (adminOverlay.style.display === 'flex') closePanel(); else openPanel();
+    });
+
+    closeAdminPanel.addEventListener('click', closePanel);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+
+    clearSeenBtn.addEventListener('click', clearSeenLocal);
+
+    // --------------- Post message to Firebase ----------------
+    postBtn.addEventListener('click', async () => {
+      const name = document.getElementById('adminName').value.trim() || 'Admin';
+      const msg = document.getElementById('adminMsg').value.trim();
+      const duration = parseInt(document.getElementById('adminDuration').value,10) || 6;
+      const color = document.getElementById('adminColor').value || '#ffffff';
+      const target = document.getElementById('adminTarget').value.trim() || '';
+
+      if (!msg) { alert('Please enter a message.'); return; }
+
+      const payload = {
+        name,
+        text: msg,
+        duration,
+        color,
+        target,
+        createdAt: Date.now()
+      };
+
+      if (firebaseAvailable) {
+        try {
+          await firebase.database().ref('adminMessages').push(payload);
+          document.getElementById('adminMsg').value = '';
+          alert('Message posted to Firebase.');
+        } catch (err) {
+          console.error(err);
+          alert('Failed to post message to Firebase. See console.');
+        }
+      } else {
+        console.warn('Firebase not available - showing message locally only.');
+        const pseudoId = 'local-' + Date.now() + '-' + Math.floor(Math.random()*10000);
+        showMessage(pseudoId, payload);
+        // mark seen immediately (since user saw it)
+        addSeen(pseudoId);
+        alert('Message shown locally (not persisted).');
+      }
+    });
+
+    // Preview button (local-only)
+    previewBtn.addEventListener('click', () => {
+      const name = document.getElementById('adminName').value.trim() || 'Admin';
+      const msg = document.getElementById('adminMsg').value.trim() || 'Preview message';
+      const duration = parseInt(document.getElementById('adminDuration').value,10) || 6;
+      const color = document.getElementById('adminColor').value || '#ffffff';
+      const payload = { name, text: msg, duration, color, createdAt: Date.now() };
+      const pseudoId = 'preview-' + Date.now();
+      showMessage(pseudoId, payload);
+      // mark preview as seen so it won't reappear on refresh
+      addSeen(pseudoId);
+    });
+
+    // --------------- Displaying incoming messages (with local seen tracking) ----------------
+    function buildMessageElement(id, data) {
+      const el = document.createElement('div');
+      el.className = 'adminMsg';
+      el.dataset.msgId = id;
+
+      const left = document.createElement('div');
+      left.className = 'left';
+
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.textContent = (data.name || 'A').slice(0,2).toUpperCase();
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const who = document.createElement('div');
+      who.className = 'who';
+      who.textContent = (data.name ? data.name : 'Admin');
+      const text = document.createElement('div');
+      text.className = 'text';
+      text.innerText = data.text || '';
+      text.style.color = data.color || '#ffffff';
+
+      meta.appendChild(who);
+      meta.appendChild(text);
+      left.appendChild(avatar);
+      left.appendChild(meta);
+
+      const right = document.createElement('div');
+      right.className = 'right';
+
+      // Close button: remove locally and mark as seen so it won't reappear
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'closeBtn';
+      closeBtn.textContent = 'Close';
+      closeBtn.addEventListener('click', () => {
+        addSeen(id);
+        el.style.transition = 'opacity .25s, transform .25s';
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-8px) scale(.99)';
+        setTimeout(()=> el.remove(), 260);
+      });
+      right.appendChild(closeBtn);
+
+      el.appendChild(left);
+      el.appendChild(right);
+
+      return el;
+    }
+
+    // Show message: prepend so newest on top, skip if seen
+    function showMessage(id, data) {
+      if (!id) id = 'msg-' + Date.now();
+      if (hasSeen(id)) return; // skip if locally seen already
+
+      const el = buildMessageElement(id, data);
+      container.prepend(el);
+
+      // mark as seen shortly after it appears (user has "seen" it)
+      setTimeout(() => addSeen(id), 400);
+
+      // Auto-remove after duration if provided and >0; when removed, ensure marked seen
+      const dur = (data.duration && Number(data.duration)) ? Number(data.duration) * 1000 : 0;
+      if (dur > 0) {
+        setTimeout(() => {
+          if (document.body.contains(el)) {
+            addSeen(id);
+            el.style.transition = 'opacity .25s, transform .25s';
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(-8px) scale(.99)';
+            setTimeout(()=> { if (el.remove) el.remove(); }, 260);
+          }
+        }, dur);
+      }
+    }
+
+    // --------------- Firebase listener for child_added (skip seen) ----------------
     if (firebaseAvailable) {
       try {
-        await firebase.database().ref('adminMessages').push(payload);
-        document.getElementById('adminMsg').value = '';
-        alert('Message posted to Firebase.');
-      } catch (err) {
-        console.error(err);
-        alert('Failed to post message to Firebase. See console.');
+        const ref = firebase.database().ref('adminMessages').limitToLast(200);
+        ref.on('child_added', snapshot => {
+          const id = snapshot.key;
+          const data = snapshot.val();
+          if (!data || !data.text) return;
+          try { showMessage(id, data); } catch (e) { console.error('showMessage err', e); }
+        });
+      } catch (e) {
+        console.error('Firebase listener setup failed:', e);
       }
     } else {
-      console.warn('Firebase not available - showing message locally only.');
-      const pseudoId = 'local-' + Date.now() + '-' + Math.floor(Math.random()*10000);
-      showMessage(pseudoId, payload);
-      // mark seen immediately (since user saw it)
-      addSeen(pseudoId);
-      alert('Message shown locally (not persisted).');
+      // no firebase: preview and local posting still work
     }
-  });
 
-  // Preview button (local-only)
-  previewBtn.addEventListener('click', () => {
-    const name = document.getElementById('adminName').value.trim() || 'Admin';
-    const msg = document.getElementById('adminMsg').value.trim() || 'Preview message';
-    const duration = parseInt(document.getElementById('adminDuration').value,10) || 6;
-    const color = document.getElementById('adminColor').value || '#ffffff';
-    const payload = { name, text: msg, duration, color, createdAt: Date.now() };
-    const pseudoId = 'preview-' + Date.now();
-    showMessage(pseudoId, payload);
-    // mark preview as seen so it won't reappear on refresh
-    addSeen(pseudoId);
-  });
+    // Expose debug helpers
+    window._adminMessages = {
+      showMessage,
+      hasSeen,
+      addSeen,
+      getSeenSet: () => Array.from(getSeenSet()),
+      clearSeenLocal
+    };
 
-  // --------------- Displaying incoming messages (with local seen tracking) ----------------
-  function buildMessageElement(id, data) {
-    const el = document.createElement('div');
-    el.className = 'adminMsg';
-    el.dataset.msgId = id;
+  }); // DOMContentLoaded
+  </script>
+  <script>
+  /*
+    Pack game: listen to /topNotices and display top banner
+    - Paste this exactly before </body> in your pack game page.
+    - Requires firebase.database() available (your pack already does).
+    - Shows the stored `.text` for each notice; notices are removed when expireAt passes.
+  */
+  (function(){
+    const _db = (typeof db !== 'undefined') ? db : (window.firebase && firebase.database ? firebase.database() : null);
+    if (!_db) { console.warn('[topNotices] Firebase DB not found.'); return; }
 
-    const left = document.createElement('div');
-    left.className = 'left';
-
-    const avatar = document.createElement('div');
-    avatar.className = 'avatar';
-    avatar.textContent = (data.name || 'A').slice(0,2).toUpperCase();
-
-    const meta = document.createElement('div');
-    meta.className = 'meta';
-    const who = document.createElement('div');
-    who.className = 'who';
-    who.textContent = (data.name ? data.name : 'Admin');
-    const text = document.createElement('div');
-    text.className = 'text';
-    text.innerText = data.text || '';
-    text.style.color = data.color || '#ffffff';
-
-    meta.appendChild(who);
-    meta.appendChild(text);
-    left.appendChild(avatar);
-    left.appendChild(meta);
-
-    const right = document.createElement('div');
-    right.className = 'right';
-
-    // Close button: remove locally and mark as seen so it won't reappear
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'closeBtn';
-    closeBtn.textContent = 'Close';
-    closeBtn.addEventListener('click', () => {
-      addSeen(id);
-      el.style.transition = 'opacity .25s, transform .25s';
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(-8px) scale(.99)';
-      setTimeout(()=> el.remove(), 260);
-    });
-    right.appendChild(closeBtn);
-
-    el.appendChild(left);
-    el.appendChild(right);
-
-    return el;
-  }
-
-  // Show message: prepend so newest on top, skip if seen
-  function showMessage(id, data) {
-    if (!id) id = 'msg-' + Date.now();
-    if (hasSeen(id)) return; // skip if locally seen already
-
-    const el = buildMessageElement(id, data);
-    container.prepend(el);
-
-    // mark as seen shortly after it appears (user has "seen" it)
-    setTimeout(() => addSeen(id), 400);
-
-    // Auto-remove after duration if provided and >0; when removed, ensure marked seen
-    const dur = (data.duration && Number(data.duration)) ? Number(data.duration) * 1000 : 0;
-    if (dur > 0) {
-      setTimeout(() => {
-        if (document.body.contains(el)) {
-          addSeen(id);
-          el.style.transition = 'opacity .25s, transform .25s';
-          el.style.opacity = '0';
-          el.style.transform = 'translateY(-8px) scale(.99)';
-          setTimeout(()=> { if (el.remove) el.remove(); }, 260);
-        }
-      }, dur);
-    }
-  }
-
-  // --------------- Firebase listener for child_added (skip seen) ----------------
-  if (firebaseAvailable) {
-    try {
-      const ref = firebase.database().ref('adminMessages').limitToLast(200);
-      ref.on('child_added', snapshot => {
-        const id = snapshot.key;
-        const data = snapshot.val();
-        if (!data || !data.text) return;
-        try { showMessage(id, data); } catch (e) { console.error('showMessage err', e); }
+    // create top banner UI if not already present
+    function ensureUI(){
+      let wrapper = document.getElementById('globalTopNoticeWrap');
+      if (wrapper) return { wrapper, textEl: wrapper.querySelector('.notice-text') };
+      wrapper = document.createElement('div');
+      wrapper.id = 'globalTopNoticeWrap';
+      Object.assign(wrapper.style, {
+        position:'fixed', top:'10px', left:'50%', transform:'translateX(-50%)',
+        zIndex:2147483647, display:'none', pointerEvents:'none'
       });
-    } catch (e) {
-      console.error('Firebase listener setup failed:', e);
+      const box = document.createElement('div');
+      box.className = 'notice-box';
+      Object.assign(box.style, {
+        background:'#000', color:'#fff', padding:'10px 16px', borderRadius:'10px',
+        fontWeight:700, boxShadow:'0 8px 30px rgba(0,0,0,0.35)', pointerEvents:'auto',
+        maxWidth:'92vw', textAlign:'center', fontFamily:'Inter, system-ui, Arial, sans-serif'
+      });
+      const text = document.createElement('div'); text.className = 'notice-text';
+      box.appendChild(text);
+      wrapper.appendChild(box);
+      document.body.appendChild(wrapper);
+      return { wrapper, textEl: text };
     }
-  } else {
-    // no firebase: preview and local posting still work
-  }
 
-  // Expose debug helpers
-  window._adminMessages = {
-    showMessage,
-    hasSeen,
-    addSeen,
-    getSeenSet: () => Array.from(getSeenSet()),
-    clearSeenLocal
-  };
+    const { wrapper: noticeWrap, textEl: noticeText } = ensureUI();
+    const active = {}; // key -> { val, timeoutId }
 
-}); // DOMContentLoaded
-</script>
-<script>
-/*
-  Pack game: listen to /topNotices and display top banner
-  - Paste this exactly before </body> in your pack game page.
-  - Requires firebase.database() available (your pack already does).
-  - Shows the stored `.text` for each notice; notices are removed when expireAt passes.
-*/
-(function(){
-  const _db = (typeof db !== 'undefined') ? db : (window.firebase && firebase.database ? firebase.database() : null);
-  if (!_db) { console.warn('[topNotices] Firebase DB not found.'); return; }
+    function show(text){
+      noticeText.innerText = text;
+      noticeWrap.style.display = 'block';
+      noticeWrap.style.opacity = '1';
+    }
+    function hide(){
+      noticeWrap.style.opacity = '0';
+      setTimeout(()=> { try { noticeWrap.style.display = 'none'; } catch(e){} }, 260);
+    }
 
-  // create top banner UI if not already present
-  function ensureUI(){
-    let wrapper = document.getElementById('globalTopNoticeWrap');
-    if (wrapper) return { wrapper, textEl: wrapper.querySelector('.notice-text') };
-    wrapper = document.createElement('div');
-    wrapper.id = 'globalTopNoticeWrap';
-    Object.assign(wrapper.style, {
-      position:'fixed', top:'10px', left:'50%', transform:'translateX(-50%)',
-      zIndex:2147483647, display:'none', pointerEvents:'none'
+    async function scheduleRemove(key, val){
+      try {
+        if (!val || !val.expireAt) return;
+        const msLeft = Number(val.expireAt) - Date.now();
+        if (msLeft <= 0) {
+          try { await _db.ref('topNotices/' + key).remove().catch(()=>{}); } catch(e){}
+          return;
+        }
+        if (active[key] && active[key].timeoutId) clearTimeout(active[key].timeoutId);
+        active[key] = active[key] || {};
+        active[key].timeoutId = setTimeout(async () => {
+          try {
+            const ref = _db.ref('topNotices/' + key);
+            const snap = await ref.once('value');
+            const node = snap.val();
+            if (node && node.expireAt && Number(node.expireAt) <= Date.now()) {
+              await ref.remove().catch(()=>{});
+            }
+          } catch(e) { console.warn('[topNotices] scheduled removal failed', e); }
+        }, msLeft + 50);
+      } catch(e){ console.warn('[topNotices] scheduleRemove err', e); }
+    }
+
+    function pickTop(){
+      let best = null;
+      for (const k in active){
+        const it = active[k];
+        if (!it || !it.val) continue;
+        const exp = Number(it.val.expireAt || 0);
+        if (!best || exp > Number(best.val.expireAt || 0)) best = { key: k, val: it.val };
+      }
+      return best;
+    }
+
+    function renderActive(){
+      const top = pickTop();
+      if (!top) { hide(); return; }
+      const secLeft = Math.max(0, Math.ceil((Number(top.val.expireAt) - Date.now()) / 1000));
+      show(`${top.val.text}${secLeft>0 ? ` — ${secLeft}s` : ''}`);
+    }
+
+    const ref = _db.ref('topNotices');
+
+    ref.on('child_added', snap => {
+      try {
+        const k = snap.key; const v = snap.val(); if (!v) return;
+        active[k] = active[k] || {};
+        active[k].val = v;
+        scheduleRemove(k, v);
+        renderActive();
+      } catch(e){ console.error('[topNotices] child_added', e); }
     });
-    const box = document.createElement('div');
-    box.className = 'notice-box';
-    Object.assign(box.style, {
-      background:'#000', color:'#fff', padding:'10px 16px', borderRadius:'10px',
-      fontWeight:700, boxShadow:'0 8px 30px rgba(0,0,0,0.35)', pointerEvents:'auto',
-      maxWidth:'92vw', textAlign:'center', fontFamily:'Inter, system-ui, Arial, sans-serif'
+
+    ref.on('child_changed', snap => {
+      try {
+        const k = snap.key; const v = snap.val(); active[k] = active[k] || {}; active[k].val = v;
+        scheduleRemove(k, v);
+        renderActive();
+      } catch(e){ console.error('[topNotices] child_changed', e); }
     });
-    const text = document.createElement('div'); text.className = 'notice-text';
-    box.appendChild(text);
-    wrapper.appendChild(box);
-    document.body.appendChild(wrapper);
-    return { wrapper, textEl: text };
-  }
 
-  const { wrapper: noticeWrap, textEl: noticeText } = ensureUI();
-  const active = {}; // key -> { val, timeoutId }
+    ref.on('child_removed', snap => {
+      try {
+        const k = snap.key;
+        if (active[k] && active[k].timeoutId) clearTimeout(active[k].timeoutId);
+        delete active[k];
+        renderActive();
+      } catch(e){ console.error('[topNotices] child_removed', e); }
+    });
 
-  function show(text){
-    noticeText.innerText = text;
-    noticeWrap.style.display = 'block';
-    noticeWrap.style.opacity = '1';
-  }
-  function hide(){
-    noticeWrap.style.opacity = '0';
-    setTimeout(()=> { try { noticeWrap.style.display = 'none'; } catch(e){} }, 260);
-  }
+    // refresh UI once per second for countdown
+    setInterval(renderActive, 1000);
 
-  async function scheduleRemove(key, val){
-    try {
-      if (!val || !val.expireAt) return;
-      const msLeft = Number(val.expireAt) - Date.now();
-      if (msLeft <= 0) {
-        try { await _db.ref('topNotices/' + key).remove().catch(()=>{}); } catch(e){}
+    // expose helpers for debugging
+    window._topNoticesLocal = {
+      active,
+      publishLocal: async (text, seconds = 7) => {
+        const now = Date.now(); const expireAt = now + seconds*1000;
+        await _db.ref('topNotices').push({ text, createdAt: now, expireAt, source: 'game-console' });
+      },
+      removeByKey: async (k) => { await _db.ref('topNotices/' + k).remove().catch(()=>{}); }
+    };
+
+    console.log('[topNotices] listener active (showing DB text exactly as stored).');
+  })();
+  </script>
+  <!-- ===== Rebirth system (stores LEVEL under accounts/{username}/LEVEL) ===== -->
+  <style>
+    /* Rebirth modal + small header button */
+    #rebirthBtnHeader { margin-left: 8px; }
+    #rebirthModalBox {
+      display:none; position:fixed; z-index:2000; left:50%; top:50%;
+      transform:translate(-50%,-50%); background:#fff; padding:18px; border-radius:12px;
+      box-shadow:0 12px 40px rgba(0,0,0,0.35); width:min(420px,94%); text-align:left;
+    }
+    #rebirthModalBox h3 { margin:0 0 8px 0; font-size:20px; }
+    #rebirthModalBox p { margin:6px 0; color:#333; }
+    #rebirthModalBox .req { background:#fff9e6; border-radius:8px; padding:10px; margin:10px 0; border:1px solid #ffecb3; }
+    #rebirthModalBox .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:12px; }
+    .btn-rebirth { background:linear-gradient(180deg,#ffd64d 0%,#ffcc00 100%); color:#1a1a1a; border-radius:8px; padding:10px 16px; font-weight:800; border:1px solid rgba(0,0,0,0.06); cursor:pointer; }
+    .btn-rebirth[disabled] { opacity:0.45; cursor:not-allowed; filter:grayscale(0.12); }
+    #rebirthClose { background:#eee; border-radius:8px; padding:10px 14px; cursor:pointer; border:1px solid #ddd; }
+    #rebirthNotice { color:#666; font-size:0.9rem; }
+    #userLevelDisplay { font-size:0.95rem; color:#222; margin-top:4px; }
+  </style>
+
+  <!-- Modal markup -->
+  <div id="rebirthModalBox" role="dialog" aria-modal="true" aria-hidden="true">
+    <h3 id="rebirthTitle">Rebirth</h3>
+    <div id="rebirthContent">
+      <p id="rebirthDesc">Prepare to rebirth and increase your level.</p>
+      <div class="req">
+        <div><strong>Required Card:</strong> <span id="rebirthReqCard">—</span></div>
+        <div><strong>Required Money:</strong> <span id="rebirthReqMoney">—</span></div>
+        <div id="rebirthHasCard" style="margin-top:6px;color:#333;"></div>
+        <div id="rebirthHasMoney" style="margin-top:6px;color:#333;"></div>
+      </div>
+      <div id="rebirthNotice">If you rebirth your cards will be reset and your balance will become $500.</div>
+    </div>
+    <div class="actions">
+      <button id="rebirthClose" onclick="closeRebirthModal()">Cancel</button>
+      <button id="rebirthConfirm" class="btn-rebirth" disabled>Rebirth</button>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    // ==== CONFIG: Edit this to add more levels ====
+    // money may be a number (plain integer) or a shorthand string "5M", "1.2K", etc.
+    const REBIRTH_LEVELS = [
+      { level: 2, card: "Zezo SECRET", money: "5M" },{ level: 3, card: "lilly kowaferr", money: "10M" },{ level: 4, card: "Asser colotinni fasatennee", money: "150M" },{ level: 5, card: "Zezo Prismatic", money: "350M" },{ level: 6, card: "LILLY EXAM", money: "650M" }      // example: requires card "LILLY EXAM" and $5,000,000
+      // add more levels like:
+      // { level: 3, card: "LILLY SUIIII", money: 20000000 },
+    ];
+
+    // ==== HELPERS ====
+    function parseMoneyValue(v) {
+      if (v === undefined || v === null) return 0;
+      if (typeof v === 'number') return v;
+      const s = String(v).trim().toUpperCase();
+      const m = s.match(/^([\d.,]+)\s*([KMB])?$/);
+      if (!m) return Number(s.replace(/[, ]+/g,'')) || 0;
+      let num = Number(m[1].replace(/,/g,''));
+      const unit = m[2];
+      if (unit === 'K') num *= 1e3;
+      if (unit === 'M') num *= 1e6;
+      if (unit === 'B') num *= 1e9;
+      return Math.round(num);
+    }
+
+    function humanMoney(n) {
+      if (n === null || n === undefined) return '$0';
+      const num = Number(n);
+      if (!isFinite(num)) return String(n);
+      if (Math.abs(num) >= 1e9) return (num/1e9).toFixed(1).replace(/\.0$/,'') + 'B';
+      if (Math.abs(num) >= 1e6) return (num/1e6).toFixed(1).replace(/\.0$/,'') + 'M';
+      if (Math.abs(num) >= 1e3) return (num/1e3).toFixed(1).replace(/\.0$/,'') + 'K';
+      return '$' + num;
+    }
+
+    // check if user has a card by exact (case-insensitive) name in collection or lockedCards
+    function userHasCard(cardName) {
+      if (!cardName) return false;
+      const target = String(cardName).trim().toLowerCase();
+      try {
+        for (const id in (collection || {})) {
+          const c = collection[id];
+          if (!c || !c.name) continue;
+          if (String(c.name).trim().toLowerCase() === target) return true;
+        }
+        for (const id in (lockedCards || {})) {
+          const c = lockedCards[id];
+          if (!c || !c.name) continue;
+          if (String(c.name).trim().toLowerCase() === target) return true;
+        }
+      } catch(e){ console.warn('userHasCard err',e); }
+      return false;
+    }
+
+    // ==== DOM refs ====
+    const rebirthModal = document.getElementById('rebirthModalBox');
+    const rebirthReqCard = document.getElementById('rebirthReqCard');
+    const rebirthReqMoney = document.getElementById('rebirthReqMoney');
+    const rebirthHasCard = document.getElementById('rebirthHasCard');
+    const rebirthHasMoney = document.getElementById('rebirthHasMoney');
+    const rebirthConfirm = document.getElementById('rebirthConfirm');
+
+    // ----- IMPORTANT: accounts path constant (LEVEL stored here) -----
+    const ACCOUNTS_LEVEL_PATH = (user) => `accounts/${user}/LEVEL`;
+
+    // display/close helpers
+    window.openRebirthModal = async function() {
+      if (!currentUser) { showMessage('You must be logged in to rebirth.'); return; }
+      const level = await getCurrentUserLevel(); // now reads from /accounts/{user}/LEVEL
+      const nextLevel = (typeof level === 'number') ? level + 1 : 2;
+      const req = REBIRTH_LEVELS.find(r => r.level === nextLevel);
+      if (!req) {
+        showMessage(`you are now MAX REBIRTH ${nextLevel}.more rebirths on the way `);
         return;
       }
-      if (active[key] && active[key].timeoutId) clearTimeout(active[key].timeoutId);
-      active[key] = active[key] || {};
-      active[key].timeoutId = setTimeout(async () => {
-        try {
-          const ref = _db.ref('topNotices/' + key);
-          const snap = await ref.once('value');
-          const node = snap.val();
-          if (node && node.expireAt && Number(node.expireAt) <= Date.now()) {
-            await ref.remove().catch(()=>{});
-          }
-        } catch(e) { console.warn('[topNotices] scheduled removal failed', e); }
-      }, msLeft + 50);
-    } catch(e){ console.warn('[topNotices] scheduleRemove err', e); }
-  }
+      // fill UI
+      rebirthReqCard.innerText = req.card || '—';
+      rebirthReqMoney.innerText = humanMoney(parseMoneyValue(req.money));
+      // eligibility checks
+      const hasCard = userHasCard(req.card);
+      const hasMoney = (Number(balance || 0) >= parseMoneyValue(req.money));
+      rebirthHasCard.innerText = hasCard ? 'Card found in your collection.' : 'Required card not found.';
+      rebirthHasCard.style.color = hasCard ? '#166534' : '#8b0000';
+      rebirthHasMoney.innerText = hasMoney ? `You have ${humanMoney(balance)} (required ${humanMoney(parseMoneyValue(req.money))}).` : `Insufficient funds: you have ${humanMoney(balance)}.`;
+      rebirthHasMoney.style.color = hasMoney ? '#166534' : '#8b0000';
+      // enable/disable confirm
+      rebirthConfirm.disabled = !(hasCard && hasMoney);
+      // store current displayed requirement on the button for safety
+      rebirthConfirm.dataset.reqLevel = req.level;
+      rebirthConfirm.dataset.reqCard = req.card;
+      rebirthConfirm.dataset.reqMoney = parseMoneyValue(req.money);
+      // show modal
+      rebirthModal.style.display = 'block';
+    };
 
-  function pickTop(){
-    let best = null;
-    for (const k in active){
-      const it = active[k];
-      if (!it || !it.val) continue;
-      const exp = Number(it.val.expireAt || 0);
-      if (!best || exp > Number(best.val.expireAt || 0)) best = { key: k, val: it.val };
+    window.closeRebirthModal = function() {
+      rebirthModal.style.display = 'none';
+      rebirthConfirm.dataset.reqLevel = '';
+      rebirthConfirm.dataset.reqCard = '';
+      rebirthConfirm.dataset.reqMoney = '';
+    };
+
+    // ==== Rebirth action ====
+    async function performRebirth() {
+      if (!currentUser) { showMessage('You must be logged in.'); return; }
+      const reqLevel = Number(rebirthConfirm.dataset.reqLevel || 0);
+      const reqCard = String(rebirthConfirm.dataset.reqCard || '').trim();
+      const reqMoney = Number(rebirthConfirm.dataset.reqMoney || 0);
+
+      if (!reqLevel || !reqCard) { showMessage('Invalid rebirth requirement data.'); return; }
+
+      // re-check eligibility (server-trustable path would be better)
+      const freshUserSnap = await db.ref(`users/${currentUser}`).once('value');
+      const userNode = freshUserSnap.exists() ? freshUserSnap.val() : {};
+      const currentBalance = Number(userNode.balance || balance || 0);
+      // check card existence in local caches (good enough for now)
+      const hasCard = userHasCard(reqCard);
+      if (!hasCard) { showMessage('You no longer have the required card.'); closeRebirthModal(); return; }
+      if (currentBalance < reqMoney) { showMessage('You do not have the required money.'); closeRebirthModal(); return; }
+
+      // perform update: reset collections, set balance to 500, set new level UNDER accounts/{user}/LEVEL
+      const newLevel = reqLevel;
+      const updates = {};
+      updates[`users/${currentUser}/balance`] = 500;
+      updates[`users/${currentUser}/collection`] = {};       // reset to empty
+      updates[`users/${currentUser}/lockedCards`] = {};     // reset to empty
+      // **store LEVEL under accounts path only**
+      updates[ACCOUNTS_LEVEL_PATH(currentUser)] = newLevel;
+      // optional log
+      updates[`adminActions/rebirths/${Date.now()}_${currentUser}`] = { by: currentUser, newLevel, at: Date.now(), reason: `Rebirth: level ${newLevel}` };
+
+      try {
+        await db.ref().update(updates);
+        // update local state to reflect changes
+        balance = 500;
+        collection = {};
+        lockedCards = {};
+        // persist other user fields (saveUser uses update and won't touch accounts/*)
+        await saveUser().catch(()=>{ /* not fatal if already updated above */ });
+        updateUI();
+        updateUserLevelUI(newLevel); // local UI update
+        showMessage(`Rebirth successful! You are now level ${newLevel}. Your collection has been reset and balance set to $500.`);
+      } catch (err) {
+        console.error('performRebirth err', err);
+        showMessage('Error performing rebirth. See console for details.');
+      } finally {
+        closeRebirthModal();
+      }
     }
-    return best;
+
+    rebirthConfirm.addEventListener('click', function(){
+      const doIt = confirm('Are you sure? Rebirthing resets your collection and sets your balance to $500.');
+      if (!doIt) return;
+      performRebirth();
+    });
+
+    // ==== User level UI handling (reads/writes only under accounts/{user}/LEVEL) ====
+    let levelRefHandle = null;
+    function updateUserLevelUI(val) {
+      try {
+        let wrap = document.getElementById('userLevelDisplay');
+        if (!wrap) {
+          const headerActions = document.querySelector('.header-actions');
+          if (headerActions) {
+            const right = headerActions.querySelector('.header-right') || headerActions;
+            const d = document.createElement('div');
+            d.id = 'userLevelDisplay';
+            d.innerText = 'Level: 1';
+            right.insertBefore(d, right.firstChild || null);
+          }
+          wrap = document.getElementById('userLevelDisplay');
+        }
+        const levelText = (val !== undefined && val !== null) ? val : (window._cachedUserLevel || 1);
+        if (wrap) wrap.innerText = `Level: ${levelText}`;
+        window._cachedUserLevel = levelText;
+      } catch(e){ console.warn('updateUserLevelUI err', e); }
+    }
+
+    async function getCurrentUserLevel() {
+      if (!currentUser) return 1;
+      try {
+        const snap = await db.ref(ACCOUNTS_LEVEL_PATH(currentUser)).once('value');
+        const v = snap.exists() ? snap.val() : null;
+        const level = (v === null || v === undefined) ? 1 : Number(v || 1);
+        window._cachedUserLevel = level;
+        updateUserLevelUI(level);
+        return level;
+      } catch(e){ console.warn('getCurrentUserLevel err', e); return (window._cachedUserLevel || 1); }
+    }
+
+    // attach DB listener to keep UI in sync (listens to accounts/{user}/LEVEL)
+    function attachLevelListenerForUser(u) {
+      try {
+        if (!u) return;
+        if (levelRefHandle) { try { levelRefHandle.off(); } catch(e){} levelRefHandle = null; }
+        const ref = db.ref(ACCOUNTS_LEVEL_PATH(u));
+        ref.on('value', snap => {
+          const v = snap.exists() ? snap.val() : 1;
+          window._cachedUserLevel = Number(v || 1);
+          updateUserLevelUI(window._cachedUserLevel);
+        });
+        levelRefHandle = ref;
+      } catch(e){ console.warn('attachLevelListenerForUser err', e); }
+    }
+
+    function detachLevelListener() {
+      try {
+        if (levelRefHandle) { levelRefHandle.off(); levelRefHandle = null; }
+      } catch(e){ console.warn('detachLevelListener err', e); }
+    }
+
+    // Monkeypatch login/logout to attach/detach level listener (idempotent)
+    if (window.login && !window.__rebirth_wrapped_login__) {
+      const _login = window.login;
+      window.login = async function(...args) {
+        const res = await _login.apply(this, args);
+        try { if (currentUser) { attachLevelListenerForUser(currentUser); getCurrentUserLevel().catch(()=>{}); } } catch(e){}
+        return res;
+      };
+      window.__rebirth_wrapped_login__ = true;
+    }
+    if (window.logout && !window.__rebirth_wrapped_logout__) {
+      const _logout = window.logout;
+      window.logout = function(...args) {
+        try { detachLevelListener(); } catch(e){}
+        return _logout.apply(this, args);
+      };
+      window.__rebirth_wrapped_logout__ = true;
+    }
+
+    // ==== Add header button (if header exists) ====
+    function injectRebirthButton() {
+      try {
+        const hdrRight = document.querySelector('.header-right');
+        if (!hdrRight) return;
+        if (document.getElementById('rebirthBtnHeader')) return;
+        const btn = document.createElement('button');
+        btn.id = 'rebirthBtnHeader';
+        btn.className = 'btn-rebirth';
+        btn.innerText = 'Rebirth';
+        btn.onclick = openRebirthModal;
+        hdrRight.prepend(btn);
+        updateUserLevelUI();
+      } catch(e){ console.warn('injectRebirthButton err', e); }
+    }
+
+    injectRebirthButton();
+    document.addEventListener('DOMContentLoaded', injectRebirthButton);
+
+    // watch for currentUser to be set after this script loads
+    (function watchForUser() {
+      let attempts = 0;
+      const id = setInterval(() => {
+        attempts++;
+        if (currentUser) {
+          attachLevelListenerForUser(currentUser);
+          getCurrentUserLevel().catch(()=>{});
+          clearInterval(id);
+          return;
+        }
+        if (attempts > 120) clearInterval(id);
+      }, 1000);
+    })();
+
+    // expose small helpers for debug
+    window._rebirth = {
+      REBIRTH_LEVELS,
+      openRebirthModal,
+      performRebirth,
+      parseMoneyValue,
+      userHasCard,
+      ACCOUNTS_LEVEL_PATH
+    };
+
+  })(); // IIFE
+  </script>
+  <!-- ===== END Rebirth system (accounts/USERNAME/LEVEL) ===== -->
+<script>
+/* -------- Rebirth Sell-Multiplier (paste after your rebirth system) --------
+   Behavior:
+   - Level stored at accounts/{user}/LEVEL (your existing code)
+   - Multiplier = 1.0 + (level - 1) * 0.5
+   - When selling a card: soldPrice = round(card.currentPrice * multiplier)
+   - UI: shows "Sell Multiplier: ×1.5" next to Level display
+*/
+
+(function(){
+
+  // read current cached level (your rebirth code writes window._cachedUserLevel)
+  function getUserLevel() {
+    // fallback to 1 if unknown
+    const lvl = (window._cachedUserLevel !== undefined && window._cachedUserLevel !== null) ? Number(window._cachedUserLevel) : 1;
+    return (isNaN(lvl) || lvl < 1) ? 1 : lvl;
   }
 
-  function renderActive(){
-    const top = pickTop();
-    if (!top) { hide(); return; }
-    const secLeft = Math.max(0, Math.ceil((Number(top.val.expireAt) - Date.now()) / 1000));
-    show(`${top.val.text}${secLeft>0 ? ` — ${secLeft}s` : ''}`);
+  // multiplier formula: 1.0 + (level - 1) * 0.5
+  function getSellMultiplier() {
+    const lvl = getUserLevel();
+    return 1 + (Math.max(lvl - 1, 0) * 0.25);
   }
 
-  const ref = _db.ref('topNotices');
-
-  ref.on('child_added', snap => {
+  // Show multiplier in UI (creates element if missing)
+  function updateSellMultiplierUI() {
     try {
-      const k = snap.key; const v = snap.val(); if (!v) return;
-      active[k] = active[k] || {};
-      active[k].val = v;
-      scheduleRemove(k, v);
-      renderActive();
-    } catch(e){ console.error('[topNotices] child_added', e); }
-  });
+      let levelEl = document.getElementById('userLevelDisplay');
+      if (!levelEl) {
+        // if level element doesn't exist yet, create minimal one in header-right
+        const hdr = document.querySelector('.header-right') || document.querySelector('.header-actions');
+        if (hdr) {
+          const d = document.createElement('div');
+          d.id = 'userLevelDisplay';
+          d.style.fontSize = '0.95rem';
+          d.style.color = '#222';
+          d.style.marginTop = '4px';
+          hdr.insertBefore(d, hdr.firstChild || null);
+          levelEl = d;
+        } else {
+          // can't find place to show it — bail silently
+          return;
+        }
+      }
+      // keep the level text as your code sets it; ensure it exists
+      const lvlText = getUserLevel();
+      levelEl.innerText = `Level: ${lvlText}`;
 
-  ref.on('child_changed', snap => {
+      // multiplier display element
+      let mEl = document.getElementById('sellMultiplierDisplay');
+      if (!mEl) {
+        mEl = document.createElement('div');
+        mEl.id = 'sellMultiplierDisplay';
+        mEl.style.fontSize = '0.9rem';
+        mEl.style.color = '#444';
+        mEl.style.marginTop = '2px';
+        levelEl.parentElement.insertBefore(mEl, levelEl.nextSibling);
+      }
+      const mult = getSellMultiplier();
+      mEl.innerText = `Sell Multiplier: ×${mult.toFixed(1)}`;
+    } catch (e) {
+      console.warn('updateSellMultiplierUI err', e);
+    }
+  }
+
+  // Attempt to keep UI in sync if your rebirth code calls updateUserLevelUI
+  // If updateUserLevelUI exists on window, wrap it so we also refresh the multiplier UI.
+  try {
+    if (window.updateUserLevelUI && !window.__wrapped_updateUserLevelUI_for_multiplier__) {
+      const _orig = window.updateUserLevelUI;
+      window.updateUserLevelUI = function(val) {
+        try { _orig.call(this, val); } catch(e){ try { _orig(val); } catch(e2){} }
+        try { updateSellMultiplierUI(); } catch(e){ console.warn('post-update sell UI failed', e); }
+      };
+      window.__wrapped_updateUserLevelUI_for_multiplier__ = true;
+    } else {
+      // if updateUserLevelUI not present or wrapped already, still update UI now
+      setTimeout(updateSellMultiplierUI, 120);
+    }
+  } catch(e){ setTimeout(updateSellMultiplierUI, 120); }
+
+  // --- Patch sellCard to apply multiplier ---
+  // The original sellCard in your code was:
+  // function sellCard(cardId) { const c = collection[cardId]; if (!c) return showMessage("Card not found!"); balance += c.currentPrice; delete collection[cardId]; saveUser(); updateUI(); showMessage(`Sold card "${c.name}" for $${c.currentPrice}.`); }
+  // We'll wrap/replace it safely so other code calling sellCard(cardId) still works.
+
+  function doSell(cardId) {
+    // This function implements the new sell with multiplier. It mirrors your previous logic.
     try {
-      const k = snap.key; const v = snap.val(); active[k] = active[k] || {}; active[k].val = v;
-      scheduleRemove(k, v);
-      renderActive();
-    } catch(e){ console.error('[topNotices] child_changed', e); }
-  });
+      const c = (collection && collection[cardId]) ? collection[cardId] : ((lockedCards && lockedCards[cardId]) ? lockedCards[cardId] : null);
+      if (!c) return showMessage("Card not found!");
 
-  ref.on('child_removed', snap => {
-    try {
-      const k = snap.key;
-      if (active[k] && active[k].timeoutId) clearTimeout(active[k].timeoutId);
-      delete active[k];
-      renderActive();
-    } catch(e){ console.error('[topNotices] child_removed', e); }
-  });
+      // Prevent selling locked cards if they are explicitly locked in your logic
+      if (lockedCards && lockedCards[cardId] && lockedCards[cardId].isLocked) {
+        return showMessage("This card is locked and cannot be sold.");
+      }
 
-  // refresh UI once per second for countdown
-  setInterval(renderActive, 1000);
+      const basePrice = Number(c.currentPrice || c.basePrice || 0);
+      const mult = getSellMultiplier();
+      const sellPrice = Math.round(basePrice * mult);
 
-  // expose helpers for debugging
-  window._topNoticesLocal = {
-    active,
-    publishLocal: async (text, seconds = 7) => {
-      const now = Date.now(); const expireAt = now + seconds*1000;
-      await _db.ref('topNotices').push({ text, createdAt: now, expireAt, source: 'game-console' });
-    },
-    removeByKey: async (k) => { await _db.ref('topNotices/' + k).remove().catch(()=>{}); }
+      // Update balance and local collection state
+      balance = Number(balance || 0) + sellPrice;
+      if (collection && collection[cardId]) delete collection[cardId];
+      if (lockedCards && lockedCards[cardId]) delete lockedCards[cardId]; // fallback - usually sell from collection
+
+      // persist and update UI
+      saveUser().catch(()=>{}); // best-effort
+      updateUI();
+      showMessage(`Sold card "${c.name}" for $${sellPrice} (×${mult.toFixed(1)}).`);
+    } catch (err) {
+      console.error('doSell err', err);
+      showMessage('Error selling card. See console.');
+    }
+  }
+
+  // If a global sellCard existed, wrap it; otherwise define it.
+  try {
+    if (typeof window.sellCard === 'function' && !window.__sellCard_multiplier_patched__) {
+      const orig = window.sellCard;
+      window.sellCard = function(cardId, ...rest) {
+        // prefer our new behavior
+        doSell(cardId);
+        // keep backward compatibility: we won't call original to avoid double-processing.
+      };
+      window.__sellCard_multiplier_patched__ = true;
+    } else if (typeof window.sellCard !== 'function') {
+      // define sellCard globally as expected by your UI buttons
+      window.sellCard = function(cardId) { doSell(cardId); };
+      window.__sellCard_multiplier_patched__ = true;
+    } else {
+      // already patched, still ensure doSell is available
+      window.sellCard = function(cardId) { doSell(cardId); };
+      window.__sellCard_multiplier_patched__ = true;
+    }
+  } catch (e) {
+    // fallback: create global function anyway
+    try { window.sellCard = function(cardId){ doSell(cardId); }; window.__sellCard_multiplier_patched__ = true; } catch(e2){ console.warn('failed to install sellCard patch', e2); }
+  }
+
+  // Also patch one-off places where code might call direct balance increment after selling:
+  // (This is conservative: many parts call saveUser() and updateUI(), so consistent state is kept.)
+  // We expose helper in case you want to compute adjusted sell price elsewhere:
+  window.getSellMultiplier = getSellMultiplier;
+  window.getSellPriceFor = function(card) {
+    const base = Number((card && (card.currentPrice || card.basePrice)) || 0);
+    return Math.round(base * getSellMultiplier());
   };
 
-  console.log('[topNotices] listener active (showing DB text exactly as stored).');
-})();
+  // Run initial UI update
+  setTimeout(updateSellMultiplierUI, 150);
+
+  // Keep multiplier UI refreshed every 3 seconds (in case level updates from DB)
+  setInterval(updateSellMultiplierUI, 3000);
+
+  console.log('[rebirth-multiplier] installed: base=1.0, +0.5 per level. Current multiplier:', getSellMultiplier());
+
+})(); // IIFE end
 </script>
 
-</body>
-</html>
+  </body>
+  </html>
