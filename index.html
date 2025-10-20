@@ -136,8 +136,8 @@
     box-shadow: 0 6px 20px rgba(2,6,15,0.6);
   }
 
-  /* ---------- yinyang CARD: light-blue, water-like moving effect ---------- */
-  .yinyang-card {
+  /* ---------- LillySeason CARD: light-blue, water-like moving effect ---------- */
+  .LillySeason-card {
     background: linear-gradient(180deg, #000000 0%, #ffffff95 35%, #000000 60%, #ffffff 100%);
     border-color: #ffffff;
     color: #ff0000;
@@ -148,7 +148,7 @@
   }
 
   /* subtle flowing highlight layer */
-  .yinyang-card::before {
+  .LillySeason-card::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -164,7 +164,7 @@
   }
 
   /* moving wave stripe for water flow */
-  .yinyang-card::after {
+  .LillySeason-card::after {
     content: "";
     position: absolute;
     left: -60%;
@@ -185,16 +185,16 @@
     animation: waveMove 8.5s linear infinite;
   }
 
-  /* text polish for headings inside an yinyang card */
-  .yinyang-card h3,
-  .yinyang-card .card-title {
+  /* text polish for headings inside an LillySeason card */
+  .LillySeason-card h3,
+  .LillySeason-card .card-title {
     color: #022c3a;
     text-shadow: 0 1px 0 rgba(255,255,255,0.5);
     font-weight: 800;
   }
 
   /* optional little floating bubbles to add life */
-  .yinyang-card .yinyang-bubble {
+  .LillySeason-card .LillySeason-bubble {
     position: absolute;
     border-radius: 50%;
     background: rgba(255,255,255,0.14);
@@ -222,9 +222,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .yinyang-card::before,
-    .yinyang-card::after,
-    .yinyang-card .yinyang-bubble {
+    .LillySeason-card::before,
+    .LillySeason-card::after,
+    .LillySeason-card .LillySeason-bubble {
       animation: none !important;
     }
   }
@@ -232,9 +232,9 @@
 
 <script>
 /**
- * markyinyangCardsByName(names)
+ * markLillySeasonCardsByName(names)
  * - names: string or array of strings (exact card name match, case-insensitive)
- * Adds the .yinyang-card class to matching card DOM nodes and adds decorative bubbles.
+ * Adds the .LillySeason-card class to matching card DOM nodes and adds decorative bubbles.
  *
  * This script is safe to include in <head> — it waits for DOMContentLoaded before acting.
  */
@@ -247,10 +247,10 @@
 
   function addBubbles(cardEl, count) {
     // avoid duplicate bubble groups
-    if (cardEl.querySelector('.yinyang-bubble')) return;
+    if (cardEl.querySelector('.LillySeason-bubble')) return;
     for (let i = 0; i < count; i++) {
       const b = document.createElement('div');
-      b.className = 'yinyang-bubble';
+      b.className = 'LillySeason-bubble';
       const size = 8 + Math.round(Math.random() * 26);
       b.style.width = b.style.height = size + 'px';
       b.style.left = (8 + Math.random() * 84) + '%';
@@ -261,7 +261,7 @@
     }
   }
 
-  window.markyinyangCardsByName = function(names, bubbleCount = 3) {
+  window.markLillySeasonCardsByName = function(names, bubbleCount = 3) {
     if (!names) return;
     const arr = Array.isArray(names) ? names.slice() : [names];
     const targets = arr.map(s => String(s || '').trim().toLowerCase());
@@ -269,20 +269,20 @@
       const h3 = card.querySelector('h3');
       const name = h3 ? String(h3.innerText || '').trim().toLowerCase() : '';
       if (isMatch(name, targets)) {
-        card.classList.add('yinyang-card');
+        card.classList.add('LillySeason-card');
         addBubbles(card, bubbleCount || 2);
       } else {
-        // remove yinyang visuals if present and not matched
-        card.classList.remove('yinyang-card');
-        card.querySelectorAll('.yinyang-bubble').forEach(n => n.remove());
+        // remove LillySeason visuals if present and not matched
+        card.classList.remove('LillySeason-card');
+        card.querySelectorAll('.LillySeason-bubble').forEach(n => n.remove());
       }
     });
   };
 
   // convenience: mark a default name on load if present in the DOM
   document.addEventListener('DOMContentLoaded', function(){
-    // auto-mark cards named "yinyang CARD" and "yinyang" (case-insensitive)
-    markyinyangCardsByName(['yinyang card','yinyang']);
+    // auto-mark cards named "LillySeason CARD" and "LillySeason" (case-insensitive)
+    markLillySeasonCardsByName(['LillySeason card','LillySeason']);
   }, { once: true });
 })();
 </script>
@@ -398,7 +398,7 @@
     <button id="buyPristimaticBtn" class="btn btn-pristimatic" onclick="openPack('pristimatic')">Buy Pristimatic Pack (100%) ($7500)</button>
     <!-- SECRET pack button (50,000) -->
     <button id="buySecretBtn" class="btn btn-secret" onclick="openPack('secret')">Buy SECRET Pack (0%) ($50,000)</button>
-    <button id="buyyinyangBtn" class="btn btn-yinyang" onclick="openPack('yinyang')">Buy yinyang Pack (0%) ($1000000)</button>
+    <button id="buyLillySeasonBtn" class="btn btn-LillySeason" onclick="openPack('LillySeason')">Buy LillySeason Pack (0%) ($1000000)</button>
   </div>
 
   <div id="openedCard"></div>
@@ -471,7 +471,7 @@ function generateCardId() { return Date.now().toString() + Math.random().toStrin
 const accounts = { zezo: "000", asser: "230", lilly: "246", ab: "123", layan: "123" };
 
 const MUTATION_TIERS = { common: {chance:0.5}, uncommon:{chance:0.24}, rare:{chance:0.15}, veryHard:{chance:0.08}, ultra:{chance:0.03} };
-const MUTATIONS = { plasma:{priceIncrease:2000,tier:'uncommon'}, bloom:{priceIncrease:2000,tier:'common'}, choc:{priceIncrease:3500,tier:'common'}, shocked:{priceIncrease:4500,tier:'rare'}, rainbow:{priceIncrease:4000,tier:'uncommon'}, burnt:{priceIncrease:4000,tier:'uncommon'}, chilled:{priceIncrease:4500,tier:'rare'}, CHOCOLATE:{priceIncrease:4500,tier:'rare'}, frozen:{priceIncrease:3000,tier:'common'}, yinyang:{priceIncrease:10000,tier:'veryHard'}, zezopilot:{priceIncrease:12000,tier:'veryHard'}, KHALTO:{priceIncrease:12500,tier:'veryHard'}, aurora:{priceIncrease:15000,tier:'ultra'}, EGYPT:{priceIncrease:16000,tier:'ultra'} };
+const MUTATIONS = { plasma:{priceIncrease:2000,tier:'uncommon'}, bloom:{priceIncrease:2000,tier:'common'}, choc:{priceIncrease:3500,tier:'common'}, shocked:{priceIncrease:4500,tier:'rare'}, rainbow:{priceIncrease:4000,tier:'uncommon'}, burnt:{priceIncrease:4000,tier:'uncommon'}, chilled:{priceIncrease:4500,tier:'rare'}, CHOCOLATE:{priceIncrease:4500,tier:'rare'}, frozen:{priceIncrease:3000,tier:'common'}, LillySeason:{priceIncrease:10000,tier:'veryHard'}, zezopilot:{priceIncrease:12000,tier:'veryHard'}, KHALTO:{priceIncrease:12500,tier:'veryHard'}, aurora:{priceIncrease:15000,tier:'ultra'}, EGYPT:{priceIncrease:16000,tier:'ultra'} };
 
 let cardPools = {
   common: [
@@ -486,7 +486,7 @@ let cardPools = {
   rare: [
     { name: "Blue Asser", quantity: 70, chance: 0.30, price: 260 },
     { name: "Asser Dragon", quantity: 50, chance: 0.25, price: 280 },
-    { name: "Asser yinyang", quantity: 40, chance: 0.20, price: 300 },
+    { name: "Asser LillySeason", quantity: 40, chance: 0.20, price: 300 },
     { name: "Asser Legend", quantity: 40, chance: 0.15, price: 350 },
     { name: "Asser Mythic", quantity: 40, chance: 0.10, price: 400 }
   ],
@@ -532,20 +532,17 @@ let cardPools = {
     { name: "Zezo SECRET", quantity: 10, chance: 0.05, price: 13500 }
   ],
 
-  /* NEW: yinyang pack — very low quantities, extremely rare */
-  yinyang: [
-    { name: "YIN YANG ASSER Gooooooooooooooooooal", quantity: 0, chance: 0.02, price: 1000000 },
-    { name: "YIN YANG LILLY", quantity: 1, chance: 0.03, price: 1000000 },
-    { name: "YIN YANG 67", quantity: 0, chance: 0.03, price: 1000000 },
-    { name: "YIN YANG ZEZO", quantity: 0, chance: 0.03, price: 900000 },
-    { name: "YIN YANG LA VACA", quantity: 0, chance: 0.03, price: 900000 },
-    { name: "TIPI TACO", quantity: 0, chance: 0.03, price: 900000 },
-    { name: "ESOK SEKOLA", quantity: 0, chance: 0.03, price: 3000000 },
-    { name: "DRAGON CANELONLI", quantity: 0, chance: 0.03, price: 10000000 },
-    { name: "YEEEEEEES MY EXAMINE", quantity: 0, chance: 0.03, price: 2000000 },
-     { name: "LOS SEKOLITOS", quantity: 0, chance: 0.03, price: 4000000 },
-    { name: "YIN YANG SHARP-LABUBU", quantity: 0, chance: 0.03, price: 900000 },
-     { name: "YIN YANG TA7ADY", quantity: 0, chance: 0.03, price: 950000 }
+  /* NEW: LillySeason pack — very low quantities, extremely rare */
+  LillySeason: [
+    { name: "LILLY GOAL", quantity: 0, chance: 0.02, price: 1000000 },
+     { name: "LILLY SUIIII", quantity: 0, chance: 0.02, price: 1000000 },
+     { name: "LILLY EXAM", quantity: 0, chance: 0.02, price: 1000000 },
+     { name: "LILLY SAD", quantity: 1, chance: 0.02, price: 1000000 },
+     { name: "LILLY LABUBU", quantity: 0, chance: 0.02, price: 2000000 },
+     { name: "LILLY PURPLE", quantity: 0, chance: 0.02, price: 1000000 },
+     { name: "LILLY SEASON", quantity: 0, chance: 0.02, price: 7000000 },
+     { name: "LILLY 67", quantity: 0, chance: 0.02, price: 10000000 },
+     { name: "LILLY CANELONLI", quantity: 0, chance: 0.02, price: 12000000 },
   ],
 
   /* SECRET pack placeholders — slots intentionally left with 0 quantity so you can fill later.
@@ -603,7 +600,7 @@ function getCardType(cardName) {
   if (cardPools.mythical && cardPools.mythical.some(c=>c.name===cardName)) return 'mythical';
   if (cardPools.divine.some(c=>c.name===cardName)) return 'divine';
   if (cardPools.pristimatic.some(c=>c.name===cardName)) return 'pristimatic';
-  if (cardPools.yinyang && cardPools.yinyang.some(c=>c.name===cardName)) return 'yinyang';
+  if (cardPools.LillySeason && cardPools.LillySeason.some(c=>c.name===cardName)) return 'LillySeason';
   if (cardPools.secret && cardPools.secret.some(c=>c.name===cardName)) return 'secret';
   return '';
 }
@@ -616,7 +613,7 @@ function getBaseCardPrice(cardName) {
     ...(cardPools.mythical||[]),
     ...cardPools.divine,
     ...cardPools.pristimatic,
-    ...(cardPools.yinyang||[]),
+    ...(cardPools.LillySeason||[]),
     ...(cardPools.secret||[])
   ];
   const c = all.find(x=>x.name===cardName);
@@ -631,7 +628,7 @@ function getCardQuantity(cardName) {
     ...(cardPools.mythical||[]),
     ...cardPools.divine,
     ...cardPools.pristimatic,
-    ...(cardPools.yinyang||[]),
+    ...(cardPools.LillySeason||[]),
     ...(cardPools.secret||[])
   ];
   const c = all.find(x=>x.name===cardName);
@@ -980,7 +977,7 @@ function updatePackChances() {
     { type: 'mythical', pool: cardPools.mythical, buttonId: 'buyMythicalBtn' },
     { type: 'divine', pool: cardPools.divine, buttonId: 'buyDivineBtn' },
     { type: 'pristimatic', pool: cardPools.pristimatic, buttonId: 'buyPristimaticBtn' },
-    { type: 'yinyang', pool: cardPools.yinyang, buttonId: 'buyyinyangBtn' }, // <-- yinyang added
+    { type: 'LillySeason', pool: cardPools.LillySeason, buttonId: 'buyLillySeasonBtn' }, // <-- LillySeason added
     { type: 'secret', pool: cardPools.secret, buttonId: 'buySecretBtn' }
   ];
   packs.forEach(pack=>{
@@ -988,7 +985,7 @@ function updatePackChances() {
     const availableCards = (pack.pool || []).filter(card => getCardQuantity(card.name) > 0);
     availableCards.forEach(card => totalChance += card.chance);
     const chanceText = `(${Math.round(totalChance*100)}%)`;
-    const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='mythical'?3000:pack.type==='divine'?5000:pack.type==='pristimatic'?7500:(pack.type==='secret'?50000:(pack.type==='yinyang'?1000000:0));
+    const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='mythical'?3000:pack.type==='divine'?5000:pack.type==='pristimatic'?7500:(pack.type==='secret'?50000:(pack.type==='LillySeason'?1000000:0));
     const btn = document.getElementById(pack.buttonId);
     if (btn) {
       btn.innerText = `Buy ${pack.type.charAt(0).toUpperCase()+pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
@@ -1042,7 +1039,7 @@ async function openPack(type) {
   else if (type === "mythical") { packPrice = 3000; pool = cardPools.mythical; }
   else if (type === "divine") { packPrice = 5000; pool = cardPools.divine; }
   else if (type === "pristimatic") { packPrice = 7500; pool = cardPools.pristimatic; }
-  else if (type === "yinyang") { packPrice = 50000; pool = cardPools.yinyang; } // <-- yinyang support
+  else if (type === "LillySeason") { packPrice = 50000; pool = cardPools.LillySeason; } // <-- LillySeason support
   else if (type === "secret") { packPrice = 50000; pool = cardPools.secret; }
 
   if (balance < packPrice) { showMessage("You don't have enough money to buy this pack."); return; }
