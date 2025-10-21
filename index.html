@@ -534,7 +534,7 @@ let cardPools = {
 
   /* NEW: LillySeason pack — very low quantities, extremely rare */
   LillySeason: [
-    { name: "LILLY GOAL", quantity: 0, chance: 0.02, price: 1000000 },
+    { name: "LILLY TRIP", quantity: 0, chance: 0.02, price: 2000000 },
      { name: "LILLY SUIIII", quantity: 0, chance: 0.02, price: 1000000 },
      { name: "LILLY EXAM", quantity: 0, chance: 0.02, price: 1000000 },
      { name: "LILLY SAD", quantity: 1, chance: 0.02, price: 1000000 },
@@ -3142,57 +3142,6 @@ window.__shortenNumbers = {
   console.log('[rebirth-multiplier] installed: base=1.0, +0.5 per level. Current multiplier:', getSellMultiplier());
 
 })(); // IIFE end
-</script>
-<!-- ===== White Loading Screen ===== -->
-<div id="loadingScreen">
-  <img id="loadingLogo" src="fish.png" alt="Loading">
-  <div id="loadingText">Loading...</div>
-</div>
-
-<style>
-  /* Loading screen styling */
-  #loadingScreen {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 99999;
-    transition: opacity 0.8s ease;
-  }
-
-  #loadingLogo {
-    width: 150px;
-    height: 150px;
-    object-fit: contain;
-    margin-bottom: 20px;
-  }
-
-  #loadingText {
-    font-family: Arial, sans-serif;
-    font-size: 20px;
-    color: #333;
-    animation: blink 1.5s infinite;
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-</style>
-
-<script>
-  // Wait 10 seconds, then hide loading screen
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      const loader = document.getElementById('loadingScreen');
-      loader.style.opacity = '0';
-      setTimeout(() => loader.remove(), 800); // remove after fade-out
-    }, 4000); // 10 seconds
-  });
 </script>
 
   </body>
