@@ -136,9 +136,9 @@
     box-shadow: 0 6px 20px rgba(2,6,15,0.6);
   }
 
-  /* ---------- LillySeason CARD: light-blue, water-like moving effect ---------- */
-  .LillySeason-card {
-    background: linear-gradient(180deg, #ff00f2 0%, #e100ff 35%, #ff00f2 60%, #e100ff 100%);
+  /* ---------- Candy CARD: light-blue, water-like moving effect ---------- */
+  .Candy-card {
+    background: linear-gradient(180deg, #ff00f2 0%, #0565ff 35%, #ff00f2 60%, #0565ff 100%);
     border-color: #ffffff;
     color: #ff0000;
     box-shadow: inset 0 -6px 30px rgba(157, 5, 228, 0.06), 0 10px 30px rgba(193, 1, 246, 0.08);
@@ -148,7 +148,7 @@
   }
 
   /* subtle flowing highlight layer */
-  .LillySeason-card::before {
+  .Candy-card::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -164,7 +164,7 @@
   }
 
   /* moving wave stripe for water flow */
-  .LillySeason-card::after {
+  .Candy-card::after {
     content: "";
     position: absolute;
     left: -60%;
@@ -185,16 +185,16 @@
     animation: waveMove 8.5s linear infinite;
   }
 
-  /* text polish for headings inside an LillySeason card */
-  .LillySeason-card h3,
-  .LillySeason-card .card-title {
+  /* text polish for headings inside an Candy card */
+  .Candy-card h3,
+  .Candy-card .card-title {
     color: #022c3a;
     text-shadow: 0 1px 0 rgba(255,255,255,0.5);
     font-weight: 800;
   }
 
   /* optional little floating bubbles to add life */
-  .LillySeason-card .LillySeason-bubble {
+  .Candy-card .Candy-bubble {
     position: absolute;
     border-radius: 50%;
     background: rgba(255,255,255,0.14);
@@ -222,9 +222,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .LillySeason-card::before,
-    .LillySeason-card::after,
-    .LillySeason-card .LillySeason-bubble {
+    .Candy-card::before,
+    .Candy-card::after,
+    .Candy-card .Candy-bubble {
       animation: none !important;
     }
   }
@@ -232,9 +232,9 @@
 
 <script>
 /**
- * markLillySeasonCardsByName(names)
+ * markCandyCardsByName(names)
  * - names: string or array of strings (exact card name match, case-insensitive)
- * Adds the .LillySeason-card class to matching card DOM nodes and adds decorative bubbles.
+ * Adds the .Candy-card class to matching card DOM nodes and adds decorative bubbles.
  *
  * This script is safe to include in <head> — it waits for DOMContentLoaded before acting.
  */
@@ -247,10 +247,10 @@
 
   function addBubbles(cardEl, count) {
     // avoid duplicate bubble groups
-    if (cardEl.querySelector('.LillySeason-bubble')) return;
+    if (cardEl.querySelector('.Candy-bubble')) return;
     for (let i = 0; i < count; i++) {
       const b = document.createElement('div');
-      b.className = 'LillySeason-bubble';
+      b.className = 'Candy-bubble';
       const size = 8 + Math.round(Math.random() * 26);
       b.style.width = b.style.height = size + 'px';
       b.style.left = (8 + Math.random() * 84) + '%';
@@ -261,7 +261,7 @@
     }
   }
 
-  window.markLillySeasonCardsByName = function(names, bubbleCount = 3) {
+  window.markCandyCardsByName = function(names, bubbleCount = 3) {
     if (!names) return;
     const arr = Array.isArray(names) ? names.slice() : [names];
     const targets = arr.map(s => String(s || '').trim().toLowerCase());
@@ -269,20 +269,20 @@
       const h3 = card.querySelector('h3');
       const name = h3 ? String(h3.innerText || '').trim().toLowerCase() : '';
       if (isMatch(name, targets)) {
-        card.classList.add('LillySeason-card');
+        card.classList.add('Candy-card');
         addBubbles(card, bubbleCount || 2);
       } else {
-        // remove LillySeason visuals if present and not matched
-        card.classList.remove('LillySeason-card');
-        card.querySelectorAll('.LillySeason-bubble').forEach(n => n.remove());
+        // remove Candy visuals if present and not matched
+        card.classList.remove('Candy-card');
+        card.querySelectorAll('.Candy-bubble').forEach(n => n.remove());
       }
     });
   };
 
   // convenience: mark a default name on load if present in the DOM
   document.addEventListener('DOMContentLoaded', function(){
-    // auto-mark cards named "LillySeason CARD" and "LillySeason" (case-insensitive)
-    markLillySeasonCardsByName(['LillySeason card','LillySeason']);
+    // auto-mark cards named "Candy CARD" and "Candy" (case-insensitive)
+    markCandyCardsByName(['Candy card','Candy']);
   }, { once: true });
 })();
 </script>
@@ -398,7 +398,7 @@
     <button id="buyPristimaticBtn" class="btn btn-pristimatic" onclick="openPack('pristimatic')">Buy Pristimatic Pack (100%) ($7500)</button>
     <!-- SECRET pack button (50,000) -->
     <button id="buySecretBtn" class="btn btn-secret" onclick="openPack('secret')">Buy SECRET Pack (0%) ($50,000)</button>
-    <button id="buyLillySeasonBtn" class="btn btn-LillySeason" onclick="openPack('LillySeason')">Buy LillySeason Pack (0%) ($1000000)</button>
+    <button id="buyCandyBtn" class="btn btn-Candy" onclick="openPack('Candy')">Buy Candy Pack (0%) ($1000000)</button>
   </div>
 
   <div id="openedCard"></div>
@@ -471,7 +471,7 @@ function generateCardId() { return Date.now().toString() + Math.random().toStrin
 const accounts = { zezo: "000", asser: "230", lilly: "246", ab: "123", layan: "123" };
 
 const MUTATION_TIERS = { common: {chance:0.5}, uncommon:{chance:0.24}, rare:{chance:0.15}, veryHard:{chance:0.08}, ultra:{chance:0.03} };
-const MUTATIONS = { plasma:{priceIncrease:2000,tier:'uncommon'}, bloom:{priceIncrease:2000,tier:'common'}, choc:{priceIncrease:3500,tier:'common'}, shocked:{priceIncrease:4500,tier:'rare'}, rainbow:{priceIncrease:4000,tier:'uncommon'}, burnt:{priceIncrease:4000,tier:'uncommon'}, chilled:{priceIncrease:4500,tier:'rare'}, CHOCOLATE:{priceIncrease:4500,tier:'rare'}, frozen:{priceIncrease:3000,tier:'common'}, LillySeason:{priceIncrease:10000,tier:'veryHard'}, zezopilot:{priceIncrease:12000,tier:'veryHard'}, KHALTO:{priceIncrease:12500,tier:'veryHard'}, aurora:{priceIncrease:15000,tier:'ultra'}, EGYPT:{priceIncrease:16000,tier:'ultra'} };
+const MUTATIONS = { plasma:{priceIncrease:2000,tier:'uncommon'}, bloom:{priceIncrease:2000,tier:'common'}, choc:{priceIncrease:3500,tier:'common'}, shocked:{priceIncrease:4500,tier:'rare'}, rainbow:{priceIncrease:4000,tier:'uncommon'}, burnt:{priceIncrease:4000,tier:'uncommon'}, chilled:{priceIncrease:4500,tier:'rare'}, CHOCOLATE:{priceIncrease:4500,tier:'rare'}, frozen:{priceIncrease:3000,tier:'common'}, Candy:{priceIncrease:10000,tier:'veryHard'}, zezopilot:{priceIncrease:12000,tier:'veryHard'}, KHALTO:{priceIncrease:12500,tier:'veryHard'}, aurora:{priceIncrease:15000,tier:'ultra'}, EGYPT:{priceIncrease:16000,tier:'ultra'} };
 
 let cardPools = {
   common: [
@@ -486,7 +486,7 @@ let cardPools = {
   rare: [
     { name: "Blue Asser", quantity: 70, chance: 0.30, price: 260 },
     { name: "Asser Dragon", quantity: 50, chance: 0.25, price: 280 },
-    { name: "Asser LillySeason", quantity: 40, chance: 0.20, price: 300 },
+    { name: "Asser Candy", quantity: 40, chance: 0.20, price: 300 },
     { name: "Asser Legend", quantity: 40, chance: 0.15, price: 350 },
     { name: "Asser Mythic", quantity: 40, chance: 0.10, price: 400 }
   ],
@@ -532,19 +532,19 @@ let cardPools = {
     { name: "Zezo SECRET", quantity: 10, chance: 0.05, price: 13500 }
   ],
 
-  /* NEW: LillySeason pack — very low quantities, extremely rare */
-  LillySeason: [
-    { name: "LILLY HOTSPOT", quantity: 0, chance: 0.02, price: 8000000 },
-     { name: "MR.ZEZO", quantity: 0, chance: 0.02, price: 50000000 },
-     { name: "LILLY SUIIII", quantity: 0, chance: 0.02, price: 1000000 },
-     { name: "LILLY EXAM", quantity: 0, chance: 0.02, price: 1000000 },
-     { name: "LILLY SAD", quantity: 1, chance: 0.02, price: 1000000 },
-     { name: "ASSER ESH DAKHAL", quantity: 0, chance: 0.02, price: 15000000 },
-     { name: "LILLY LABUBU", quantity: 0, chance: 0.02, price: 2000000 },
-     { name: "LILLY TACO", quantity: 0, chance: 0.02, price: 10000000 },
-     { name: "LILLY SEASON", quantity: 0, chance: 0.02, price: 7000000 },
-     { name: "LILLY 67", quantity: 0, chance: 0.02, price: 10000000 },
-     { name: "LILLY CANELONLI", quantity: 0, chance: 0.02, price: 12000000 },
+  /* NEW: Candy pack — very low quantities, extremely rare */
+  Candy: [
+    { name: "CANDY LILLY", quantity: 0, chance: 0.02, price: 1500000 },
+    { name: "CANDY ASSER", quantity: 1, chance: 0.02, price: 1500000 },
+    { name: "CANDY ZEZO", quantity: 0, chance: 0.02, price: 1500000 },
+    { name: "CANDY KHALTO", quantity: 0, chance: 0.02, price: 15000000 },
+    { name: "CANDY PS5", quantity: 0, chance: 0.02, price: 8000000 },
+    { name: "CANDY RED DEAD REDEMTION II", quantity: 0, chance: 0.02, price: 10000000 },
+    { name: "CANDY MR.ZEZO", quantity: 0, chance: 0.02, price: 13000000 },
+    { name: "CANDY ROCKET LEAGUE", quantity: 0, chance: 0.02, price: 10000000 },
+    { name: "CANDY LA GRANDE", quantity: 0, chance: 0.02, price: 15000000 },
+    { name: "CANDY 67", quantity: 0, chance: 0.02, price: 67000000 },
+     
   ],
 
   /* SECRET pack placeholders — slots intentionally left with 0 quantity so you can fill later.
@@ -602,7 +602,7 @@ function getCardType(cardName) {
   if (cardPools.mythical && cardPools.mythical.some(c=>c.name===cardName)) return 'mythical';
   if (cardPools.divine.some(c=>c.name===cardName)) return 'divine';
   if (cardPools.pristimatic.some(c=>c.name===cardName)) return 'pristimatic';
-  if (cardPools.LillySeason && cardPools.LillySeason.some(c=>c.name===cardName)) return 'LillySeason';
+  if (cardPools.Candy && cardPools.Candy.some(c=>c.name===cardName)) return 'Candy';
   if (cardPools.secret && cardPools.secret.some(c=>c.name===cardName)) return 'secret';
   return '';
 }
@@ -615,7 +615,7 @@ function getBaseCardPrice(cardName) {
     ...(cardPools.mythical||[]),
     ...cardPools.divine,
     ...cardPools.pristimatic,
-    ...(cardPools.LillySeason||[]),
+    ...(cardPools.Candy||[]),
     ...(cardPools.secret||[])
   ];
   const c = all.find(x=>x.name===cardName);
@@ -630,7 +630,7 @@ function getCardQuantity(cardName) {
     ...(cardPools.mythical||[]),
     ...cardPools.divine,
     ...cardPools.pristimatic,
-    ...(cardPools.LillySeason||[]),
+    ...(cardPools.Candy||[]),
     ...(cardPools.secret||[])
   ];
   const c = all.find(x=>x.name===cardName);
@@ -979,7 +979,7 @@ function updatePackChances() {
     { type: 'mythical', pool: cardPools.mythical, buttonId: 'buyMythicalBtn' },
     { type: 'divine', pool: cardPools.divine, buttonId: 'buyDivineBtn' },
     { type: 'pristimatic', pool: cardPools.pristimatic, buttonId: 'buyPristimaticBtn' },
-    { type: 'LillySeason', pool: cardPools.LillySeason, buttonId: 'buyLillySeasonBtn' }, // <-- LillySeason added
+    { type: 'Candy', pool: cardPools.Candy, buttonId: 'buyCandyBtn' }, // <-- Candy added
     { type: 'secret', pool: cardPools.secret, buttonId: 'buySecretBtn' }
   ];
   packs.forEach(pack=>{
@@ -987,7 +987,7 @@ function updatePackChances() {
     const availableCards = (pack.pool || []).filter(card => getCardQuantity(card.name) > 0);
     availableCards.forEach(card => totalChance += card.chance);
     const chanceText = `(${Math.round(totalChance*100)}%)`;
-    const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='mythical'?3000:pack.type==='divine'?5000:pack.type==='pristimatic'?7500:(pack.type==='secret'?50000:(pack.type==='LillySeason'?1000000:0));
+    const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='mythical'?3000:pack.type==='divine'?5000:pack.type==='pristimatic'?7500:(pack.type==='secret'?50000:(pack.type==='Candy'?1000000:0));
     const btn = document.getElementById(pack.buttonId);
     if (btn) {
       btn.innerText = `Buy ${pack.type.charAt(0).toUpperCase()+pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
@@ -1041,7 +1041,7 @@ async function openPack(type) {
   else if (type === "mythical") { packPrice = 3000; pool = cardPools.mythical; }
   else if (type === "divine") { packPrice = 5000; pool = cardPools.divine; }
   else if (type === "pristimatic") { packPrice = 7500; pool = cardPools.pristimatic; }
-  else if (type === "LillySeason") { packPrice = 1000000; pool = cardPools.LillySeason; } // <-- LillySeason support
+  else if (type === "Candy") { packPrice = 1000000; pool = cardPools.Candy; } // <-- Candy support
   else if (type === "secret") { packPrice = 50000; pool = cardPools.secret; }
 
   if (balance < packPrice) { showMessage("You don't have enough money to buy this pack."); return; }
@@ -2714,7 +2714,7 @@ window.__shortenNumbers = {
     // ==== CONFIG: Edit this to add more levels ====
     // money may be a number (plain integer) or a shorthand string "5M", "1.2K", etc.
     const REBIRTH_LEVELS = [
-      { level: 2, card: "Zezo SECRET", money: "5M" },{ level: 3, card: "lilly kowaferr", money: "10M" },{ level: 4, card: "Asser colotinni fasatennee", money: "150M" },{ level: 5, card: "Zezo Prismatic", money: "350M" },{ level: 6, card: "LILLY EXAM", money: "650M" }      // example: requires card "LILLY EXAM" and $5,000,000
+      { level: 2, card: "Zezo SECRET", money: "5M" },{ level: 3, card: "lilly kowaferr", money: "10M" },{ level: 4, card: "Asser colotinni fasatennee", money: "150M" },{ level: 5, card: "Zezo Prismatic", money: "350M" },{ level: 6, card: "LILLY EXAM", money: "650M" },{ level: 7, card: "CANDY ZEZO", money: "850M" },{ level: 8, card: "CANDY RED DEAD REDEMTION II", money: "1B" }     // example: requires card "LILLY EXAM" and $5,000,000
       // add more levels like:
       // { level: 3, card: "LILLY SUIIII", money: 20000000 },
     ];
