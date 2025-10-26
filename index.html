@@ -2,10 +2,6 @@
 <meta charset="UTF-8">
 <title>Pack Opening Game with Mutations + Protect</title>
 
-<!-- Prevent zooming on mobile -->
-<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <meta name="format-detection" content="telephone=no">
 <link rel="apple-touch-icon" href="trala.png">
@@ -18,18 +14,14 @@
 
 
 <style>
-  html, body {
+html, body {
   margin: 0;
   padding: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden; /* removes scrolling */
-  touch-action: none; /* disables iOS pull-to-refresh / zoom */
-}
-#gameBox, #loginBox {
   width: 100%;
   height: 100%;
-  box-sizing: border-box;
+  background: #ff0000; /* your game color */
+  overflow: auto; /* allow movement if needed */
+  touch-action: pan-x pan-y; /* allow scroll and move */
 }
 
 
