@@ -128,9 +128,9 @@
     box-shadow: 0 6px 20px rgba(2,6,15,0.6);
   }
 
-  /* ---------- Candy CARD: light-blue, water-like moving effect ---------- */
-  .Candy-card {
-    background: linear-gradient(180deg, #ff00f2 0%, #0565ff 35%, #ff00f2 60%, #0565ff 100%);
+  /* ---------- Bloodmoon CARD: light-blue, water-like moving effect ---------- */
+  .Bloodmoon-card {
+    background: linear-gradient(180deg, #ff0000 0%, #821010 35%, #ff0000 60%, #821010 100%);
     border-color: #ffffff;
     color: #ff0000;
     box-shadow: inset 0 -6px 30px rgba(157, 5, 228, 0.06), 0 10px 30px rgba(193, 1, 246, 0.08);
@@ -140,7 +140,7 @@
   }
 
   /* subtle flowing highlight layer */
-  .Candy-card::before {
+  .Bloodmoon-card::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -156,7 +156,7 @@
   }
 
   /* moving wave stripe for water flow */
-  .Candy-card::after {
+  .Bloodmoon-card::after {
     content: "";
     position: absolute;
     left: -60%;
@@ -177,16 +177,16 @@
     animation: waveMove 8.5s linear infinite;
   }
 
-  /* text polish for headings inside an Candy card */
-  .Candy-card h3,
-  .Candy-card .card-title {
+  /* text polish for headings inside an Bloodmoon card */
+  .Bloodmoon-card h3,
+  .Bloodmoon-card .card-title {
     color: #022c3a;
     text-shadow: 0 1px 0 rgba(255,255,255,0.5);
     font-weight: 800;
   }
 
   /* optional little floating bubbles to add life */
-  .Candy-card .Candy-bubble {
+  .Bloodmoon-card .Bloodmoon-bubble {
     position: absolute;
     border-radius: 50%;
     background: rgba(255,255,255,0.14);
@@ -214,9 +214,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .Candy-card::before,
-    .Candy-card::after,
-    .Candy-card .Candy-bubble {
+    .Bloodmoon-card::before,
+    .Bloodmoon-card::after,
+    .Bloodmoon-card .Bloodmoon-bubble {
       animation: none !important;
     }
   }
@@ -224,9 +224,9 @@
 
 <script>
 /**
- * markCandyCardsByName(names)
+ * markBloodmoonCardsByName(names)
  * - names: string or array of strings (exact card name match, case-insensitive)
- * Adds the .Candy-card class to matching card DOM nodes and adds decorative bubbles.
+ * Adds the .Bloodmoon-card class to matching card DOM nodes and adds decorative bubbles.
  *
  * This script is safe to include in <head> — it waits for DOMContentLoaded before acting.
  */
@@ -239,10 +239,10 @@
 
   function addBubbles(cardEl, count) {
     // avoid duplicate bubble groups
-    if (cardEl.querySelector('.Candy-bubble')) return;
+    if (cardEl.querySelector('.Bloodmoon-bubble')) return;
     for (let i = 0; i < count; i++) {
       const b = document.createElement('div');
-      b.className = 'Candy-bubble';
+      b.className = 'Bloodmoon-bubble';
       const size = 8 + Math.round(Math.random() * 26);
       b.style.width = b.style.height = size + 'px';
       b.style.left = (8 + Math.random() * 84) + '%';
@@ -253,7 +253,7 @@
     }
   }
 
-  window.markCandyCardsByName = function(names, bubbleCount = 3) {
+  window.markBloodmoonCardsByName = function(names, bubbleCount = 3) {
     if (!names) return;
     const arr = Array.isArray(names) ? names.slice() : [names];
     const targets = arr.map(s => String(s || '').trim().toLowerCase());
@@ -261,20 +261,20 @@
       const h3 = card.querySelector('h3');
       const name = h3 ? String(h3.innerText || '').trim().toLowerCase() : '';
       if (isMatch(name, targets)) {
-        card.classList.add('Candy-card');
+        card.classList.add('Bloodmoon-card');
         addBubbles(card, bubbleCount || 2);
       } else {
-        // remove Candy visuals if present and not matched
-        card.classList.remove('Candy-card');
-        card.querySelectorAll('.Candy-bubble').forEach(n => n.remove());
+        // remove Bloodmoon visuals if present and not matched
+        card.classList.remove('Bloodmoon-card');
+        card.querySelectorAll('.Bloodmoon-bubble').forEach(n => n.remove());
       }
     });
   };
 
   // convenience: mark a default name on load if present in the DOM
   document.addEventListener('DOMContentLoaded', function(){
-    // auto-mark cards named "Candy CARD" and "Candy" (case-insensitive)
-    markCandyCardsByName(['Candy card','Candy']);
+    // auto-mark cards named "Bloodmoon CARD" and "Bloodmoon" (case-insensitive)
+    markBloodmoonCardsByName(['Bloodmoon card','Bloodmoon']);
   }, { once: true });
 })();
 </script>
@@ -390,7 +390,7 @@
     <button id="buyPristimaticBtn" class="btn btn-pristimatic" onclick="openPack('pristimatic')">Buy Pristimatic Pack (100%) ($7500)</button>
     <!-- SECRET pack button (50,000) -->
     <button id="buySecretBtn" class="btn btn-secret" onclick="openPack('secret')">Buy SECRET Pack (0%) ($50,000)</button>
-    <button id="buyCandyBtn" class="btn btn-Candy" onclick="openPack('Candy')">Buy Candy Pack (0%) ($1000000)</button>
+    <button id="buyBloodmoonBtn" class="btn btn-Bloodmoon" onclick="openPack('Bloodmoon')">Buy Bloodmoon Pack (0%) ($1000000)</button>
   </div>
 
   <div id="openedCard"></div>
@@ -463,7 +463,7 @@ function generateCardId() { return Date.now().toString() + Math.random().toStrin
 const accounts = { zezo: "000", asser: "67", lilly: "678", ab: "123", layan: "123" };
 
 const MUTATION_TIERS = { common: {chance:0.5}, uncommon:{chance:0.24}, rare:{chance:0.15}, veryHard:{chance:0.08}, ultra:{chance:0.03} };
-const MUTATIONS = { plasma:{priceIncrease:2000,tier:'uncommon'}, bloom:{priceIncrease:2000,tier:'common'}, choc:{priceIncrease:3500,tier:'common'}, shocked:{priceIncrease:4500,tier:'rare'}, rainbow:{priceIncrease:4000,tier:'uncommon'}, burnt:{priceIncrease:4000,tier:'uncommon'}, chilled:{priceIncrease:4500,tier:'rare'}, CHOCOLATE:{priceIncrease:4500,tier:'rare'}, frozen:{priceIncrease:3000,tier:'common'}, Candy:{priceIncrease:10000,tier:'veryHard'}, zezopilot:{priceIncrease:12000,tier:'veryHard'}, KHALTO:{priceIncrease:12500,tier:'veryHard'}, aurora:{priceIncrease:15000,tier:'ultra'}, EGYPT:{priceIncrease:16000,tier:'ultra'} };
+const MUTATIONS = { plasma:{priceIncrease:2000,tier:'uncommon'}, bloom:{priceIncrease:2000,tier:'common'}, choc:{priceIncrease:3500,tier:'common'}, shocked:{priceIncrease:4500,tier:'rare'}, rainbow:{priceIncrease:4000,tier:'uncommon'}, burnt:{priceIncrease:4000,tier:'uncommon'}, chilled:{priceIncrease:4500,tier:'rare'}, CHOCOLATE:{priceIncrease:4500,tier:'rare'}, frozen:{priceIncrease:3000,tier:'common'}, Bloodmoon:{priceIncrease:10000,tier:'veryHard'}, zezopilot:{priceIncrease:12000,tier:'veryHard'}, KHALTO:{priceIncrease:12500,tier:'veryHard'}, aurora:{priceIncrease:15000,tier:'ultra'}, EGYPT:{priceIncrease:16000,tier:'ultra'} };
 
 let cardPools = {
   common: [
@@ -478,7 +478,7 @@ let cardPools = {
   rare: [
     { name: "Blue Asser", quantity: 70, chance: 0.30, price: 260 },
     { name: "Asser Dragon", quantity: 50, chance: 0.25, price: 280 },
-    { name: "Asser Candy", quantity: 40, chance: 0.20, price: 300 },
+    { name: "Asser Bloodmoon", quantity: 40, chance: 0.20, price: 300 },
     { name: "Asser Legend", quantity: 40, chance: 0.15, price: 350 },
     { name: "Asser Mythic", quantity: 40, chance: 0.10, price: 400 }
   ],
@@ -524,20 +524,19 @@ let cardPools = {
     { name: "Zezo SECRET", quantity: 10, chance: 0.05, price: 13500 }
   ],
 
-  /* NEW: Candy pack — very low quantities, extremely rare */
-  Candy: [
-    { name: "CANDY LILLY", quantity: 0, chance: 0.02, price: 1500000 },
-    { name: "CANDY ASSER", quantity: 1, chance: 0.02, price: 1500000 },
-    { name: "CANDY ZEZO", quantity: 0, chance: 0.02, price: 1500000 },
-    { name: "CANDY KHALTO", quantity: 0, chance: 0.02, price: 15000000 },
-    { name: "CANDY PS5", quantity: 0, chance: 0.02, price: 8000000 },
-    { name: "CANDY RED DEAD REDEMTION II", quantity: 0, chance: 0.02, price: 10000000 },
-    { name: "CANDY MR.ZEZO", quantity: 0, chance: 0.02, price: 13000000 },
-    { name: "CANDY ROCKET LEAGUE", quantity: 0, chance: 0.02, price: 10000000 },
-    { name: "CANDY LA GRANDE", quantity: 0, chance: 0.02, price: 15000000 },
-    { name: "CANDY MEOWL", quantity: 0, chance: 0.02, price: 35000000 },
-    { name: "CANDY 67", quantity: 0, chance: 0.02, price: 67000000 },
-     
+  /* NEW: Bloodmoon pack — very low quantities, extremely rare */
+  Bloodmoon: [
+    { name: "Bloodmoon GARAMA AND MADUNG", quantity: 1, chance: 0.02, price: 2000000 },
+    { name: "Bloodmoon MEOWL", quantity: 0, chance: 0.02, price: 90000000 },
+    { name: "Bloodmoon 67", quantity: 0, chance: 0.02, price: 70000000 },
+    { name: "Bloodmoon LOS TRALALITOS", quantity: 0, chance: 0.02, price: 75000000 },
+    { name: "Bloodmoon LOS BROS", quantity: 0, chance: 0.02, price: 80000000 },
+    { name: "Bloodmoon LOS TUNGTUNGCITOS", quantity: 0, chance: 0.02, price: 80000000 },
+    { name: "Bloodmoon MADRID VS BARCA", quantity: 0, chance: 0.02, price: 35000000 },
+    { name: "Bloodmoon JOB JOB JOB SAHUR!", quantity: 0, chance: 0.02, price: 70000000 },
+    { name: "Bloodmoon LOS 67", quantity: 0, chance: 0.02, price: 150000000 },
+    { name: "Bloodmoon LOS ZEZOS", quantity: 0, chance: 0.02, price: 100000000 },
+    
   ],
 
   /* SECRET pack placeholders — slots intentionally left with 0 quantity so you can fill later.
@@ -595,7 +594,7 @@ function getCardType(cardName) {
   if (cardPools.mythical && cardPools.mythical.some(c=>c.name===cardName)) return 'mythical';
   if (cardPools.divine.some(c=>c.name===cardName)) return 'divine';
   if (cardPools.pristimatic.some(c=>c.name===cardName)) return 'pristimatic';
-  if (cardPools.Candy && cardPools.Candy.some(c=>c.name===cardName)) return 'Candy';
+  if (cardPools.Bloodmoon && cardPools.Bloodmoon.some(c=>c.name===cardName)) return 'Bloodmoon';
   if (cardPools.secret && cardPools.secret.some(c=>c.name===cardName)) return 'secret';
   return '';
 }
@@ -608,7 +607,7 @@ function getBaseCardPrice(cardName) {
     ...(cardPools.mythical||[]),
     ...cardPools.divine,
     ...cardPools.pristimatic,
-    ...(cardPools.Candy||[]),
+    ...(cardPools.Bloodmoon||[]),
     ...(cardPools.secret||[])
   ];
   const c = all.find(x=>x.name===cardName);
@@ -623,7 +622,7 @@ function getCardQuantity(cardName) {
     ...(cardPools.mythical||[]),
     ...cardPools.divine,
     ...cardPools.pristimatic,
-    ...(cardPools.Candy||[]),
+    ...(cardPools.Bloodmoon||[]),
     ...(cardPools.secret||[])
   ];
   const c = all.find(x=>x.name===cardName);
@@ -972,7 +971,7 @@ function updatePackChances() {
     { type: 'mythical', pool: cardPools.mythical, buttonId: 'buyMythicalBtn' },
     { type: 'divine', pool: cardPools.divine, buttonId: 'buyDivineBtn' },
     { type: 'pristimatic', pool: cardPools.pristimatic, buttonId: 'buyPristimaticBtn' },
-    { type: 'Candy', pool: cardPools.Candy, buttonId: 'buyCandyBtn' }, // <-- Candy added
+    { type: 'Bloodmoon', pool: cardPools.Bloodmoon, buttonId: 'buyBloodmoonBtn' }, // <-- Bloodmoon added
     { type: 'secret', pool: cardPools.secret, buttonId: 'buySecretBtn' }
   ];
   packs.forEach(pack=>{
@@ -980,7 +979,7 @@ function updatePackChances() {
     const availableCards = (pack.pool || []).filter(card => getCardQuantity(card.name) > 0);
     availableCards.forEach(card => totalChance += card.chance);
     const chanceText = `(${Math.round(totalChance*100)}%)`;
-    const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='mythical'?3000:pack.type==='divine'?5000:pack.type==='pristimatic'?7500:(pack.type==='secret'?50000:(pack.type==='Candy'?1000000:0));
+    const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='mythical'?3000:pack.type==='divine'?5000:pack.type==='pristimatic'?7500:(pack.type==='secret'?50000:(pack.type==='Bloodmoon'?1000000:0));
     const btn = document.getElementById(pack.buttonId);
     if (btn) {
       btn.innerText = `Buy ${pack.type.charAt(0).toUpperCase()+pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
@@ -1034,7 +1033,7 @@ async function openPack(type) {
   else if (type === "mythical") { packPrice = 3000; pool = cardPools.mythical; }
   else if (type === "divine") { packPrice = 5000; pool = cardPools.divine; }
   else if (type === "pristimatic") { packPrice = 7500; pool = cardPools.pristimatic; }
-  else if (type === "Candy") { packPrice = 1000000; pool = cardPools.Candy; } // <-- Candy support
+  else if (type === "Bloodmoon") { packPrice = 1000000; pool = cardPools.Bloodmoon; } // <-- Bloodmoon support
   else if (type === "secret") { packPrice = 50000; pool = cardPools.secret; }
 
   if (balance < packPrice) { showMessage("You don't have enough money to buy this pack."); return; }
@@ -2718,6 +2717,13 @@ window.__shortenNumbers = {
       { level: 10, card: "CANDY MR.ZEZO", money: "1.5B" },
       { level: 11, card: "CANDY 67", money: "2.25B" },
       { level: 12, card: "CANDY MEOWL", money: "2.75B" },
+      { level: 13, card: "BLOODMOON GARAMA AND MADUNG", money: "3B" },
+      { level: 14, card: "BLOODMOON MEOWL", money: "3.25B" },
+      { level: 15, card: "BLOODMOON 67", money: "3.5B" },
+      { level: 16, card: "BLOODMOON LOS BROS", money: "3.75B" },
+      { level: 17, card: "BLOODMOON LOS ZEZOS", money: "4B" },
+      { level: 18, card: "BLOODMOON LOS TUNGTUNGCITOS", money: "4.25B" },
+      { level: 19, card: "BLOODMOON MADRID VS BARCA", money: "4.5B" },
     ];
 
     // ==== HELPERS ====
