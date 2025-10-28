@@ -463,7 +463,21 @@ function generateCardId() { return Date.now().toString() + Math.random().toStrin
 const accounts = { zezo: "000", asser: "67", lilly: "678", ab: "123", layan: "123" };
 
 const MUTATION_TIERS = { common: {chance:0.5}, uncommon:{chance:0.24}, rare:{chance:0.15}, veryHard:{chance:0.08}, ultra:{chance:0.03} };
-const MUTATIONS = { plasma:{priceIncrease:2000,tier:'uncommon'}, bloom:{priceIncrease:2000,tier:'common'}, choc:{priceIncrease:3500,tier:'common'}, shocked:{priceIncrease:4500,tier:'rare'}, rainbow:{priceIncrease:4000,tier:'uncommon'}, burnt:{priceIncrease:4000,tier:'uncommon'}, chilled:{priceIncrease:4500,tier:'rare'}, CHOCOLATE:{priceIncrease:4500,tier:'rare'}, frozen:{priceIncrease:3000,tier:'common'}, Bloodmoon:{priceIncrease:10000,tier:'veryHard'}, zezopilot:{priceIncrease:12000,tier:'veryHard'}, KHALTO:{priceIncrease:12500,tier:'veryHard'}, aurora:{priceIncrease:15000,tier:'ultra'}, EGYPT:{priceIncrease:16000,tier:'ultra'} };
+const MUTATIONS = { plasma:{priceIncrease:20000,tier:'uncommon'},
+ bloom:{priceIncrease:20000,tier:'common'},
+  choc:{priceIncrease:35000,tier:'common'},
+   shocked:{priceIncrease:45000,tier:'rare'},
+    rainbow:{priceIncrease:40000,tier:'uncommon'},
+     burnt:{priceIncrease:40000,tier:'uncommon'},
+      chilled:{priceIncrease:45000,tier:'rare'},
+       CHOCOLATE:{priceIncrease:45000,tier:'rare'},
+        frozen:{priceIncrease:30000,tier:'common'},
+         Bloodmoon:{priceIncrease:100000,tier:'veryHard'},
+          zezopilot:{priceIncrease:120000,tier:'veryHard'},
+          TACO:{priceIncrease:200000,tier:'veryHard'},
+           KHALTO:{priceIncrease:120500,tier:'veryHard'},
+            aurora:{priceIncrease:150000,tier:'ultra'},
+             EGYPT:{priceIncrease:160000,tier:'ultra'} };
 
 let cardPools = {
   common: [
@@ -534,6 +548,7 @@ let cardPools = {
     { name: "Bloodmoon LOS TUNGTUNGCITOS", quantity: 0, chance: 0.02, price: 80000000 },
     { name: "Bloodmoon MADRID VS BARCA", quantity: 0, chance: 0.02, price: 35000000 },
     { name: "Bloodmoon JOB JOB JOB SAHUR!", quantity: 0, chance: 0.02, price: 70000000 },
+    { name: "Bloodmoon LOS JOB SAUHUR!", quantity: 0, chance: 0.02, price: 100000000 },
     { name: "Bloodmoon LOS 67", quantity: 0, chance: 0.02, price: 150000000 },
     { name: "Bloodmoon LOS ZEZOS", quantity: 0, chance: 0.02, price: 100000000 },
     
