@@ -1,62 +1,107 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mini Tournament Firebase</title>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mini Tournament — Realtime (Firebase) — 10 Matches, 4 Days + Final</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; }
-  table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
-  th, td { border: 1px solid #333; padding: 8px; text-align: center; }
-  th { background-color: #eee; }
-  input { width: 50px; }
-  .final { margin-top: 30px; }
+  :root{ --bg:#0f1724; --card:#0b1220; --muted:#9aa7bf; --accent:#3b82f6; --glass: rgba(255,255,255,0.04);} 
+  *{box-sizing:border-box;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;}
+  body{margin:0;background:linear-gradient(180deg,#041025 0%, #06102a 100%);color:#e6eef8; padding:28px;}
+  .wrap{max-width:1100px;margin:0 auto;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  h1{margin:0;font-size:20px;letter-spacing:-0.2px;}
+  p.lead{margin:4px 0 0;color:var(--muted);font-size:13px;}
+  .grid{display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start;}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03);} 
+  .card h2{margin:0 0 8px;font-size:15px;} 
+  .day{margin-bottom:12px;} 
+  table{width:100%;border-collapse:collapse;font-size:13px;} 
+  th,td{padding:8px 6px;text-align:left;} 
+  thead th{font-size:12px;color:var(--muted);font-weight:600;} 
+  tbody tr{border-top:1px dashed rgba(255,255,255,0.03);} 
+  .team{font-weight:600;} 
+  .score-input{width:56px;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:var(--glass);color:inherit;font-weight:700;text-align:center;} 
+  .btn{padding:7px 10px;border-radius:8px;border:0;font-weight:700;cursor:pointer;} 
+  .btn-save{background:linear-gradient(90deg,var(--accent),#6cb1ff);color:#04203d;} 
+  .btn-reset{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);} 
+  .meta{font-size:12px;color:var(--muted);margin-top:8px;} 
+  .leaderboard table{font-size:13px;} 
+  .leaderboard th, .leaderboard td{padding:6px 8px;text-align:left;} 
+  .leaderboard .pos{width:26px;font-weight:800;} 
+  .small{font-size:12px;color:var(--muted);} 
+  .final-card{display:flex;flex-direction:column;gap:10px;} 
+  .final-teams{display:flex;gap:8px;align-items:center;} 
+  .final-team{flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02);text-align:center;font-weight:800;} 
+  .champ{font-size:14px;font-weight:800;text-align:center;margin-top:8px;} 
+  .controls{display:flex;gap:8px;align-items:center;} 
+  .btn-danger{background:linear-gradient(90deg,#ff6b6b,#ff9393);color:#2a0a0a;} 
+  footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center;} 
+  .status{font-size:12px;color:var(--muted);} 
+  @media (max-width:980px){.grid{grid-template-columns:1fr;}.leaderboard{order:-1}}
 </style>
 </head>
 <body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Mini Tournament — Realtime (Firebase)</h1>
+      <p class="lead">Teams: <strong>Barca</strong>, <strong>Man City</strong>, <strong>Liverpool</strong>. Scores saved to Firebase Realtime Database so all users see the same live data.</p>
+    </div>
+    <div style="text-align:right">
+      <div class="small status">DB status: <span id="dbStatus">connecting…</span></div>
+      <div style="margin-top:6px"><button class="btn btn-reset" id="resetAll">Reset tournament</button></div>
+    </div>
+  </header>
 
-<h1>Mini Tournament</h1>
+  <div class="grid">
+    <main>
+      <!-- Days & Matches -->
+      <div id="daysContainer"></div>
 
-<h2>Matches</h2>
-<table id="matchesTable">
-  <thead>
-    <tr>
-      <th>Day</th>
-      <th>Match</th>
-      <th>Score</th>
-      <th>Set Score</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+      <!-- Final match -->
+      <div class="card" style="margin-top:14px;">
+        <h2>FINAL — Top 1 vs Top 2</h2>
+        <div class="final-card">
+          <div class="small">The final will use the current leaderboard's 1st and 2nd placed teams. (Final does not affect leaderboard points.)</div>
+          <div class="final-teams">
+            <div class="final-team" id="finalHome">—</div>
+            <div style="font-weight:700;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);">vs</div>
+            <div class="final-team" id="finalAway">—</div>
+          </div>
 
-<h2>Leaderboard</h2>
-<table id="leaderboard">
-  <thead>
-    <tr>
-      <th>Team</th>
-      <th>Points</th>
-      <th>Wins</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input id="finalHomeScore" class="score-input" type="number" min="0" placeholder="0" />
+            <button class="btn btn-save" id="saveFinal">Save final score</button>
+            <input id="finalAwayScore" class="score-input" type="number" min="0" placeholder="0" />
+            <button class="btn btn-reset" id="resetFinal">Reset final</button>
+          </div>
 
-<div class="final">
-  <h2>Final</h2>
-  <p id="finalMatch">Top 2 teams will play here</p>
-  <input type="number" id="finalTeam1Score" placeholder="Team 1 score">
-  <input type="number" id="finalTeam2Score" placeholder="Team 2 score">
-  <button onclick="setFinalScore()">Set Final Score</button>
-  <p id="finalResult"></p>
+          <div class="champ" id="finalResult">No final played yet</div>
+        </div>
+      </div>
+    </main>
+
+    <aside>
+      <div class="card leaderboard" id="leaderboardCard">
+        <h2>Leaderboard</h2>
+        <div id="leaderboardWrap"></div>
+        <div class="meta">Sorted by <strong>points</strong>, then goal difference, then goals for, then name.</div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>Made for you — copy `index.html` to GitHub Pages or open locally. See notes below for DB rules.</footer>
 </div>
 
+<!-- Firebase compat scripts (works in browsers without bundling) -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
 <script>
-  // Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyBClhOYxDhLpQKPwurk1V3vsPXJ1Csew6E",
+/* ========== CONFIG - your Firebase project (provided) ========== */
+const firebaseConfig = {
+  apiKey: "AIzaSyBClhOYxDhLpQKPwurk1V3vsPXJ1Csew6E",
   authDomain: "project-add05.firebaseapp.com",
   databaseURL: "https://project-add05-default-rtdb.firebaseio.com",
   projectId: "project-add05",
@@ -64,129 +109,333 @@
   messagingSenderId: "321491234235",
   appId: "1:321491234235:web:1f674625d9f129f2ef689e",
   measurementId: "G-87M4WVB5Z8"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+};
 
-  const teams = ["Barcelona", "Man City", "Liverpool"];
-  const days = ["Thursday","Thursday","Thursday","Friday","Friday","Friday","Saturday","Saturday","Sunday","Sunday"];
+/* ======== Tournament config (unchanged) ======== */
+const TEAMS = ['Barca','Man City','Liverpool'];
+const MATCHES = [
+  { id: 'm1', day: 1, home: 'Barca',     away: 'Man City' },
+  { id: 'm2', day: 1, home: 'Liverpool', away: 'Man City' },
+  { id: 'm3', day: 1, home: 'Barca',     away: 'Liverpool' },
 
-  const matchesTemplate = [
-    {team1: "Barcelona", team2: "Man City"},
-    {team1: "Barcelona", team2: "Liverpool"},
-    {team1: "Man City", team2: "Liverpool"},
-    {team1: "Barcelona", team2: "Man City"},
-    {team1: "Barcelona", team2: "Liverpool"},
-    {team1: "Man City", team2: "Liverpool"},
-    {team1: "Barcelona", team2: "Man City"},
-    {team1: "Barcelona", team2: "Liverpool"},
-    {team1: "Man City", team2: "Liverpool"},
-    {team1: "Barcelona", team2: "Man City"}
-  ];
+  { id: 'm4', day: 2, home: 'Man City',  away: 'Barca' },
+  { id: 'm5', day: 2, home: 'Liverpool', away: 'Barca' },
+  { id: 'm6', day: 2, home: 'Man City',  away: 'Liverpool' },
 
-  // Initialize Firebase matches if empty
-  db.ref('matches').once('value', snapshot => {
-    if(!snapshot.exists()){
-      matchesTemplate.forEach((m, i)=>{
-        db.ref('matches/'+i).set({
-          team1: m.team1,
-          team2: m.team2,
-          score: null,
-          day: days[i]
-        });
-      });
-      teams.forEach(t=>{
-        db.ref('leaderboard/'+t).set({points:0,wins:0});
-      });
-      db.ref('final').set({score1:null,score2:null});
-    }
-  });
+  { id: 'm7', day: 3, home: 'Barca',     away: 'Man City' },
+  { id: 'm8', day: 3, home: 'Liverpool', away: 'Man City' },
 
-  // Render matches
-  function renderMatches(matches){
-    const tbody = document.querySelector("#matchesTable tbody");
-    tbody.innerHTML = "";
-    matches.forEach((match, index)=>{
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${match.day}</td>
-        <td>${match.team1} vs ${match.team2}</td>
-        <td>${match.score ? match.score : "-"}</td>
-        <td>
-          <input type="number" id="score1-${index}" placeholder="0">
-          <input type="number" id="score2-${index}" placeholder="0">
-          <button onclick="setScore(${index})">Set</button>
+  { id: 'm9', day: 4, home: 'Barca',     away: 'Liverpool' },
+  { id: 'm10',day: 4, home: 'Man City',  away: 'Barca' }
+];
+
+/* ======== DOM nodes ======== */
+const daysContainer = document.getElementById('daysContainer');
+const leaderboardWrap = document.getElementById('leaderboardWrap');
+const finalHomeEl = document.getElementById('finalHome');
+const finalAwayEl = document.getElementById('finalAway');
+const finalHomeScore = document.getElementById('finalHomeScore');
+const finalAwayScore = document.getElementById('finalAwayScore');
+const finalResultEl = document.getElementById('finalResult');
+const dbStatusEl = document.getElementById('dbStatus');
+
+/* ======== State (backed by Firebase) ======== */
+let savedMatches = {}; // will mirror /matches in DB
+let savedFinal = null;  // will mirror /final in DB
+
+/* ======== Firebase init & realtime listeners ======== */
+let db = null;
+function initFirebase(){
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    dbStatusEl.textContent = 'connected';
+
+    // Listen to all matches changes
+    const matchesRef = db.ref('matches');
+    matchesRef.on('value', snapshot => {
+      const data = snapshot.val() || {};
+      savedMatches = data;
+      renderAll();
+    }, err => {
+      console.warn('matches.on error', err);
+      dbStatusEl.textContent = 'error';
+    });
+
+    // Listen to final match changes
+    const finalRef = db.ref('final');
+    finalRef.on('value', snapshot => {
+      savedFinal = snapshot.val();
+      renderFinal();
+    }, err=>{
+      console.warn('final.on error', err);
+      dbStatusEl.textContent = 'error';
+    });
+
+    // optional: listen to connection state
+    const connectedRef = db.ref('.info/connected');
+    connectedRef.on('value', snap => {
+      const v = snap.val();
+      dbStatusEl.textContent = v ? 'online' : 'offline';
+    });
+
+  }catch(e){
+    console.error('Firebase init failed', e);
+    dbStatusEl.textContent = 'init-failed';
+  }
+}
+
+/* ======== Rendering (same UI as before) ======== */
+function groupByDay(list){
+  const days = {};
+  for(const m of list){ if(!days[m.day]) days[m.day] = []; days[m.day].push(m); }
+  return days;
+}
+
+function renderDays(){
+  const grouped = groupByDay(MATCHES);
+  let html = '';
+  const dayNums = Object.keys(grouped).sort((a,b)=>a-b);
+  for(const d of dayNums){
+    const matches = grouped[d];
+    html += `<div class="card day"><h2>Day ${d}</h2>
+      <table aria-label="Matches for day ${d}">
+        <thead><tr><th>Home</th><th>Score</th><th>Score</th><th>Away</th><th></th></tr></thead>
+        <tbody>`;
+    for(const m of matches){
+      const s = savedMatches[m.id] || {};
+      const hs = (s.homeScore !== undefined && s.homeScore !== null) ? s.homeScore : '';
+      const as = (s.awayScore !== undefined && s.awayScore !== null) ? s.awayScore : '';
+      html += `<tr data-match-id="${m.id}">
+        <td class="team">${escapeHtml(m.home)}</td>
+        <td><input type="number" min="0" class="score-input" value="${hs}" data-role="home" aria-label="${m.home} score" /></td>
+        <td><input type="number" min="0" class="score-input" value="${as}" data-role="away" aria-label="${m.away} score" /></td>
+        <td class="team">${escapeHtml(m.away)}</td>
+        <td style="text-align:right">
+          <div class="controls">
+            <button class="btn btn-save" data-action="save">Save score</button>
+            <button class="btn btn-reset" data-action="reset">Reset</button>
+          </div>
         </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  // Render leaderboard
-  function renderLeaderboard(leaderboard){
-    const tbody = document.querySelector("#leaderboard tbody");
-    tbody.innerHTML = "";
-    Object.keys(leaderboard).forEach(team=>{
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${team}</td><td>${leaderboard[team].points}</td><td>${leaderboard[team].wins}</td>`;
-      tbody.appendChild(tr);
-    });
-  }
-
-  // Listen for changes
-  db.ref('matches').on('value', snap=>{
-    const matches = snap.val();
-    renderMatches(Object.values(matches));
-  });
-
-  db.ref('leaderboard').on('value', snap=>{
-    renderLeaderboard(snap.val());
-    renderFinalMatch(snap.val());
-  });
-
-  db.ref('final').on('value', snap=>{
-    const f = snap.val();
-    if(f.score1 !== null && f.score2 !== null){
-      const sorted = Object.entries(leaderboard).sort((a,b)=>b[1].points - a[1].points).map(e=>e[0]);
-      document.getElementById("finalResult").innerText = `${sorted[0]} ${f.score1} - ${f.score2} ${sorted[1]}`;
+      </tr>`;
     }
+    html += `</tbody></table></div>`;
+  }
+  daysContainer.innerHTML = html;
+
+  // Attach listeners
+  daysContainer.querySelectorAll('button[data-action="save"]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const tr = e.target.closest('tr');
+      const id = tr.getAttribute('data-match-id');
+      const homeInput = tr.querySelector('input[data-role="home"]');
+      const awayInput = tr.querySelector('input[data-role="away"]');
+      saveScoreForMatch(id, homeInput.value, awayInput.value);
+    });
+  });
+  daysContainer.querySelectorAll('button[data-action="reset"]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const tr = e.target.closest('tr');
+      const id = tr.getAttribute('data-match-id');
+      if(confirm('Reset this match score?')) {
+        if(db) db.ref('matches/' + id).remove();
+      }
+    });
   });
 
-  // Set match score
-  function setScore(index){
-    const score1 = parseInt(document.getElementById(`score1-${index}`).value);
-    const score2 = parseInt(document.getElementById(`score2-${index}`).value);
-    if(isNaN(score1)||isNaN(score2)) return alert("Enter valid scores!");
-
-    db.ref('matches/'+index+'/score').set(`${score1}-${score2}`);
-
-    db.ref('matches').once('value', snap=>{
-      const match = Object.values(snap.val())[index];
-      const t1 = match.team1, t2 = match.team2;
-      db.ref('leaderboard').once('value', lbSnap=>{
-        const lb = lbSnap.val();
-        if(score1>score2){ lb[t1].points+=3; lb[t1].wins+=1; }
-        else if(score2>score1){ lb[t2].points+=3; lb[t2].wins+=1; }
-        db.ref('leaderboard').set(lb);
-      });
+  // Enter to save
+  daysContainer.querySelectorAll('.score-input').forEach(inp=>{
+    inp.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){
+        const tr = e.target.closest('tr');
+        const id = tr.getAttribute('data-match-id');
+        const home = tr.querySelector('input[data-role="home"]').value;
+        const away = tr.querySelector('input[data-role="away"]').value;
+        saveScoreForMatch(id, home, away);
+      }
     });
-  }
+  });
+}
 
-  // Render final match text
-  function renderFinalMatch(lb){
-    const sorted = Object.entries(lb).sort((a,b)=>b[1].points - a[1].points).map(e=>e[0]);
-    document.getElementById("finalMatch").innerText = `${sorted[0]} vs ${sorted[1]}`;
+/* Leaderboard calculation */
+function computeStats(){
+  const stats = {};
+  for(const t of TEAMS){ stats[t] = { team: t, played:0, wins:0, draws:0, losses:0, gf:0, ga:0, pts:0 }; }
+  for(const m of MATCHES){
+    const s = savedMatches[m.id];
+    if(!s || (s.homeScore === undefined || s.homeScore === null) || (s.awayScore === undefined || s.awayScore === null)) continue;
+    const a = parseInt(s.homeScore,10);
+    const b = parseInt(s.awayScore,10);
+    if(Number.isNaN(a) || Number.isNaN(b)) continue;
+    const home = m.home, away = m.away;
+    stats[home].played++; stats[away].played++;
+    stats[home].gf += a; stats[home].ga += b;
+    stats[away].gf += b; stats[away].ga += a;
+    if(a > b){ stats[home].wins++; stats[away].losses++; stats[home].pts += 3; }
+    else if(a === b){ stats[home].draws++; stats[away].draws++; stats[home].pts += 1; stats[away].pts += 1; }
+    else { stats[away].wins++; stats[home].losses++; stats[away].pts += 3; }
   }
+  return stats;
+}
 
-  // Set final score
-  function setFinalScore(){
-    const score1 = parseInt(document.getElementById("finalTeam1Score").value);
-    const score2 = parseInt(document.getElementById("finalTeam2Score").value);
-    if(isNaN(score1)||isNaN(score2)) return alert("Enter valid scores!");
-    db.ref('final').set({score1, score2});
+function renderLeaderboard(){
+  const stats = computeStats();
+  const arr = Object.values(stats);
+  arr.sort((A,B)=>{
+    if(B.pts !== A.pts) return B.pts - A.pts;
+    const gdA = A.gf - A.ga, gdB = B.gf - B.ga;
+    if(gdB !== gdA) return gdB - gdA;
+    if(B.gf !== A.gf) return B.gf - A.gf;
+    return A.team.localeCompare(B.team);
+  });
+
+  let html = `<table><thead><tr>
+    <th class="pos">#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th>
+  </tr></thead><tbody>`;
+  for(let i=0;i<arr.length;i++){
+    const r = arr[i];
+    const gd = r.gf - r.ga;
+    html += `<tr>
+      <td class="pos">${i+1}</td>
+      <td>${escapeHtml(r.team)}</td>
+      <td>${r.played}</td>
+      <td>${r.wins}</td>
+      <td>${r.draws}</td>
+      <td>${r.losses}</td>
+      <td>${r.gf}</td>
+      <td>${r.ga}</td>
+      <td>${gd >= 0 ? '+'+gd : gd}</td>
+      <td style="font-weight:800">${r.pts}</td>
+    </tr>`;
   }
+  html += `</tbody></table>`;
+  leaderboardWrap.innerHTML = html;
 
+  // Update final participants (top 2)
+  const top1 = arr[0] ? arr[0].team : null;
+  const top2 = arr[1] ? arr[1].team : null;
+  finalHomeEl.textContent = top1 || '—';
+  finalAwayEl.textContent = top2 || '—';
+}
+
+/* Save a match score to Firebase */
+// NOTE: prompts for admin code '246' before writing
+function saveScoreForMatch(matchId, homeVal, awayVal){
+  // prompt for admin code '246' when saving
+  const codeVal = prompt('Enter admin code to save score:');
+  if(codeVal === null) return; // user cancelled
+  if(String(codeVal).trim() !== '246'){ alert('Invalid admin code.'); return; }
+
+  const h = homeVal === '' ? null : parseInt(homeVal,10);
+  const a = awayVal === '' ? null : parseInt(awayVal,10);
+  if(h === null || a === null || Number.isNaN(h) || Number.isNaN(a)){
+    alert('Enter non-negative integers for both scores.'); return;
+  }
+  if(h < 0 || a < 0){ alert('Scores cannot be negative'); return; }
+  if(!db){ alert('Database not initialized'); return; }
+
+  const payload = { homeScore: h, awayScore: a, savedAt: Date.now() };
+  db.ref('matches/' + matchId).set(payload).catch(err=>{
+    console.error('write error', err); alert('Failed to write to DB: ' + err.message);
+  });
+}
+
+/* Final match handling (saved to /final)
+   Note: final does NOT affect leaderboard points
+*/
+// NOTE: prompts for admin code '246' before writing
+function saveFinalScore(){
+  // prompt for admin code '246' when saving the final
+  const codeVal = prompt('Enter admin code to save final:');
+  if(codeVal === null) return;
+  if(String(codeVal).trim() !== '246'){ alert('Invalid admin code.'); return; }
+
+  const topTeams = getTopTwoFromStats();
+  if(!topTeams[0] || !topTeams[1]){ alert('Not enough ranked teams yet (need at least two).'); return; }
+  const h = finalHomeScore.value === '' ? null : parseInt(finalHomeScore.value,10);
+  const a = finalAwayScore.value === '' ? null : parseInt(finalAwayScore.value,10);
+  if(h === null || a === null || Number.isNaN(h) || Number.isNaN(a)){ alert('Enter non-negative integer scores for the final.'); return; }
+  if(h < 0 || a < 0){ alert('Scores cannot be negative'); return; }
+  if(!db){ alert('Database not initialized'); return; }
+
+  const payload = { home: topTeams[0], away: topTeams[1], homeScore: h, awayScore: a, playedAt: Date.now() };
+  db.ref('final').set(payload).catch(err=>{ console.error('final write error', err); alert('Failed to save final: ' + err.message); });
+}
+
+function resetFinal(){ if(!db) return; if(confirm('Reset final match?')) db.ref('final').remove(); }
+
+function renderFinal(){
+  if(savedFinal){
+    finalHomeEl.textContent = savedFinal.home;
+    finalAwayEl.textContent = savedFinal.away;
+    finalHomeScore.value = savedFinal.homeScore;
+    finalAwayScore.value = savedFinal.awayScore;
+    const h = savedFinal.homeScore, a = savedFinal.awayScore;
+    let text = `${escapeHtml(savedFinal.home)} ${h} — ${a} ${escapeHtml(savedFinal.away)} — `;
+    if(h > a) text += `Champion: ${escapeHtml(savedFinal.home)} 🏆`;
+    else if(h < a) text += `Champion: ${escapeHtml(savedFinal.away)} 🏆`;
+    else text += `Final ended in a draw. Consider tie-breaking rules.`;
+    finalResultEl.textContent = text;
+  } else {
+    finalResultEl.textContent = 'No final played yet';
+    const top = getTopTwoFromStats();
+    finalHomeScore.value = '';
+    finalAwayScore.value = '';
+    finalHomeEl.textContent = top[0] || '—';
+    finalAwayEl.textContent = top[1] || '—';
+  }
+}
+
+/* Utility: get top two team names from current leaderboard stats */
+function getTopTwoFromStats(){
+  const stats = computeStats();
+  const arr = Object.values(stats);
+  arr.sort((A,B)=>{
+    if(B.pts !== A.pts) return B.pts - A.pts;
+    const gdA = A.gf - A.ga, gdB = B.gf - B.ga;
+    if(gdB !== gdA) return gdB - gdA;
+    if(B.gf !== A.gf) return B.gf - A.gf;
+    return A.team.localeCompare(B.team);
+  });
+  return [arr[0] ? arr[0].team : null, arr[1] ? arr[1].team : null];
+}
+
+/* Reset all: remove /matches and /final from DB */
+document.getElementById('resetAll').addEventListener('click', ()=>{
+  if(!db){ alert('Database not initialized'); return; }
+  if(confirm('Reset the whole tournament (all match scores and final)?')){
+    db.ref('matches').remove().catch(err=>console.error(err));
+    db.ref('final').remove().catch(err=>console.error(err));
+  }
+});
+
+// Final save/reset buttons
+document.getElementById('saveFinal').addEventListener('click', saveFinalScore);
+document.getElementById('resetFinal').addEventListener('click', resetFinal);
+
+/* Global render */
+function renderAll(){ renderDays(); renderLeaderboard(); renderFinal(); }
+
+/* Helper: escape HTML */
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* Kickoff */
+initFirebase(); // will start listeners and render as soon as data arrives
 </script>
 
+<!-- Notes for deployment (visible in the file):
+  1) This file uses Firebase Realtime Database. Your DB rules must allow reads/writes from the browser
+     while you test. Example (UNSAFE for production):
+
+     {
+       "rules": {
+         ".read": true,
+         ".write": true
+       }
+     }
+
+  2) For production, secure your DB using Firebase Authentication and appropriate rules.
+  3) Upload this file as index.html to a GitHub repository and enable GitHub Pages, or open locally.
+-->
 </body>
 </html>
