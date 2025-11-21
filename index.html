@@ -3,103 +3,158 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Mini Tournament — Realtime (Firebase) — 10 Matches, 4 Days + Final</title>
+<title>Mini Tournament — Fullscreen Live Match Controller (Firebase) — Final Integrated</title>
 <style>
-  :root{ --bg:#0f1724; --card:#0b1220; --muted:#9aa7bf; --accent:#3b82f6; --glass: rgba(255,255,255,0.04);} 
-  *{box-sizing:border-box;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;}
-  body{margin:0;background:linear-gradient(180deg,#041025 0%, #06102a 100%);color:#e6eef8; padding:28px;}
-  .wrap{max-width:1100px;margin:0 auto;}
-  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
-  h1{margin:0;font-size:20px;letter-spacing:-0.2px;}
-  p.lead{margin:4px 0 0;color:var(--muted);font-size:13px;}
-  .grid{display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start;}
-  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03);} 
-  .card h2{margin:0 0 8px;font-size:15px;} 
-  .day{margin-bottom:12px;} 
-  table{width:100%;border-collapse:collapse;font-size:13px;} 
-  th,td{padding:8px 6px;text-align:left;} 
-  thead th{font-size:12px;color:var(--muted);font-weight:600;} 
-  tbody tr{border-top:1px dashed rgba(255,255,255,0.03);} 
-  .team{font-weight:600;} 
-  .score-input{width:56px;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:var(--glass);color:inherit;font-weight:700;text-align:center;} 
-  .btn{padding:7px 10px;border-radius:8px;border:0;font-weight:700;cursor:pointer;} 
-  .btn-save{background:linear-gradient(90deg,var(--accent),#6cb1ff);color:#04203d;} 
-  .btn-reset{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);} 
-  .meta{font-size:12px;color:var(--muted);margin-top:8px;} 
-  .leaderboard table{font-size:13px;} 
-  .leaderboard th, .leaderboard td{padding:6px 8px;text-align:left;} 
-  .leaderboard .pos{width:26px;font-weight:800;} 
-  .small{font-size:12px;color:var(--muted);} 
-  .final-card{display:flex;flex-direction:column;gap:10px;} 
-  .final-teams{display:flex;gap:8px;align-items:center;} 
-  .final-team{flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02);text-align:center;font-weight:800;} 
-  .champ{font-size:14px;font-weight:800;text-align:center;margin-top:8px;} 
-  .controls{display:flex;gap:8px;align-items:center;} 
-  .btn-danger{background:linear-gradient(90deg,#ff6b6b,#ff9393);color:#2a0a0a;} 
-  footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center;} 
-  .status{font-size:12px;color:var(--muted);} 
-  @media (max-width:980px){.grid{grid-template-columns:1fr;}.leaderboard{order:-1}}
+  :root{
+    --bg:#071027; --card:#071827; --muted:#9aa7bf; --accent:#3b82f6;
+    --glass: rgba(255,255,255,0.03);
+    --win:#16a34a; --lose:#ef4444; --neutral:#e6eef8;
+  }
+  *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;}
+  body{margin:0;background:linear-gradient(180deg,#041025 0%, #06102a 100%);color:var(--neutral);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  h1{margin:0;font-size:20px;}
+  .lead{color:var(--muted);font-size:13px;margin-top:6px;}
+  .grid{display:grid;grid-template-columns:1fr 360px;gap:18px;align-items:start;}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,0.03);}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th,td{padding:10px 8px;text-align:left;}
+  thead th{font-size:12px;color:var(--muted);text-transform:uppercase;}
+  tbody tr{border-top:1px dashed rgba(255,255,255,0.03);}
+  .team{font-weight:700;}
+  .btn{padding:8px 10px;border-radius:8px;border:0;font-weight:700;cursor:pointer;}
+  .btn-start{background:linear-gradient(90deg,var(--accent),#6cb1ff);color:#04203d;}
+  .btn-reset{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);}
+  .small{font-size:13px;color:var(--muted);}
+  .score-display{font-weight:900;font-size:16px;}
+  .status{font-size:12px;color:var(--muted);}
+
+  /* Fullscreen modal styles */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:flex-start;justify-content:center;z-index:60;overflow:auto;}
+  .modal{background:var(--card);width:100vw;height:100vh;border-radius:0;padding:28px;display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:center;}
+  .modal-top{grid-column:1 / -1;display:flex;justify-content:space-between;align-items:center;}
+  #modalTimer{font-weight:900;font-size:32px;text-align:center;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,0.02);min-width:220px;}
+  .team-block{text-align:center;padding:18px;border-radius:10px;background:rgba(255,255,255,0.02);display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 160px);}
+  .team-name{font-weight:900;font-size:26px;margin-bottom:12px;}
+  .goals{font-size:96px;font-weight:900;margin:10px 0;min-height:1em;}
+  .goal-btns{display:flex;gap:12px;justify-content:center;}
+  .goal-btn{width:56px;height:56px;border-radius:12px;border:0;font-size:28px;font-weight:800;cursor:pointer;background:rgba(255,255,255,0.04);color:var(--neutral);}
+  .controls{grid-column:1 / -1;display:flex;gap:12px;align-items:center;justify-content:center;margin-top:6px;}
+  .time-label{font-size:14px;color:var(--muted);margin-right:8px;}
+  .timer-controls{display:flex;gap:8px;align-items:center;}
+  .btn-end{background:linear-gradient(90deg,#ff6b6b,#ff9393);color:#2a0a0a;}
+  .winner{color:var(--win);}
+  .loser{color:var(--lose);}
+
+  @media (max-width:1000px){
+    .grid{grid-template-columns:1fr;}
+    .modal{grid-template-columns:1fr; padding:18px;}
+    .team-block{height:auto; padding:16px;}
+    .goals{font-size:64px;}
+    .team-name{font-size:20px;}
+    #modalTimer{font-size:28px;}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div>
-      <h1>Mini Tournament — Realtime (Firebase)</h1>
-      <p class="lead">Teams: <strong>Barca</strong>, <strong>Man City</strong>, <strong>Liverpool</strong>. Scores saved to Firebase Realtime Database so all users see the same live data.</p>
+      <h1>Mini Tournament — Fullscreen Live Controller</h1>
+      <div class="lead">Barca / Man City / Liverpool — open any match with <strong>Start Match</strong>. Timer at top syncs to Firebase so everyone sees the same time. End Match to save (admin code required).</div>
     </div>
     <div style="text-align:right">
-      <div class="small status">DB status: <span id="dbStatus">connecting…</span></div>
-      <div style="margin-top:6px"><button class="btn btn-reset" id="resetAll">Reset tournament</button></div>
+      <div class="status">DB status: <span id="dbStatus">connecting…</span></div>
     </div>
   </header>
 
   <div class="grid">
     <main>
-      <!-- Days & Matches -->
-      <div id="daysContainer"></div>
+      <div class="card">
+        <h2 style="margin:0 0 12px">Matches</h2>
+        <div id="daysContainer"></div>
+      </div>
 
-      <!-- Final match -->
-      <div class="card" style="margin-top:14px;">
-        <h2>FINAL — Top 1 vs Top 2</h2>
-        <div class="final-card">
-          <div class="small">The final will use the current leaderboard's 1st and 2nd placed teams. (Final does not affect leaderboard points.)</div>
-          <div class="final-teams">
-            <div class="final-team" id="finalHome">—</div>
-            <div style="font-weight:700;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);">vs</div>
-            <div class="final-team" id="finalAway">—</div>
-          </div>
+      <div class="card" style="margin-top:12px;">
+        <h2 style="margin:0 0 8px">FINAL — Top 1 vs Top 2</h2>
+        <div class="small">Start the final with the same live controller. The final is stored at the `/final` node in the DB.</div>
 
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input id="finalHomeScore" class="score-input" type="number" min="0" placeholder="0" />
-            <button class="btn btn-save" id="saveFinal">Save final score</button>
-            <input id="finalAwayScore" class="score-input" type="number" min="0" placeholder="0" />
-            <button class="btn btn-reset" id="resetFinal">Reset final</button>
-          </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
+          <div style="flex:1" id="finalHome">—</div>
+          <div style="font-weight:700">vs</div>
+          <div style="flex:1;text-align:right" id="finalAway">—</div>
+        </div>
 
-          <div class="champ" id="finalResult">No final played yet</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
+          <button class="btn btn-start" id="startFinalBtn">Start Final</button>
+          <button class="btn btn-reset" id="resetFinal">Reset final</button>
+          <div style="margin-left:auto" class="small" id="finalResult">No final played yet</div>
         </div>
       </div>
     </main>
 
     <aside>
-      <div class="card leaderboard" id="leaderboardCard">
-        <h2>Leaderboard</h2>
+      <div class="card">
+        <h3 style="margin:0 0 8px">Leaderboard</h3>
         <div id="leaderboardWrap"></div>
-        <div class="meta">Sorted by <strong>points</strong>, then goal difference, then goals for, then name.</div>
+        <div class="small" style="margin-top:8px">Sorted by points → goal difference → goals for → name.</div>
       </div>
     </aside>
   </div>
 
-  <footer>Made for you — copy `index.html` to GitHub Pages or open locally. See notes below for DB rules.</footer>
+  <footer style="margin-top:14px;color:var(--muted);font-size:13px">Drop this `index.html` into GitHub Pages or open locally. See bottom notes for DB rules.</footer>
 </div>
 
-<!-- Firebase compat scripts (works in browsers without bundling) -->
+<!-- Fullscreen modal -->
+<div id="matchModalBackdrop" class="modal-backdrop" role="dialog" aria-hidden="true">
+  <div class="modal" role="document" aria-labelledby="modalTitle">
+    <div class="modal-top">
+      <div style="font-weight:700;color:var(--muted)">Live match controller</div>
+      <div id="modalTimer">00:00</div>
+      <div style="text-align:right;color:var(--muted)">Press <strong>End Match</strong> to save (admin code required)</div>
+    </div>
+
+    <div class="team-block" id="modalHomeBlock">
+      <div class="team-name" id="modalHomeName">Home</div>
+      <div class="goals" id="modalHomeGoals">0</div>
+      <div class="goal-btns">
+        <button class="goal-btn" id="homeDec">−</button>
+        <button class="goal-btn" id="homeInc">+</button>
+      </div>
+    </div>
+
+    <div class="team-block" id="modalAwayBlock">
+      <div class="team-name" id="modalAwayName">Away</div>
+      <div class="goals" id="modalAwayGoals">0</div>
+      <div class="goal-btns">
+        <button class="goal-btn" id="awayDec">−</button>
+        <button class="goal-btn" id="awayInc">+</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="timer-controls">
+        <span class="time-label">Timer:</span>
+        <button class="btn btn-start" id="startTimerBtn">Start</button>
+        <button class="btn btn-start" id="pauseTimerBtn">Pause</button>
+        <button class="btn btn-reset" id="resetTimerBtn">Reset</button>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-end" id="endMatchBtn">End Match (save)</button>
+        <button class="btn btn-reset" id="closeModalBtn">Close (cancel)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase compat -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
 <script>
-/* ========== CONFIG - your Firebase project (provided) ========== */
+/* ===== Firebase config ===== */
 const firebaseConfig = {
   apiKey: "AIzaSyBClhOYxDhLpQKPwurk1V3vsPXJ1Csew6E",
   authDomain: "project-add05.firebaseapp.com",
@@ -111,7 +166,7 @@ const firebaseConfig = {
   measurementId: "G-87M4WVB5Z8"
 };
 
-/* ======== Tournament config (unchanged) ======== */
+/* ===== Tournament schedule (each pair plays 3 times => 9 matches total) ===== */
 const TEAMS = ['Barca','Man City','Liverpool'];
 const MATCHES = [
   { id: 'm1', day: 1, home: 'Barca',     away: 'Man City' },
@@ -123,157 +178,150 @@ const MATCHES = [
   { id: 'm6', day: 2, home: 'Man City',  away: 'Liverpool' },
 
   { id: 'm7', day: 3, home: 'Barca',     away: 'Man City' },
-  { id: 'm8', day: 3, home: 'Liverpool', away: 'Man City' },
-
-  { id: 'm9', day: 4, home: 'Barca',     away: 'Liverpool' },
-  { id: 'm10',day: 4, home: 'Man City',  away: 'Barca' }
+  { id: 'm8', day: 3, home: 'Liverpool', away: 'Barca' },
+  { id: 'm9', day: 3, home: 'Man City',  away: 'Liverpool' }
 ];
 
-/* ======== DOM nodes ======== */
+/* ===== DOM refs ===== */
 const daysContainer = document.getElementById('daysContainer');
 const leaderboardWrap = document.getElementById('leaderboardWrap');
-const finalHomeEl = document.getElementById('finalHome');
-const finalAwayEl = document.getElementById('finalAway');
-const finalHomeScore = document.getElementById('finalHomeScore');
-const finalAwayScore = document.getElementById('finalAwayScore');
-const finalResultEl = document.getElementById('finalResult');
 const dbStatusEl = document.getElementById('dbStatus');
 
-/* ======== State (backed by Firebase) ======== */
-let savedMatches = {}; // will mirror /matches in DB
-let savedFinal = null;  // will mirror /final in DB
+const matchModalBackdrop = document.getElementById('matchModalBackdrop');
+const modalTimer = document.getElementById('modalTimer');
+const modalHomeName = document.getElementById('modalHomeName');
+const modalAwayName = document.getElementById('modalAwayName');
+const modalHomeGoals = document.getElementById('modalHomeGoals');
+const modalAwayGoals = document.getElementById('modalAwayGoals');
+const modalHomeBlock = document.getElementById('modalHomeBlock');
+const modalAwayBlock = document.getElementById('modalAwayBlock');
 
-/* ======== Firebase init & realtime listeners ======== */
+const homeDec = document.getElementById('homeDec');
+const homeInc = document.getElementById('homeInc');
+const awayDec = document.getElementById('awayDec');
+const awayInc = document.getElementById('awayInc');
+
+const startTimerBtn = document.getElementById('startTimerBtn');
+const pauseTimerBtn = document.getElementById('pauseTimerBtn');
+const resetTimerBtn = document.getElementById('resetTimerBtn');
+const endMatchBtn = document.getElementById('endMatchBtn');
+const closeModalBtn = document.getElementById('closeModalBtn');
+
+const startFinalBtn = document.getElementById('startFinalBtn');
+const resetFinalBtn = document.getElementById('resetFinal');
+const finalHomeEl = document.getElementById('finalHome');
+const finalAwayEl = document.getElementById('finalAway');
+const finalResultEl = document.getElementById('finalResult');
+
+/* ===== State ===== */
 let db = null;
+let savedMatches = {}; // mirror /matches
+let savedFinal = null;
+
+/* active match & timer state */
+let activeMatchId = null;               // match id (e.g. 'm1') or 'final'
+let activeHome = 0;
+let activeAway = 0;
+let activeTimeSeconds = 0; // integer seconds
+let timerInterval = null;
+
+/* ===== Firebase init & listeners ===== */
 function initFirebase(){
   try{
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
     dbStatusEl.textContent = 'connected';
 
-    // Listen to all matches changes
-    const matchesRef = db.ref('matches');
-    matchesRef.on('value', snapshot => {
-      const data = snapshot.val() || {};
-      savedMatches = data;
+    db.ref('matches').on('value', snap=>{
+      savedMatches = snap.val() || {};
       renderAll();
-    }, err => {
-      console.warn('matches.on error', err);
-      dbStatusEl.textContent = 'error';
-    });
+      if(activeMatchId && activeMatchId !== 'final') syncModalTimerFromDB();
+    }, err=>{ console.warn('matches listen', err); dbStatusEl.textContent='error'; });
 
-    // Listen to final match changes
-    const finalRef = db.ref('final');
-    finalRef.on('value', snapshot => {
-      savedFinal = snapshot.val();
+    db.ref('final').on('value', snap=>{
+      savedFinal = snap.val();
       renderFinal();
-    }, err=>{
-      console.warn('final.on error', err);
-      dbStatusEl.textContent = 'error';
-    });
+      if(activeMatchId === 'final') syncModalTimerFromDB();
+    }, err=>{ console.warn('final listen', err); dbStatusEl.textContent='error'; });
 
-    // optional: listen to connection state
-    const connectedRef = db.ref('.info/connected');
-    connectedRef.on('value', snap => {
-      const v = snap.val();
-      dbStatusEl.textContent = v ? 'online' : 'offline';
+    db.ref('.info/connected').on('value', snap=>{
+      dbStatusEl.textContent = snap.val() ? 'online' : 'offline';
     });
 
   }catch(e){
-    console.error('Firebase init failed', e);
-    dbStatusEl.textContent = 'init-failed';
+    console.error('Firebase init failed', e); dbStatusEl.textContent='init-failed';
   }
 }
 
-/* ======== Rendering (same UI as before) ======== */
+/* ===== Render schedule & attach handlers ===== */
 function groupByDay(list){
   const days = {};
-  for(const m of list){ if(!days[m.day]) days[m.day] = []; days[m.day].push(m); }
+  for(const m of list){ if(!days[m.day]) days[m.day]=[]; days[m.day].push(m); }
   return days;
 }
 
 function renderDays(){
   const grouped = groupByDay(MATCHES);
   let html = '';
-  const dayNums = Object.keys(grouped).sort((a,b)=>a-b);
-  for(const d of dayNums){
-    const matches = grouped[d];
-    html += `<div class="card day"><h2>Day ${d}</h2>
-      <table aria-label="Matches for day ${d}">
-        <thead><tr><th>Home</th><th>Score</th><th>Score</th><th>Away</th><th></th></tr></thead>
-        <tbody>`;
-    for(const m of matches){
-      const s = savedMatches[m.id] || {};
-      const hs = (s.homeScore !== undefined && s.homeScore !== null) ? s.homeScore : '';
-      const as = (s.awayScore !== undefined && s.awayScore !== null) ? s.awayScore : '';
+  const days = Object.keys(grouped).sort((a,b)=>a-b);
+  for(const d of days){
+    html += `<div class="small" style="margin-bottom:8px;font-weight:800">Day ${d}</div>`;
+    html += `<table aria-label="Day ${d} matches"><thead><tr><th>Home</th><th style="width:150px">Score (time)</th><th>Away</th><th style="width:170px"></th></tr></thead><tbody>`;
+    for(const m of grouped[d]){
+      const s = savedMatches[m.id];
+      let scoreText = '—';
+      if(s && s.homeScore !== undefined && s.awayScore !== undefined){
+        const t = (s.timePlayedSeconds !== undefined && s.timePlayedSeconds !== null) ? formatSeconds(s.timePlayedSeconds) : '';
+        scoreText = `${s.homeScore} — ${s.awayScore}` + (t ? ` (${t})` : '');
+      }
       html += `<tr data-match-id="${m.id}">
         <td class="team">${escapeHtml(m.home)}</td>
-        <td><input type="number" min="0" class="score-input" value="${hs}" data-role="home" aria-label="${m.home} score" /></td>
-        <td><input type="number" min="0" class="score-input" value="${as}" data-role="away" aria-label="${m.away} score" /></td>
+        <td class="score-display">${escapeHtml(scoreText)}</td>
         <td class="team">${escapeHtml(m.away)}</td>
         <td style="text-align:right">
-          <div class="controls">
-            <button class="btn btn-save" data-action="save">Save score</button>
-            <button class="btn btn-reset" data-action="reset">Reset</button>
-          </div>
+          <button class="btn btn-start" data-action="start">Start Match</button>
+          <button class="btn btn-reset" data-action="reset">Reset</button>
         </td>
       </tr>`;
     }
-    html += `</tbody></table></div>`;
+    html += `</tbody></table><div style="height:8px"></div>`;
   }
   daysContainer.innerHTML = html;
 
-  // Attach listeners
-  daysContainer.querySelectorAll('button[data-action="save"]').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
+  // handlers
+  daysContainer.querySelectorAll('button[data-action="start"]').forEach(btn=>{
+    btn.addEventListener('click', e=>{
       const tr = e.target.closest('tr');
-      const id = tr.getAttribute('data-match-id');
-      const homeInput = tr.querySelector('input[data-role="home"]');
-      const awayInput = tr.querySelector('input[data-role="away"]');
-      saveScoreForMatch(id, homeInput.value, awayInput.value);
+      openMatchController(tr.getAttribute('data-match-id'));
     });
   });
   daysContainer.querySelectorAll('button[data-action="reset"]').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
+    btn.addEventListener('click', e=>{
       const tr = e.target.closest('tr');
       const id = tr.getAttribute('data-match-id');
-      if(confirm('Reset this match score?')) {
+      if(confirm('Reset this match (remove saved score & timer)?')) {
         if(db) db.ref('matches/' + id).remove();
-      }
-    });
-  });
-
-  // Enter to save
-  daysContainer.querySelectorAll('.score-input').forEach(inp=>{
-    inp.addEventListener('keydown', (e)=>{
-      if(e.key === 'Enter'){
-        const tr = e.target.closest('tr');
-        const id = tr.getAttribute('data-match-id');
-        const home = tr.querySelector('input[data-role="home"]').value;
-        const away = tr.querySelector('input[data-role="away"]').value;
-        saveScoreForMatch(id, home, away);
       }
     });
   });
 }
 
-/* Leaderboard calculation */
+/* ===== Leaderboard ===== */
 function computeStats(){
   const stats = {};
-  for(const t of TEAMS){ stats[t] = { team: t, played:0, wins:0, draws:0, losses:0, gf:0, ga:0, pts:0 }; }
+  for(const t of TEAMS) stats[t] = { team:t, played:0, wins:0, draws:0, losses:0, gf:0, ga:0, pts:0 };
   for(const m of MATCHES){
     const s = savedMatches[m.id];
-    if(!s || (s.homeScore === undefined || s.homeScore === null) || (s.awayScore === undefined || s.awayScore === null)) continue;
-    const a = parseInt(s.homeScore,10);
-    const b = parseInt(s.awayScore,10);
+    if(!s || s.homeScore===undefined || s.awayScore===undefined) continue;
+    const a = parseInt(s.homeScore,10), b = parseInt(s.awayScore,10);
     if(Number.isNaN(a) || Number.isNaN(b)) continue;
     const home = m.home, away = m.away;
     stats[home].played++; stats[away].played++;
     stats[home].gf += a; stats[home].ga += b;
     stats[away].gf += b; stats[away].ga += a;
-    if(a > b){ stats[home].wins++; stats[away].losses++; stats[home].pts += 3; }
-    else if(a === b){ stats[home].draws++; stats[away].draws++; stats[home].pts += 1; stats[away].pts += 1; }
-    else { stats[away].wins++; stats[home].losses++; stats[away].pts += 3; }
+    if(a > b){ stats[home].wins++; stats[home].pts += 3; stats[away].losses++; }
+    else if(a === b){ stats[home].draws++; stats[away].draws++; stats[home].pts++; stats[away].pts++; }
+    else { stats[away].wins++; stats[away].pts += 3; stats[home].losses++; }
   }
   return stats;
 }
@@ -289,104 +337,192 @@ function renderLeaderboard(){
     return A.team.localeCompare(B.team);
   });
 
-  let html = `<table><thead><tr>
-    <th class="pos">#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th>
-  </tr></thead><tbody>`;
+  let html = `<table><thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead><tbody>`;
   for(let i=0;i<arr.length;i++){
-    const r = arr[i];
-    const gd = r.gf - r.ga;
-    html += `<tr>
-      <td class="pos">${i+1}</td>
-      <td>${escapeHtml(r.team)}</td>
-      <td>${r.played}</td>
-      <td>${r.wins}</td>
-      <td>${r.draws}</td>
-      <td>${r.losses}</td>
-      <td>${r.gf}</td>
-      <td>${r.ga}</td>
-      <td>${gd >= 0 ? '+'+gd : gd}</td>
-      <td style="font-weight:800">${r.pts}</td>
-    </tr>`;
+    const r = arr[i]; const gd = r.gf - r.ga;
+    html += `<tr><td style="font-weight:800">${i+1}</td><td>${escapeHtml(r.team)}</td><td>${r.played}</td><td>${r.wins}</td><td>${r.draws}</td><td>${r.losses}</td><td>${r.gf}</td><td>${r.ga}</td><td>${gd>=0? '+'+gd: gd}</td><td style="font-weight:800">${r.pts}</td></tr>`;
   }
   html += `</tbody></table>`;
   leaderboardWrap.innerHTML = html;
 
-  // Update final participants (top 2)
+  // final participants
   const top1 = arr[0] ? arr[0].team : null;
   const top2 = arr[1] ? arr[1].team : null;
   finalHomeEl.textContent = top1 || '—';
   finalAwayEl.textContent = top2 || '—';
 }
 
-/* Save a match score to Firebase */
-// NOTE: prompts for admin code '246' before writing
-function saveScoreForMatch(matchId, homeVal, awayVal){
-  // prompt for admin code '246' when saving
-  const codeVal = prompt('Enter admin code to save score:');
-  if(codeVal === null) return; // user cancelled
-  if(String(codeVal).trim() !== '246'){ alert('Invalid admin code.'); return; }
+/* ===== Modal controller & timer sync (works for matches and final) ===== */
 
-  const h = homeVal === '' ? null : parseInt(homeVal,10);
-  const a = awayVal === '' ? null : parseInt(awayVal,10);
-  if(h === null || a === null || Number.isNaN(h) || Number.isNaN(a)){
-    alert('Enter non-negative integers for both scores.'); return;
-  }
-  if(h < 0 || a < 0){ alert('Scores cannot be negative'); return; }
-  if(!db){ alert('Database not initialized'); return; }
-
-  const payload = { homeScore: h, awayScore: a, savedAt: Date.now() };
-  db.ref('matches/' + matchId).set(payload).catch(err=>{
-    console.error('write error', err); alert('Failed to write to DB: ' + err.message);
-  });
+/** Helper: get DB ref path for current active match **/
+function activeNodeRef(){
+  if(!db) return null;
+  if(activeMatchId === 'final') return db.ref('final');
+  return db.ref('matches/' + activeMatchId);
 }
 
-/* Final match handling (saved to /final)
-   Note: final does NOT affect leaderboard points
-*/
-// NOTE: prompts for admin code '246' before writing
-function saveFinalScore(){
-  // prompt for admin code '246' when saving the final
-  const codeVal = prompt('Enter admin code to save final:');
-  if(codeVal === null) return;
-  if(String(codeVal).trim() !== '246'){ alert('Invalid admin code.'); return; }
+/** When opening controller for either a match or final **/
+function openMatchController(matchId){
+  activeMatchId = matchId;
 
-  const topTeams = getTopTwoFromStats();
-  if(!topTeams[0] || !topTeams[1]){ alert('Not enough ranked teams yet (need at least two).'); return; }
-  const h = finalHomeScore.value === '' ? null : parseInt(finalHomeScore.value,10);
-  const a = finalAwayScore.value === '' ? null : parseInt(finalAwayScore.value,10);
-  if(h === null || a === null || Number.isNaN(h) || Number.isNaN(a)){ alert('Enter non-negative integer scores for the final.'); return; }
-  if(h < 0 || a < 0){ alert('Scores cannot be negative'); return; }
-  if(!db){ alert('Database not initialized'); return; }
-
-  const payload = { home: topTeams[0], away: topTeams[1], homeScore: h, awayScore: a, playedAt: Date.now() };
-  db.ref('final').set(payload).catch(err=>{ console.error('final write error', err); alert('Failed to save final: ' + err.message); });
-}
-
-function resetFinal(){ if(!db) return; if(confirm('Reset final match?')) db.ref('final').remove(); }
-
-function renderFinal(){
-  if(savedFinal){
-    finalHomeEl.textContent = savedFinal.home;
-    finalAwayEl.textContent = savedFinal.away;
-    finalHomeScore.value = savedFinal.homeScore;
-    finalAwayScore.value = savedFinal.awayScore;
-    const h = savedFinal.homeScore, a = savedFinal.awayScore;
-    let text = `${escapeHtml(savedFinal.home)} ${h} — ${a} ${escapeHtml(savedFinal.away)} — `;
-    if(h > a) text += `Champion: ${escapeHtml(savedFinal.home)} 🏆`;
-    else if(h < a) text += `Champion: ${escapeHtml(savedFinal.away)} 🏆`;
-    else text += `Final ended in a draw. Consider tie-breaking rules.`;
-    finalResultEl.textContent = text;
-  } else {
-    finalResultEl.textContent = 'No final played yet';
+  let matchNames = { home: 'Home', away: 'Away' };
+  let saved = null;
+  if(matchId === 'final'){
+    // use savedFinal or current leaderboard for names
     const top = getTopTwoFromStats();
-    finalHomeScore.value = '';
-    finalAwayScore.value = '';
-    finalHomeEl.textContent = top[0] || '—';
-    finalAwayEl.textContent = top[1] || '—';
+    matchNames.home = top[0] || 'Team 1';
+    matchNames.away = top[1] || 'Team 2';
+    saved = savedFinal || {};
+  } else {
+    const match = MATCHES.find(m=>m.id===matchId);
+    if(!match) return;
+    matchNames.home = match.home;
+    matchNames.away = match.away;
+    saved = savedMatches[matchId] || {};
+  }
+
+  // load existing score/time if present
+  activeHome = (saved.homeScore !== undefined && saved.homeScore !== null) ? parseInt(saved.homeScore,10) : 0;
+  activeAway = (saved.awayScore !== undefined && saved.awayScore !== null) ? parseInt(saved.awayScore,10) : 0;
+  activeTimeSeconds = (saved.timePlayedSeconds !== undefined && saved.timePlayedSeconds !== null) ? parseInt(saved.timePlayedSeconds,10) : 0;
+
+  modalHomeName.textContent = matchNames.home;
+  modalAwayName.textContent = matchNames.away;
+  updateModalScores();
+  updateModalTimerDisplay();
+
+  // If DB indicates timerRunning for the node, start local timer; otherwise ensure stopped
+  const nodeSaved = (matchId === 'final') ? (savedFinal || {}) : (savedMatches[matchId] || {});
+  if(nodeSaved.timerRunning){
+    startTimerLocal();
+  } else {
+    stopTimerLocal(false);
+  }
+
+  matchModalBackdrop.style.display = 'flex';
+  matchModalBackdrop.setAttribute('aria-hidden','false');
+}
+
+/** Close modal (does not auto-save) **/
+function closeMatchController(){
+  stopTimerLocal(false);
+  activeMatchId = null;
+  matchModalBackdrop.style.display = 'none';
+  matchModalBackdrop.setAttribute('aria-hidden','true');
+}
+
+/* Score UI */
+function updateModalScores(){
+  modalHomeGoals.textContent = String(activeHome);
+  modalAwayGoals.textContent = String(activeAway);
+  modalHomeBlock.classList.remove('winner','loser');
+  modalAwayBlock.classList.remove('winner','loser');
+  if(activeHome > activeAway){ modalHomeBlock.classList.add('winner'); modalAwayBlock.classList.add('loser'); }
+  else if(activeAway > activeHome){ modalAwayBlock.classList.add('winner'); modalHomeBlock.classList.add('loser'); }
+}
+
+/* Timer helpers */
+function formatSeconds(sec){
+  sec = Math.max(0, Math.floor(Number(sec) || 0));
+  const mm = String(Math.floor(sec/60)).padStart(2,'0');
+  const ss = String(sec % 60).padStart(2,'0');
+  return `${mm}:${ss}`;
+}
+function updateModalTimerDisplay(){ modalTimer.textContent = formatSeconds(activeTimeSeconds); }
+
+/* Local timer control — writes to DB using activeNodeRef() when running */
+function startTimerLocal(){
+  if(timerInterval) return;
+  timerInterval = setInterval(()=>{
+    activeTimeSeconds++;
+    updateModalTimerDisplay();
+    const ref = activeNodeRef();
+    if(ref) ref.update({ timePlayedSeconds: activeTimeSeconds, timerRunning: true }).catch(e=>console.warn('timer write', e));
+  }, 1000);
+}
+function stopTimerLocal(writeToDB = true){
+  if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+  const ref = activeNodeRef();
+  if(writeToDB && ref) ref.update({ timerRunning: false, timePlayedSeconds: activeTimeSeconds }).catch(e=>console.warn('timer stop write', e));
+}
+function resetTimerLocal(){
+  activeTimeSeconds = 0;
+  updateModalTimerDisplay();
+  const ref = activeNodeRef();
+  if(ref) ref.update({ timePlayedSeconds: activeTimeSeconds }).catch(e=>console.warn('timer reset write', e));
+}
+
+/* Sync local modal state to DB content when DB updates (for active node) */
+function syncModalTimerFromDB(){
+  if(!activeMatchId) return;
+  const nodeSaved = (activeMatchId === 'final') ? (savedFinal || {}) : (savedMatches[activeMatchId] || {});
+  const dbTime = (nodeSaved.timePlayedSeconds !== undefined && nodeSaved.timePlayedSeconds !== null) ? parseInt(nodeSaved.timePlayedSeconds,10) : 0;
+  const dbRunning = Boolean(nodeSaved.timerRunning);
+
+  // If not running locally, reflect DB time
+  if(!timerInterval){
+    activeTimeSeconds = dbTime;
+    updateModalTimerDisplay();
+  }
+  // If DB says running and we aren't local-running, start local
+  if(dbRunning && !timerInterval){
+    startTimerLocal();
+  }
+  // If DB says stopped and we are running locally, stop local without overwriting DB (we're reflecting)
+  if(!dbRunning && timerInterval){
+    stopTimerLocal(false);
   }
 }
 
-/* Utility: get top two team names from current leaderboard stats */
+/* goal buttons */
+homeInc.addEventListener('click', ()=>{ activeHome++; updateModalScores(); });
+homeDec.addEventListener('click', ()=>{ if(activeHome>0) activeHome--; updateModalScores(); });
+awayInc.addEventListener('click', ()=>{ activeAway++; updateModalScores(); });
+awayDec.addEventListener('click', ()=>{ if(activeAway>0) activeAway--; updateModalScores(); });
+
+/* timer buttons */
+startTimerBtn.addEventListener('click', ()=>{
+  if(!activeMatchId){ alert('No active match'); return; }
+  const ref = activeNodeRef();
+  if(ref) ref.update({ timerRunning: true, timePlayedSeconds: activeTimeSeconds }).catch(e=>console.warn('start timer write', e));
+  startTimerLocal();
+});
+pauseTimerBtn.addEventListener('click', ()=>{ stopTimerLocal(true); });
+resetTimerBtn.addEventListener('click', ()=>{ if(confirm('Reset timer to 00:00 for this match?')) resetTimerLocal(); });
+
+/* End match: prompt admin code and write final state to DB at the node (matches/{id} or /final) */
+endMatchBtn.addEventListener('click', ()=>{
+  if(!activeMatchId) return;
+  const code = prompt('Enter admin code to save score:');
+  if(code === null) return;
+  if(String(code).trim() !== '246'){ alert('Invalid admin code.'); return; }
+  const h = activeHome, a = activeAway;
+  if(h < 0 || a < 0){ alert('Invalid goals'); return; }
+  if(!db){ alert('Database not initialized'); return; }
+
+  if(timerInterval) stopTimerLocal(true);
+  const payload = { homeScore: h, awayScore: a, timePlayedSeconds: activeTimeSeconds, savedAt: Date.now(), timerRunning: false };
+
+  const nodeRef = activeNodeRef();
+  if(!nodeRef){ alert('DB not ready'); return; }
+
+  // For matches we set matches/{id}; for final we set /final (activeNodeRef handles it)
+  nodeRef.set(payload).then(()=>{
+    closeMatchController();
+  }).catch(err=>{
+    console.error('save match', err);
+    alert('Failed to save match: ' + (err && err.message ? err.message : String(err)));
+  });
+});
+
+/* close modal */
+closeModalBtn.addEventListener('click', ()=>{ if(confirm('Close without saving? Running timer will be paused locally (DB unchanged).')){ stopTimerLocal(false); closeMatchController(); } });
+
+/* Start Final button opens modal for 'final' node */
+startFinalBtn.addEventListener('click', ()=>{ openMatchController('final'); });
+resetFinalBtn.addEventListener('click', ()=>{ if(confirm('Reset final (remove saved final & timer)?')) db.ref('final').remove(); });
+
+/* ===== Utility & render glue ===== */
 function getTopTwoFromStats(){
   const stats = computeStats();
   const arr = Object.values(stats);
@@ -400,42 +536,65 @@ function getTopTwoFromStats(){
   return [arr[0] ? arr[0].team : null, arr[1] ? arr[1].team : null];
 }
 
-/* Reset all: remove /matches and /final from DB */
-document.getElementById('resetAll').addEventListener('click', ()=>{
-  if(!db){ alert('Database not initialized'); return; }
-  if(confirm('Reset the whole tournament (all match scores and final)?')){
-    db.ref('matches').remove().catch(err=>console.error(err));
-    db.ref('final').remove().catch(err=>console.error(err));
+/* Render final summary info in the final card */
+function renderFinal(){
+  if(savedFinal){
+    finalHomeEl.textContent = savedFinal.home || (getTopTwoFromStats()[0] || '—');
+    finalAwayEl.textContent = savedFinal.away || (getTopTwoFromStats()[1] || '—');
+    const h = savedFinal.homeScore, a = savedFinal.awayScore;
+    let text = 'No final played yet';
+    if(h !== undefined && a !== undefined && h !== null && a !== null){
+      text = `${finalHomeEl.textContent} ${h} — ${a} ${finalAwayEl.textContent} — `;
+      if(h > a) text += `Champion: ${finalHomeEl.textContent} 🏆`;
+      else if(h < a) text += `Champion: ${finalAwayEl.textContent} 🏆`;
+      else text += 'Final ended in a draw.';
+    }
+    finalResultEl.textContent = text;
+  } else {
+    const top = getTopTwoFromStats();
+    finalHomeEl.textContent = top[0] || '—';
+    finalAwayEl.textContent = top[1] || '—';
+    finalResultEl.textContent = 'No final played yet';
   }
-});
+}
 
-// Final save/reset buttons
-document.getElementById('saveFinal').addEventListener('click', saveFinalScore);
-document.getElementById('resetFinal').addEventListener('click', resetFinal);
+/* top-level rendering */
+function renderAll(){
+  renderDays();
+  renderLeaderboard();
+  renderFinal();
+}
 
-/* Global render */
-function renderAll(){ renderDays(); renderLeaderboard(); renderFinal(); }
+/* helper: format seconds to mm:ss */
+function formatSeconds(sec){
+  sec = Math.max(0, Math.floor(Number(sec) || 0));
+  const mm = String(Math.floor(sec/60)).padStart(2,'0');
+  const ss = String(sec % 60).padStart(2,'0');
+  return `${mm}:${ss}`;
+}
 
-/* Helper: escape HTML */
+/* helper: escape HTML */
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 /* Kickoff */
-initFirebase(); // will start listeners and render as soon as data arrives
+initFirebase();
+
+/* Close modal on Esc */
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape' && matchModalBackdrop.style.display === 'flex'){
+    if(confirm('Close without saving? Running timer will be paused locally (DB unchanged).')){ stopTimerLocal(false); closeMatchController(); }
+  }
+});
 </script>
 
-<!-- Notes for deployment (visible in the file):
-  1) This file uses Firebase Realtime Database. Your DB rules must allow reads/writes from the browser
-     while you test. Example (UNSAFE for production):
-
-     {
-       "rules": {
-         ".read": true,
-         ".write": true
-       }
-     }
-
-  2) For production, secure your DB using Firebase Authentication and appropriate rules.
-  3) Upload this file as index.html to a GitHub repository and enable GitHub Pages, or open locally.
+<!-- Notes:
+  - Final now uses the same fullscreen live controller as other matches and is stored at /final.
+  - Timers are synced to Firebase every second while running (this generates frequent small writes).
+    To reduce writes you can change the code to update DB every N seconds instead.
+  - Admin code to save/end match is '246' (client-side prompt). For production, use Firebase Authentication.
+  - For quick testing set Realtime DB rules to:
+      { "rules": { ".read": true, ".write": true } }
+    (UNSAFE). Secure properly before publishing.
 -->
 </body>
 </html>
