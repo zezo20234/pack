@@ -62,7 +62,7 @@
   <header>
     <div>
       <h1>Mini Tournament — Fullscreen Live Controller</h1>
-      <div class="lead">Barca / Man City / AHLY — open any match with <strong>Start Match</strong>. Timer at top syncs to Firebase so everyone sees the same time. End Match to save (admin code required).</div>
+      <div class="lead">BARCELONA / Man City / AHLY — open any match with <strong>Start Match</strong>. Timer at top syncs to Firebase so everyone sees the same time. End Match to save (admin code required).</div>
     </div>
     <div style="text-align:right">
       <div class="status">DB status: <span id="dbStatus">connecting…</span></div>
@@ -167,18 +167,18 @@ const firebaseConfig = {
 };
 
 /* ===== Tournament schedule (each pair plays 3 times => 9 matches total) ===== */
-const TEAMS = ['Barca','Man City','AHLY'];
+const TEAMS = ['BARCELONA','Man City','AHLY'];
 const MATCHES = [
-  { id: 'm1', day: 1, home: 'Barca',     away: 'Man City' },
+  { id: 'm1', day: 1, home: 'BARCELONA',     away: 'Man City' },
   { id: 'm2', day: 1, home: 'AHLY', away: 'Man City' },
-  { id: 'm3', day: 1, home: 'Barca',     away: 'AHLY' },
+  { id: 'm3', day: 1, home: 'BARCELONA',     away: 'AHLY' },
 
-  { id: 'm4', day: 2, home: 'Man City',  away: 'Barca' },
-  { id: 'm5', day: 2, home: 'AHLY', away: 'Barca' },
+  { id: 'm4', day: 2, home: 'Man City',  away: 'BARCELONA' },
+  { id: 'm5', day: 2, home: 'AHLY', away: 'BARCELONA' },
   { id: 'm6', day: 2, home: 'Man City',  away: 'AHLY' },
 
-  { id: 'm7', day: 3, home: 'Barca',     away: 'Man City' },
-  { id: 'm8', day: 3, home: 'AHLY', away: 'Barca' },
+  { id: 'm7', day: 3, home: 'BARCELONA',     away: 'Man City' },
+  { id: 'm8', day: 3, home: 'AHLY', away: 'BARCELONA' },
   { id: 'm9', day: 3, home: 'Man City',  away: 'AHLY' }
 ];
 
