@@ -3167,6 +3167,265 @@ window.__shortenNumbers = {
 
 })(); // IIFE end
 </script>
+<!-- ========== SECRET BUTTON + HIDDEN INLINE ADMIN RESTOCK (requires code 555) ========== -->
+<style>
+  /* Inline admin restock (hidden by default) */
+  #adminInlineRestock { display: none; margin: 28px auto; padding: 18px; border-radius: 12px; max-width: 1100px; background: #fff; border: 1px solid #e6e7eb; box-shadow: 0 6px 20px rgba(2,6,23,0.06); font-family: inherit; }
+  #adminInlineRestock h3 { margin: 0 0 8px 0; font-size: 1.05rem; }
+  #adminInlineRestock .grid { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+  #adminInlineRestock .field { flex:1 1 200px; min-width:160px; }
+  #adminInlineRestock label { display:block; font-size:0.92rem; margin-bottom:6px; color:#374151; }
+  #adminInlineRestock input[type="text"], #adminInlineRestock input[type="number"], #adminInlineRestock select, #adminInlineRestock textarea {
+    width:100%; padding:8px 10px; border-radius:8px; border:1px solid #d1d5db; box-sizing:border-box; font-size:0.95rem;
+  }
+  #adminInlineRestock .actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+  /* Scoped button class — NO color/background/border set here to avoid affecting global buttons */
+  #adminInlineRestock .adminInlineBtn { padding:8px 12px; border-radius:8px; cursor:pointer; font-size:0.95rem; }
+  #adminInlinePreview { margin-top:10px; padding:10px; background:#fafafa; border:1px dashed #e5e7eb; border-radius:8px; white-space:pre-wrap; font-size:0.92rem; color:#374151; }
+
+  /* Secret toggle button (bottom-left) - avoid color styles on the button itself */
+  #secretToggleContainer { position: fixed; left: 14px; bottom: 14px; z-index: 9999; }
+  #secretToggleContainer button { padding:10px 12px; border-radius:999px; cursor:pointer; font-size:0.95rem; }
+  /* small hint text when revealed (optional) */
+  #secretHint { display:none; position:fixed; left:14px; bottom:56px; z-index:9998; background: rgba(255,255,255,0.95); border:1px solid #e5e7eb; padding:6px 10px; border-radius:8px; font-size:0.86rem; color:#374151; }
+</style>
+
+<!-- Secret toggle -->
+<div id="secretToggleContainer" aria-hidden="false">
+  <button id="secretToggleBtn" type="button">Secret</button>
+</div>
+<div id="secretHint">Enter code to open admin</div>
+
+<!-- Inline admin restock (hidden) -->
+<section id="adminInlineRestock" aria-label="Admin restock section (secret)">
+  <h3>Admin — Restock / Add Card (Secret)</h3>
+
+  <div style="font-size:0.88rem; color:#6b7280; margin-bottom:10px;">
+    This admin panel is hidden from regular users. Use the left-bottom <strong>Secret</strong> button and enter code <strong>555</strong>.
+  </div>
+
+  <div class="grid">
+    <div class="field">
+      <label for="adminInlinePack">Pack</label>
+      <select id="adminInlinePack"></select>
+    </div>
+
+    <div class="field">
+      <label for="adminInlineName">Card name</label>
+      <input id="adminInlineName" type="text" placeholder="Exact card name (e.g. Blue Dragon)" />
+    </div>
+
+    <div style="width:150px" class="field">
+      <label for="adminInlinePrice">Sell price</label>
+      <input id="adminInlinePrice" type="number" min="0" step="1" placeholder="3500" />
+    </div>
+
+    <div style="width:120px" class="field">
+      <label for="adminInlineQty">Quantity</label>
+      <input id="adminInlineQty" type="number" min="1" step="1" placeholder="10" />
+    </div>
+
+    <div style="width:120px" class="field">
+      <label for="adminInlineChance">Chance (0–1)</label>
+      <input id="adminInlineChance" type="number" min="0" max="1" step="0.01" placeholder="0.05" />
+    </div>
+
+    <div style="width:220px" class="field">
+      <label style="display:flex; gap:8px; align-items:center;">
+        <input id="adminInlineCreate" type="checkbox" checked /> <span style="font-size:0.95rem;">Create if missing</span>
+      </label>
+    </div>
+  </div>
+
+  <div id="adminInlinePreview">Preview will appear here after you type values.</div>
+
+  <div class="actions">
+    <button class="adminInlineBtn" onclick="adminInlineReset()">Reset</button>
+    <button class="adminInlineBtn" onclick="adminInlineClearAll()">Clear</button>
+    <button class="adminInlineBtn" onclick="adminInlineSubmit()">Apply</button>
+  </div>
+</section>
+
+<script>
+/* SECRET BUTTON + HIDDEN ADMIN INLINE RESTOCK
+   - Secret button bottom-left prompts for code (555).
+   - On correct code, reveals the admin inline restock section and focuses the card name.
+   - No global button color changes; uses scoped classes only.
+*/
+
+/* helpers (same as before) */
+function _safePackKeys() {
+  try { if (typeof cardPools === 'object' && cardPools) return Object.keys(cardPools); } catch(e) {}
+  return ['common','rare','epic','legendary','mythical','divine','pristimatic','secret'];
+}
+function _slugify(name) { return String(name || '').toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_\-]/g,'').slice(0,120); }
+function _nowISO(){ return (new Date()).toISOString(); }
+function _msg(m){ if (typeof showMessage==='function') return showMessage(m); alert(String(m)); }
+
+/* UI functions (reused/adapted) */
+function adminInlinePopulatePacks() {
+  const sel = document.getElementById('adminInlinePack');
+  sel.innerHTML = '';
+  _safePackKeys().forEach(p => {
+    const opt = document.createElement('option'); opt.value = p; opt.textContent = p; sel.appendChild(opt);
+  });
+}
+function adminInlineReset() {
+  document.getElementById('adminInlineName').value = '';
+  document.getElementById('adminInlinePrice').value = '';
+  document.getElementById('adminInlineQty').value = '';
+  document.getElementById('adminInlineChance').value = '0.05';
+  document.getElementById('adminInlineCreate').checked = true;
+  adminInlineUpdatePreview();
+}
+function adminInlineClearAll() {
+  // clears quantities of the entered card only (if exists)
+  const name = (document.getElementById('adminInlineName').value || '').trim();
+  if (!name) return _msg('Enter the card name to clear its quantity.');
+  const key = _slugify(name);
+  try {
+    if (typeof db !== 'undefined' && db && db.ref) {
+      db.ref(`cardQuantities/${key}`).set(0);
+    } else {
+      localStorage.setItem(`cardQuantity_${key}`, '0');
+    }
+    // update in-memory if exists
+    for (const pk in cardPools) {
+      const card = (cardPools[pk] || []).find(c=>String(c.name)===String(name));
+      if (card) card.quantity = 0;
+    }
+    if (typeof updateUI==='function') try{ updateUI(); }catch(e){console.warn(e);}
+    adminInlineUpdatePreview();
+    _msg(`Cleared quantity of "${name}".`);
+  } catch (e) { console.error(e); _msg('Failed to clear quantity.'); }
+}
+
+/* preview update */
+function adminInlineUpdatePreview() {
+  const pack = document.getElementById('adminInlinePack').value || '(pack)';
+  const name = (document.getElementById('adminInlineName').value || '').trim() || '(card)';
+  const price = document.getElementById('adminInlinePrice').value || '0';
+  const qty = document.getElementById('adminInlineQty').value || '0';
+  const chance = document.getElementById('adminInlineChance').value || '0.05';
+  const create = document.getElementById('adminInlineCreate').checked ? 'Yes' : 'No';
+  document.getElementById('adminInlinePreview').innerText =
+    `Pack: ${pack}\nCard: ${name}\nPrice: ${price}\nQty to add: ${qty}\nChance: ${chance}\nCreate if missing: ${create}`;
+}
+
+/* submit logic (same behavior) */
+async function adminInlineSubmit() {
+  const pack = document.getElementById('adminInlinePack').value;
+  const name = (document.getElementById('adminInlineName').value || '').trim();
+  const price = Number(document.getElementById('adminInlinePrice').value || 0);
+  const qty = parseInt(document.getElementById('adminInlineQty').value || '0', 10);
+  const chance = parseFloat(document.getElementById('adminInlineChance').value || '0.05');
+  const createIfMissing = document.getElementById('adminInlineCreate').checked;
+
+  if (!pack || !name) return _msg('Please choose a pack and enter card name.');
+  if (!qty || qty <= 0) return _msg('Quantity must be a positive integer.');
+
+  try {
+    if (typeof cardPools !== 'object' || !cardPools) window.cardPools = {};
+    if (!cardPools[pack]) cardPools[pack] = [];
+
+    let card = cardPools[pack].find(c => String(c.name) === String(name));
+    if (card) {
+      card.price = price;
+      card.quantity = (card.quantity || 0) + qty;
+      card.chance = (typeof card.chance === 'number' && card.chance > 0) ? card.chance : (isNaN(chance) ? 0.05 : chance);
+    } else {
+      if (!createIfMissing) return _msg('Card not found in pack and create-if-missing is unchecked.');
+      card = { name, price, quantity: qty, chance: (isNaN(chance) ? 0.05 : chance) };
+      cardPools[pack].push(card);
+    }
+
+    // Persist change: prefer saveCardQuantities(), else db.ref single key, else localStorage
+    const key = _slugify(name);
+    if (typeof saveCardQuantities === 'function') {
+      try { await saveCardQuantities(); } catch(e) {
+        console.warn('saveCardQuantities failed', e);
+        if (typeof db !== 'undefined' && db && db.ref) await db.ref(`cardQuantities/${key}`).set(card.quantity);
+        else localStorage.setItem(`cardQuantity_${key}`, String(card.quantity));
+      }
+    } else if (typeof db !== 'undefined' && db && db.ref) {
+      try { await db.ref(`cardQuantities/${key}`).set(card.quantity); } catch(e){ console.warn(e); localStorage.setItem(`cardQuantity_${key}`, String(card.quantity)); }
+    } else {
+      localStorage.setItem(`cardQuantity_${key}`, String(card.quantity));
+    }
+
+    if (typeof updateUI === 'function') try{ updateUI(); }catch(e){console.warn(e);}
+    if (typeof updatePackChances === 'function') try{ updatePackChances(); }catch(e){console.warn(e);}
+
+    // log admin action (firebase or local)
+    const action = { action:'restock', by: (typeof currentUser!=='undefined' && currentUser) ? currentUser : (typeof auth!=='undefined' && auth && auth.currentUser && auth.currentUser.displayName) ? auth.currentUser.displayName : 'secret-admin', pack, name, price, qty, chance, at: _nowISO() };
+    if (typeof db !== 'undefined' && db && db.ref) {
+      try { await db.ref('adminActions').push(action); } catch(e){ console.warn('admin log failed', e); const arr=JSON.parse(localStorage.getItem('adminActionsLog')||'[]'); arr.push(action); localStorage.setItem('adminActionsLog', JSON.stringify(arr)); }
+    } else { const arr=JSON.parse(localStorage.getItem('adminActionsLog')||'[]'); arr.push(action); localStorage.setItem('adminActionsLog', JSON.stringify(arr)); }
+
+    _msg(`Restocked "${name}" in "${pack}" (+${qty}) — price:${price}, chance:${chance}`);
+    adminInlineUpdatePreview();
+  } catch (err) {
+    console.error('adminInlineSubmit error', err);
+    _msg('Restock failed — check console.');
+  }
+}
+
+/* attach listeners for preview */
+['adminInlinePack','adminInlineName','adminInlinePrice','adminInlineQty','adminInlineChance','adminInlineCreate'].forEach(id=>{
+  document.addEventListener('input', (e)=>{ if(e.target && e.target.id===id) adminInlineUpdatePreview(); });
+});
+
+/* SECRET BUTTON HANDLERS */
+const secretBtn = document.getElementById('secretToggleBtn');
+const secretHint = document.getElementById('secretHint');
+const adminSection = document.getElementById('adminInlineRestock');
+
+let secretOpen = false;
+
+function showSecretHint() {
+  secretHint.style.display = 'block';
+  setTimeout(()=>{ secretHint.style.display = 'none'; }, 2200);
+}
+
+secretBtn.addEventListener('mouseover', showSecretHint);
+secretBtn.addEventListener('focus', showSecretHint);
+
+secretBtn.addEventListener('click', function(){
+  const code = prompt('Enter secret code:');
+  if (code === null) return;
+  if (String(code).trim() === '555') {
+    if (!secretOpen) {
+      // reveal admin section
+      adminSection.style.display = 'block';
+      adminInlinePopulatePacks(); // populate now to keep up-to-date
+      adminInlineReset();
+      document.getElementById('adminInlineName').focus();
+      secretOpen = true;
+    } else {
+      // already open -> hide
+      adminSection.style.display = 'none';
+      secretOpen = false;
+    }
+  } else {
+    _msg('Incorrect code.');
+  }
+});
+
+/* Expose API in case you want to open programmatically (requires correct code) */
+window.openSecretAdmin = function(code){
+  if (String(code) === '555') {
+    if (!secretOpen) {
+      adminSection.style.display = 'block';
+      adminInlinePopulatePacks();
+      adminInlineReset();
+      secretOpen = true;
+    }
+    return true;
+  }
+  return false;
+};
+</script>
+<!-- ========== END SECRET BUTTON + HIDDEN INLINE ADMIN RESTOCK ========== -->
 
   </body>
   </html>
