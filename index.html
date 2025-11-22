@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Mini Tournament — Fullscreen Live Match Controller (Firebase) — Final Integrated</title>
+<title>Mini Tournament — Semifinal (#2 vs #3) + Final vs #1 (AHLY)</title>
 <style>
   :root{
     --bg:#071027; --card:#071827; --muted:#9aa7bf; --accent:#3b82f6;
@@ -16,7 +16,7 @@
   header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
   h1{margin:0;font-size:20px;}
   .lead{color:var(--muted);font-size:13px;margin-top:6px;}
-  .grid{display:grid;grid-template-columns:1fr 360px;gap:18px;align-items:start;}
+  .grid{display:grid;grid-template-columns:1fr 380px;gap:18px;align-items:start;}
   .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,0.03);}
   table{width:100%;border-collapse:collapse;font-size:14px;}
   th,td{padding:10px 8px;text-align:left;}
@@ -61,8 +61,8 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Mini Tournament — Fullscreen Live Controller</h1>
-      <div class="lead">BARCELONA / Man City / AHLY — open any match with <strong>Start Match</strong>. Timer at top syncs to Firebase so everyone sees the same time. End Match to save (admin code required).</div>
+      <h1>Mini Tournament — Semifinal (#2 vs #3) + Final vs #1</h1>
+      <div class="lead">Teams: <strong>Barca</strong>, <strong>Man City</strong>, <strong>AHLY</strong>. Regular season (15 matches total). After that: Semifinal (#2 vs #3) → winner plays #1 in Final. Use the fullscreen controller to run/save matches (admin code required).</div>
     </div>
     <div style="text-align:right">
       <div class="status">DB status: <span id="dbStatus">connecting…</span></div>
@@ -72,24 +72,33 @@
   <div class="grid">
     <main>
       <div class="card">
-        <h2 style="margin:0 0 12px">Matches</h2>
+        <h2 style="margin:0 0 12px">Regular Matches (15)</h2>
         <div id="daysContainer"></div>
       </div>
 
       <div class="card" style="margin-top:12px;">
-        <h2 style="margin:0 0 8px">FINAL — Top 1 vs Top 2</h2>
-        <div class="small">Start the final with the same live controller. The final is stored at the `/final` node in the DB.</div>
+        <h2 style="margin:0 0 8px">Playoffs</h2>
 
-        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
-          <div style="flex:1" id="finalHome">—</div>
-          <div style="font-weight:700">vs</div>
-          <div style="flex:1;text-align:right" id="finalAway">—</div>
+        <div style="margin-bottom:10px">
+          <strong>Semifinal — #2 vs #3 (from leaderboard)</strong>
+          <div class="small" style="margin-top:6px">This will automatically pick the current leaderboard 2nd and 3rd teams.</div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+            <button class="btn btn-start" id="startSemiBtn">Start Semifinal</button>
+            <button class="btn btn-reset" id="resetSemiBtn">Reset Semifinal</button>
+            <div style="margin-left:auto" class="small" id="semiResult">No semifinal played yet</div>
+          </div>
         </div>
 
-        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
-          <button class="btn btn-start" id="startFinalBtn">Start Final</button>
-          <button class="btn btn-reset" id="resetFinal">Reset final</button>
-          <div style="margin-left:auto" class="small" id="finalResult">No final played yet</div>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:12px 0" />
+
+        <div>
+          <strong>Final — #1 vs Semifinal Winner</strong>
+          <div class="small" style="margin-top:6px">After semifinal finishes, start the final — top #1 vs semifinal winner.</div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+            <button class="btn btn-start" id="startFinalBtn">Start Final</button>
+            <button class="btn btn-reset" id="resetFinalBtn">Reset Final</button>
+            <div style="margin-left:auto" class="small" id="finalResult">No final played yet</div>
+          </div>
         </div>
       </div>
     </main>
@@ -103,7 +112,7 @@
     </aside>
   </div>
 
-  <footer style="margin-top:14px;color:var(--muted);font-size:13px">Drop this `index.html` into GitHub Pages or open locally. See bottom notes for DB rules.</footer>
+  <footer style="margin-top:14px;color:var(--muted);font-size:13px">Copy this `index.html` into your repo. Notes at the end show DB rules and admin code.</footer>
 </div>
 
 <!-- Fullscreen modal -->
@@ -154,7 +163,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
 <script>
-/* ===== Firebase config ===== */
+/* ===== Firebase config (your project) ===== */
 const firebaseConfig = {
   apiKey: "AIzaSyBClhOYxDhLpQKPwurk1V3vsPXJ1Csew6E",
   authDomain: "project-add05.firebaseapp.com",
@@ -166,20 +175,34 @@ const firebaseConfig = {
   measurementId: "G-87M4WVB5Z8"
 };
 
-/* ===== Tournament schedule (each pair plays 3 times => 9 matches total) ===== */
-const TEAMS = ['BARCELONA','Man City','AHLY'];
+/* ===== Tournament: 3 teams, each plays 10 matches => 15 matches.
+   Each pair meets 5 times. Scheduling across 5 days (3 matches per day). ===== */
+const TEAMS = ['Barca','Man City','AHLY'];
 const MATCHES = [
-  { id: 'm1', day: 1, home: 'BARCELONA',     away: 'Man City' },
+  // Day 1
+  { id: 'm1', day: 1, home: 'Barca',     away: 'Man City' },
   { id: 'm2', day: 1, home: 'AHLY', away: 'Man City' },
-  { id: 'm3', day: 1, home: 'BARCELONA',     away: 'AHLY' },
+  { id: 'm3', day: 1, home: 'Barca',     away: 'AHLY' },
 
-  { id: 'm4', day: 2, home: 'Man City',  away: 'BARCELONA' },
-  { id: 'm5', day: 2, home: 'AHLY', away: 'BARCELONA' },
+  // Day 2
+  { id: 'm4', day: 2, home: 'Man City',  away: 'Barca' },
+  { id: 'm5', day: 2, home: 'AHLY', away: 'Barca' },
   { id: 'm6', day: 2, home: 'Man City',  away: 'AHLY' },
 
-  { id: 'm7', day: 3, home: 'BARCELONA',     away: 'Man City' },
-  { id: 'm8', day: 3, home: 'AHLY', away: 'BARCELONA' },
-  { id: 'm9', day: 3, home: 'Man City',  away: 'AHLY' }
+  // Day 3
+  { id: 'm7', day: 3, home: 'Barca',     away: 'Man City' },
+  { id: 'm8', day: 3, home: 'AHLY', away: 'Barca' },
+  { id: 'm9', day: 3, home: 'Man City',  away: 'AHLY' },
+
+  // Day 4
+  { id: 'm10', day: 4, home: 'Barca',    away: 'Man City' },
+  { id: 'm11', day: 4, home: 'AHLY',away: 'Man City' },
+  { id: 'm12', day: 4, home: 'Barca',    away: 'AHLY' },
+
+  // Day 5
+  { id: 'm13', day: 5, home: 'Man City', away: 'Barca' },
+  { id: 'm14', day: 5, home: 'AHLY',away: 'Barca' },
+  { id: 'm15', day: 5, home: 'Man City', away: 'AHLY' }
 ];
 
 /* ===== DOM refs ===== */
@@ -207,19 +230,21 @@ const resetTimerBtn = document.getElementById('resetTimerBtn');
 const endMatchBtn = document.getElementById('endMatchBtn');
 const closeModalBtn = document.getElementById('closeModalBtn');
 
+const startSemiBtn = document.getElementById('startSemiBtn');
+const resetSemiBtn = document.getElementById('resetSemiBtn');
+const semiResultEl = document.getElementById('semiResult');
+
 const startFinalBtn = document.getElementById('startFinalBtn');
-const resetFinalBtn = document.getElementById('resetFinal');
-const finalHomeEl = document.getElementById('finalHome');
-const finalAwayEl = document.getElementById('finalAway');
+const resetFinalBtn = document.getElementById('resetFinalBtn');
 const finalResultEl = document.getElementById('finalResult');
 
-/* ===== State ===== */
 let db = null;
 let savedMatches = {}; // mirror /matches
-let savedFinal = null;
+let savedSemi = null;  // mirror /semi
+let savedFinal = null; // mirror /final
 
 /* active match & timer state */
-let activeMatchId = null;               // match id (e.g. 'm1') or 'final'
+let activeMatchId = null;               // match id (e.g. 'm1') or 'semi' or 'final'
 let activeHome = 0;
 let activeAway = 0;
 let activeTimeSeconds = 0; // integer seconds
@@ -235,8 +260,14 @@ function initFirebase(){
     db.ref('matches').on('value', snap=>{
       savedMatches = snap.val() || {};
       renderAll();
-      if(activeMatchId && activeMatchId !== 'final') syncModalTimerFromDB();
+      if(activeMatchId && activeMatchId !== 'semi' && activeMatchId !== 'final') syncModalTimerFromDB();
     }, err=>{ console.warn('matches listen', err); dbStatusEl.textContent='error'; });
+
+    db.ref('semi').on('value', snap=>{
+      savedSemi = snap.val();
+      renderSemi();
+      if(activeMatchId === 'semi') syncModalTimerFromDB();
+    }, err=>{ console.warn('semi listen', err); dbStatusEl.textContent='error'; });
 
     db.ref('final').on('value', snap=>{
       savedFinal = snap.val();
@@ -344,35 +375,67 @@ function renderLeaderboard(){
   }
   html += `</tbody></table>`;
   leaderboardWrap.innerHTML = html;
-
-  // final participants
-  const top1 = arr[0] ? arr[0].team : null;
-  const top2 = arr[1] ? arr[1].team : null;
-  finalHomeEl.textContent = top1 || '—';
-  finalAwayEl.textContent = top2 || '—';
 }
 
-/* ===== Modal controller & timer sync (works for matches and final) ===== */
+/* ===== Semifinal & Final rendering ===== */
+function renderSemi(){
+  if(savedSemi && savedSemi.homeScore !== undefined && savedSemi.awayScore !== undefined){
+    const home = savedSemi.home || '?', away = savedSemi.away || '?';
+    const h = savedSemi.homeScore, a = savedSemi.awayScore;
+    let txt = `${home} ${h} — ${a} ${away}`;
+    if(h > a) txt += ` — Winner: ${home}`;
+    else if(a > h) txt += ` — Winner: ${away}`;
+    else if(savedSemi.winner) txt += ` — Winner: ${savedSemi.winner}`;
+    else txt += ` — Draw (no winner saved)`;
+    semiResultEl.textContent = txt;
+  } else {
+    semiResultEl.textContent = 'No semifinal played yet';
+  }
+}
+
+function renderFinal(){
+  if(savedFinal && savedFinal.homeScore !== undefined && savedFinal.awayScore !== undefined){
+    const home = savedFinal.home || (getLeaderboardArray()[0] || '?');
+    const away = savedFinal.away || (savedSemi && savedSemi.winner) || (getLeaderboardArray()[1] || '?');
+    const h = savedFinal.homeScore, a = savedFinal.awayScore;
+    let txt = `${home} ${h} — ${a} ${away}`;
+    if(h > a) txt += ` — Champion: ${home}`;
+    else if(a > h) txt += ` — Champion: ${away}`;
+    else txt += ' — Draw';
+    finalResultEl.textContent = txt;
+  } else {
+    finalResultEl.textContent = 'No final played yet';
+  }
+}
+
+/* ===== Modal controller & timer sync (works for matches, semi, final) ===== */
 
 /** Helper: get DB ref path for current active match **/
 function activeNodeRef(){
   if(!db) return null;
+  if(activeMatchId === 'semi') return db.ref('semi');
   if(activeMatchId === 'final') return db.ref('final');
   return db.ref('matches/' + activeMatchId);
 }
 
-/** When opening controller for either a match or final **/
+/** When opening controller for either a match or playoff node **/
 function openMatchController(matchId){
   activeMatchId = matchId;
 
   let matchNames = { home: 'Home', away: 'Away' };
   let saved = null;
   if(matchId === 'final'){
-    // use savedFinal or current leaderboard for names
-    const top = getTopTwoFromStats();
+    // final: home = #1, away = semifinal winner if present else #2
+    const top = getLeaderboardArray();
     matchNames.home = top[0] || 'Team 1';
-    matchNames.away = top[1] || 'Team 2';
+    matchNames.away = (savedSemi && savedSemi.winner) ? savedSemi.winner : (top[1] || 'Team 2');
     saved = savedFinal || {};
+  } else if(matchId === 'semi'){
+    // semifinal: #2 vs #3 from leaderboard
+    const top = getLeaderboardArray();
+    matchNames.home = top[1] || 'Team 2'; // #2
+    matchNames.away = top[2] || (TEAMS.find(t => t !== matchNames.home) || 'Team'); // #3 or fallback
+    saved = savedSemi || {};
   } else {
     const match = MATCHES.find(m=>m.id===matchId);
     if(!match) return;
@@ -392,7 +455,7 @@ function openMatchController(matchId){
   updateModalTimerDisplay();
 
   // If DB indicates timerRunning for the node, start local timer; otherwise ensure stopped
-  const nodeSaved = (matchId === 'final') ? (savedFinal || {}) : (savedMatches[matchId] || {});
+  const nodeSaved = (matchId === 'final') ? (savedFinal || {}) : (matchId === 'semi' ? (savedSemi || {}) : (savedMatches[matchId] || {}));
   if(nodeSaved.timerRunning){
     startTimerLocal();
   } else {
@@ -455,7 +518,7 @@ function resetTimerLocal(){
 /* Sync local modal state to DB content when DB updates (for active node) */
 function syncModalTimerFromDB(){
   if(!activeMatchId) return;
-  const nodeSaved = (activeMatchId === 'final') ? (savedFinal || {}) : (savedMatches[activeMatchId] || {});
+  const nodeSaved = (activeMatchId === 'final') ? (savedFinal || {}) : (activeMatchId === 'semi' ? (savedSemi || {}) : (savedMatches[activeMatchId] || {}));
   const dbTime = (nodeSaved.timePlayedSeconds !== undefined && nodeSaved.timePlayedSeconds !== null) ? parseInt(nodeSaved.timePlayedSeconds,10) : 0;
   const dbRunning = Boolean(nodeSaved.timerRunning);
 
@@ -490,8 +553,8 @@ startTimerBtn.addEventListener('click', ()=>{
 pauseTimerBtn.addEventListener('click', ()=>{ stopTimerLocal(true); });
 resetTimerBtn.addEventListener('click', ()=>{ if(confirm('Reset timer to 00:00 for this match?')) resetTimerLocal(); });
 
-/* End match: prompt admin code and write final state to DB at the node (matches/{id} or /final) */
-endMatchBtn.addEventListener('click', ()=>{
+/* End match: prompt admin code and write final state to DB at the node (matches/{id}, /semi, or /final) */
+endMatchBtn.addEventListener('click', async ()=>{
   if(!activeMatchId) return;
   const code = prompt('Enter admin code to save score:');
   if(code === null) return;
@@ -506,24 +569,88 @@ endMatchBtn.addEventListener('click', ()=>{
   const nodeRef = activeNodeRef();
   if(!nodeRef){ alert('DB not ready'); return; }
 
-  // For matches we set matches/{id}; for final we set /final (activeNodeRef handles it)
-  nodeRef.set(payload).then(()=>{
+  try{
+    // Semifinal: determine winner (if draw ask to pick)
+    if(activeMatchId === 'semi'){
+      let winner = null;
+      const homeName = modalHomeName.textContent;
+      const awayName = modalAwayName.textContent;
+      if(h > a) winner = homeName;
+      else if(a > h) winner = awayName;
+      else {
+        // tie -> ask who advances
+        const pick = prompt(`Semifinal ended ${h}—${a}. Type the winner's exact name to advance (${homeName} or ${awayName}), or Cancel to abort save:`);
+        if(pick === null) return;
+        const trimmed = String(pick).trim();
+        if(trimmed !== homeName && trimmed !== awayName){
+          alert('Invalid name entered. Save cancelled. Enter exactly one of the two team names shown.');
+          return;
+        }
+        winner = trimmed;
+      }
+      payload.home = homeName;
+      payload.away = awayName;
+      payload.winner = winner;
+      await nodeRef.set(payload);
+      // keep convenience winner at /semi/winner
+      await db.ref('semi/winner').set(winner);
+      savedSemi = (await db.ref('semi').get()).val();
+      renderSemi();
+      closeMatchController();
+      return;
+    }
+
+    // Final: save with home/away names
+    if(activeMatchId === 'final'){
+      payload.home = modalHomeName.textContent;
+      payload.away = modalAwayName.textContent;
+      await nodeRef.set(payload);
+      savedFinal = (await db.ref('final').get()).val();
+      renderFinal();
+      closeMatchController();
+      return;
+    }
+
+    // Regular match
+    payload.home = modalHomeName.textContent;
+    payload.away = modalAwayName.textContent;
+    await nodeRef.set(payload);
+    savedMatches[activeMatchId] = payload;
+    renderAll();
     closeMatchController();
-  }).catch(err=>{
+  }catch(err){
     console.error('save match', err);
     alert('Failed to save match: ' + (err && err.message ? err.message : String(err)));
-  });
+  }
 });
 
 /* close modal */
 closeModalBtn.addEventListener('click', ()=>{ if(confirm('Close without saving? Running timer will be paused locally (DB unchanged).')){ stopTimerLocal(false); closeMatchController(); } });
 
-/* Start Final button opens modal for 'final' node */
-startFinalBtn.addEventListener('click', ()=>{ openMatchController('final'); });
+/* Start Semifinal: open modal for node 'semi' (uses leaderboard #2 vs #3) */
+startSemiBtn.addEventListener('click', ()=>{
+  const top = getLeaderboardArray();
+  if(top.length < 3 || !top[1] || !top[2]){ alert('Not enough ranked teams to start semifinal.'); return; }
+  openMatchController('semi');
+});
+resetSemiBtn.addEventListener('click', ()=>{ if(confirm('Reset semifinal (remove saved semifinal & winner)?')) db.ref('semi').remove(); });
+
+/* Start Final: open modal for node 'final' (requires semi winner ideally) */
+startFinalBtn.addEventListener('click', ()=>{
+  const semiWinner = savedSemi && savedSemi.winner;
+  const top = getLeaderboardArray();
+  const top1 = top[0];
+  if(!top1){ alert('Leaderboard not ready (no top team).'); return; }
+  if(!semiWinner){
+    if(!confirm('No semifinal winner found. Start final using current #1 vs current #2 instead? (Cancel to run semifinal)')) return;
+    // The modal's logic will set away to top[1] if no semi winner exists.
+  }
+  openMatchController('final');
+});
 resetFinalBtn.addEventListener('click', ()=>{ if(confirm('Reset final (remove saved final & timer)?')) db.ref('final').remove(); });
 
 /* ===== Utility & render glue ===== */
-function getTopTwoFromStats(){
+function getLeaderboardArray(){
   const stats = computeStats();
   const arr = Object.values(stats);
   arr.sort((A,B)=>{
@@ -533,35 +660,15 @@ function getTopTwoFromStats(){
     if(B.gf !== A.gf) return B.gf - A.gf;
     return A.team.localeCompare(B.team);
   });
-  return [arr[0] ? arr[0].team : null, arr[1] ? arr[1].team : null];
-}
-
-/* Render final summary info in the final card */
-function renderFinal(){
-  if(savedFinal){
-    finalHomeEl.textContent = savedFinal.home || (getTopTwoFromStats()[0] || '—');
-    finalAwayEl.textContent = savedFinal.away || (getTopTwoFromStats()[1] || '—');
-    const h = savedFinal.homeScore, a = savedFinal.awayScore;
-    let text = 'No final played yet';
-    if(h !== undefined && a !== undefined && h !== null && a !== null){
-      text = `${finalHomeEl.textContent} ${h} — ${a} ${finalAwayEl.textContent} — `;
-      if(h > a) text += `Champion: ${finalHomeEl.textContent} 🏆`;
-      else if(h < a) text += `Champion: ${finalAwayEl.textContent} 🏆`;
-      else text += 'Final ended in a draw.';
-    }
-    finalResultEl.textContent = text;
-  } else {
-    const top = getTopTwoFromStats();
-    finalHomeEl.textContent = top[0] || '—';
-    finalAwayEl.textContent = top[1] || '—';
-    finalResultEl.textContent = 'No final played yet';
-  }
+  return arr.map(r => r.team);
 }
 
 /* top-level rendering */
 function renderAll(){
   renderDays();
   renderLeaderboard();
+  // also refresh playoff cards
+  renderSemi();
   renderFinal();
 }
 
@@ -588,13 +695,14 @@ document.addEventListener('keydown', (e)=>{
 </script>
 
 <!-- Notes:
-  - Final now uses the same fullscreen live controller as other matches and is stored at /final.
-  - Timers are synced to Firebase every second while running (this generates frequent small writes).
-    To reduce writes you can change the code to update DB every N seconds instead.
-  - Admin code to save/end match is '246' (client-side prompt). For production, use Firebase Authentication.
-  - For quick testing set Realtime DB rules to:
+  - Semifinal stored at /semi (also /semi/winner contains the winner string).
+  - Final stored at /final.
+  - Regular matches stored at /matches/{matchId}.
+  - Timer syncs to Firebase every second while running. Change frequency to reduce writes if needed.
+  - Admin code to save is '246' (client-side). For production use Firebase Auth + rules.
+  - For testing temporarily set Realtime DB rules to:
       { "rules": { ".read": true, ".write": true } }
-    (UNSAFE). Secure properly before publishing.
+    (UNSAFE). Secure your DB for production.
 -->
 </body>
 </html>
