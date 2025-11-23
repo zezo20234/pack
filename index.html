@@ -3774,6 +3774,87 @@ window.openSecretAdmin = function(code){
   console.log('Lucky Block (percent mode) installed — use _getLuckyRewardsPercent() to read normalized percentages.');
 })();
 </script>
+<script>
+/* ---- Replace only the openLuckyBlock function with this transaction-safe version ---- */
+async function openLuckyBlock(cardId) {
+  try {
+    if (!currentUser) return showMessage('You must be logged in to open Lucky Block.');
+    if (!cardId) return showMessage('Could not determine which Lucky Block to open.');
+
+    const isInCollection = collection && collection[cardId];
+    const isLocked = lockedCards && lockedCards[cardId];
+    if (!isInCollection && !isLocked) return showMessage('That Lucky Block is no longer in your collection.');
+    if (isLocked) return showMessage('This Lucky Block is locked — unlock it first to open.');
+
+    if (!confirm('Open this Lucky Block? It will be consumed.')) return;
+
+    // Choose reward deterministically now for logging and UX
+    const reward = pickByPercent(REWARDS);
+    if (!reward) throw new Error('No reward available');
+
+    const newCardId = Date.now().toString() + Math.random().toString().substr(2,6);
+    const cardObj = {
+      id: newCardId,
+      name: reward.name,
+      basePrice: reward.price || 0,
+      currentPrice: reward.price || 0,
+      isLocked: false,
+      lockTime: 0,
+      lastMutationTime: Date.now(),
+      mutations: [],
+      protectAvailableAt: Date.now() + (5 * 60 * 1000),
+      protectedUntil: 0,
+      createdFrom: 'lucky_block',
+      grantedAt: Date.now()
+    };
+
+    // Transaction on the collection map to atomically remove the Lucky Block and add the reward
+    const collRef = db.ref(`users/${currentUser}/collection`);
+    const txResult = await collRef.transaction(current => {
+      // if collection missing, abort (can't find card)
+      if (!current || typeof current !== 'object') return;
+      const existing = current[cardId];
+      if (!existing) return;           // card not present
+      if (existing.isLocked) return;   // locked in DB
+      // produce a new collection map
+      const newMap = Object.assign({}, current);
+      delete newMap[cardId];
+      newMap[newCardId] = cardObj;
+      return newMap;
+    }, undefined, false);
+
+    if (!txResult || !txResult.committed) {
+      // aborted: ensure client resync and notify user
+      await loadUserData().catch(()=>{});
+      return showMessage('Could not open the Lucky Block right now (it may have been removed or locked). Try again.');
+    }
+
+    // success -> update local collection to the snapshot returned by transaction
+    const updatedCollection = txResult.snapshot.val() || {};
+    collection = updatedCollection;
+
+    // write a log entry separately (non-transactional; doesn't touch user object)
+    await db.ref(`logs/luckyOpens/${currentUser}_${Date.now()}`).set({
+      user: currentUser,
+      openedCardId: cardId,
+      reward: reward.name,
+      at: Date.now(),
+      percent: Number(reward.percent || 0)
+    }).catch(()=>{ /* best-effort logging */ });
+
+    // IMPORTANT: do NOT call saveUser() here (it does a full set on users/{user} and may overwrite balance).
+    // Instead update the UI from the updated local collection.
+    updateUI();
+    attachButtonsToLuckyCards();
+    showMessage(`You opened the Lucky Block and received "${reward.name}" (${formatPercent(reward.percent)})!`);
+  } catch (err) {
+    console.error('openLuckyBlock err', err);
+    showMessage('An error occurred while opening the Lucky Block.');
+    try { await loadUserData(); } catch(e){ /* ignore */ }
+  }
+}
+</script>
+
 
   </body>
   </html>
