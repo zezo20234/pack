@@ -3855,6 +3855,392 @@ async function openLuckyBlock(cardId) {
 }
 </script>
 
+<script>
+/* ===== Half-hourly Fishing — UI placed under restock timer + "Next fishing" display =====
+   - Paste after your firebase/game code so `db`, `currentUser`, `collection`, `lockedCards`, generateCardId(), updateUI()` exist.
+   - UI is positioned just under the element with id="refill-count-small" (the restock small timer).
+   - Shows Next fishing time, relative countdown; green window remains page-wide but the UI is anchored under the restock timer.
+   - Clicking anywhere while window active still starts fishing; there's also a local "Fish now" button.
+*/
+
+(function installHourlyFishingUnderRestock(){
+  if (window.__hourlyFishingUnderRestock) return;
+  window.__hourlyFishingUnderRestock = true;
+
+  // ------- CONFIG -------
+  const WINDOW_DURATION_MS = 10 * 60 * 1000; // 10 minutes green window
+  const FISH_WAIT_MS = 30 * 1000;            // 30s wait after click
+  const CLAIM_INTERVAL_MS = 5000;
+  const UI_REFRESH_MS = 1000;
+
+  // SCHEDULE: change to 30 minutes (was 60*60*1000 for hourly)
+  const SCHEDULE_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+
+  const RAW_REWARDS = [
+    { name: 'KARKER KAR KUR KUR', price: 30000000, percent: 5 },
+    { name: 'ESOK SEKOLA',        price: 6000000,  percent: 24 },
+    { name: 'NOOOO MY EXAMINE',   price: 4500000,  percent: 10 },
+    { name: 'YEEEES MY EXAMINE',  price: 7000000,  percent: 8 },
+    { name: 'HALLOWEEN MEOWL',    price: 60000000, percent: 3 },
+    { name: 'POT HOTSPOT',        price: 8000000,  percent: 6 },
+    { name: 'LOS 67',             price: 100000000, percent: 1 },
+    { name: 'LA CHUCARACHA',      price: 17000000, percent: 3 },
+    { name: 'GRAPUSS MEDUSI',     price: 15000000, percent: 5 },
+    { name: 'LA VACA',            price: 1000000,  percent: 35 }
+  ];
+
+  // ------- state -------
+  let serverOffset = 0;
+  let fishingInProgress = false;
+  let countdownInterval = null;
+  let windowActive = false;
+  const META_REF = (db && db.ref) ? db.ref('meta/nextFishing') : null;
+
+  // ------- helpers: server time & percent pick -------
+  function nowServerMs(){ return Date.now() + (serverOffset || 0); }
+
+  function normalizePercents(list){
+    const arr = list.map(i => Object.assign({}, i));
+    let total = arr.reduce((s,i)=>s + Number(i.percent||0), 0);
+    if (total === 0){
+      const eq = 100 / Math.max(1, arr.length);
+      arr.forEach(i=> i.percent = eq);
+      return arr;
+    }
+    if (Math.abs(total - 100) > 0.0001){
+      console.warn('Fishing rewards percent sum !=100 (was', total, '), normalizing.');
+      arr.forEach(i => i.percent = (Number(i.percent||0) / total) * 100);
+      let rounded = arr.map(i => Math.round(i.percent * 10) / 10);
+      let diff = Math.round((100 - rounded.reduce((s,v)=>s+v,0)) * 10) / 10;
+      let idx = 0;
+      while (Math.abs(diff) >= 0.1 && idx < 1000){
+        rounded[idx % rounded.length] = Math.round((rounded[idx % rounded.length] + Math.sign(diff) * 0.1) * 10) / 10;
+        diff = Math.round((100 - rounded.reduce((s,v)=>s+v,0)) * 10) / 10;
+        idx++;
+      }
+      arr.forEach((it, i) => it.percent = rounded[i]);
+    } else {
+      arr.forEach(i => i.percent = Math.round(Number(i.percent||0) * 10) / 10);
+    }
+    return arr;
+  }
+
+  function pickByPercent(list){
+    const arr = normalizePercents(list);
+    const r = Math.random() * 100;
+    let acc = 0;
+    for (const it of arr){
+      acc += Number(it.percent || 0);
+      if (r <= acc) return it;
+    }
+    return arr[arr.length-1];
+  }
+
+  function formatTimeShort(ms){
+    const s = Math.max(0, Math.ceil(ms/1000));
+    const mm = Math.floor(s/60), ss = s % 60;
+    return `${mm}m ${ss}s`;
+  }
+
+  function formatAbsolute(ts){
+    try {
+      if (!ts) return '—';
+      const d = new Date(Number(ts));
+      return d.toLocaleString(); // uses user's locale; you can change options if desired
+    } catch(e){ return '—'; }
+  }
+
+  // ------- Styling (green background) -------
+  const BG_CLASS = '__fishingBgGreen_underRestock';
+  (function injectCss(){
+    if (document.getElementById('__fishingCssUnderRestock')) return;
+    const s = document.createElement('style'); s.id = '__fishingCssUnderRestock';
+    s.innerHTML = `
+      body.${BG_CLASS} { background: linear-gradient(180deg,#0f6f2f 0%, #26a64a 100%) !important; transition: background 0.6s ease !important; }
+      #__fishingContainerUnderRestock { pointer-events: auto; }
+      #__fishingContainerUnderRestock .__fishUI { pointer-events: auto; font-family: Inter, system-ui, Arial; }
+      #__fishingContainerUnderRestock .__fishBtn { cursor: pointer; border-radius:8px; padding:6px 8px; border:none; background:#036; color:#fff; font-weight:700; }
+      #__fishingContainerUnderRestock .__fishSmall { font-size:12px; color:#fff; opacity:0.95; }
+      #__fishingContainerUnderRestock .__fishTitle { font-weight:800; font-size:13px; color:#fff; }
+      #__fishingContainerUnderRestock { transition: opacity .25s; }
+    `;
+    document.head.appendChild(s);
+  })();
+
+  // ------- UI anchored under restock timer -------
+  function ensureUI(){
+    // if exists, reposition (in case refilled box moved)
+    let wrap = document.getElementById('__fishingContainerUnderRestock');
+    if (wrap) {
+      repositionUnderRefill();
+      return wrap;
+    }
+
+    wrap = document.createElement('div');
+    wrap.id = '__fishingContainerUnderRestock';
+    Object.assign(wrap.style, {
+      position: 'fixed', left: '8px', top: '56px', zIndex: 99990, pointerEvents: 'auto'
+    });
+
+    const ui = document.createElement('div');
+    ui.className = '__fishUI';
+    Object.assign(ui.style, {
+      background:'rgba(3,6,12,0.85)', color:'#fff', padding:'8px 10px', borderRadius:'10px',
+      boxShadow:'0 8px 26px rgba(0,0,0,0.35)', minWidth:'220px', display:'flex', flexDirection:'column', gap:'6px'
+    });
+
+    const title = document.createElement('div'); title.className='__fishTitle'; title.id='__fishTitle';
+    title.innerText = 'Fishing — inactive';
+
+    const nextRow = document.createElement('div'); nextRow.style.display='flex'; nextRow.style.justifyContent='space-between'; nextRow.style.alignItems='center';
+    const nextLabel = document.createElement('div'); nextLabel.className='__fishSmall'; nextLabel.innerText = 'Next fishing:';
+    const nextVal = document.createElement('div'); nextVal.id='__fishNext'; nextVal.className='__fishSmall'; nextVal.style.fontWeight='800'; nextVal.innerText = '—';
+    nextRow.appendChild(nextLabel); nextRow.appendChild(nextVal);
+
+    const statusRow = document.createElement('div'); statusRow.style.display='flex'; statusRow.style.justifyContent='space-between'; statusRow.style.alignItems='center';
+    const statusText = document.createElement('div'); statusText.id='__fishStatus'; statusText.className='__fishSmall'; statusText.innerText = 'Waiting...';
+    const btn = document.createElement('button'); btn.id='__fishBtn'; btn.className='__fishBtn'; btn.innerText = 'Fish now';
+    btn.onclick = function(e){ e.stopPropagation(); startFishingNow(); };
+    statusRow.appendChild(statusText); statusRow.appendChild(btn);
+
+    const countdown = document.createElement('div'); countdown.id='__fishCountdown'; countdown.style.fontWeight = '800'; countdown.style.fontSize = '13px'; countdown.style.color='#ffe';
+
+    ui.appendChild(title);
+    ui.appendChild(nextRow);
+    ui.appendChild(statusRow);
+    ui.appendChild(countdown);
+    wrap.appendChild(ui);
+    document.body.appendChild(wrap);
+
+    // reposition relative to refill-count-small if present
+    repositionUnderRefill();
+
+    // clicking anywhere when active starts fishing (but ignore clicks on inputs/controls)
+    document.addEventListener('click', function(e){
+      if (!windowActive) return;
+      const t = e.target;
+      const skip = t.closest && (t.closest('input, textarea, select, button, [contenteditable="true"], .adminMsg, #adminPanel') );
+      if (skip) {
+        // allow our own button clicks
+        if (!(t.id === '__fishBtn' || t.closest && t.closest('#__fishingContainerUnderRestock'))) return;
+      }
+      startFishingNow();
+    }, { capture: true });
+
+    // ensure reposition if window resizes
+    window.addEventListener('resize', repositionUnderRefill);
+    return wrap;
+  }
+
+  function repositionUnderRefill(){
+    try {
+      const refillSpan = document.getElementById('refill-count-small');
+      const wrap = document.getElementById('__fishingContainerUnderRestock');
+      if (!wrap) return;
+      if (refillSpan && refillSpan.parentElement) {
+        const rect = refillSpan.parentElement.getBoundingClientRect();
+        // place just below it with 8px spacing; keep left aligned with parent
+        wrap.style.left = Math.max(4, rect.left) + 'px';
+        wrap.style.top = (rect.bottom + 8) + 'px';
+      } else {
+        // fallback to top-left under typical offset
+        wrap.style.left = '8px';
+        wrap.style.top = '56px';
+      }
+    } catch(e){ /* silent */ }
+  }
+
+  // ------- UI refresh function -------
+  function refreshUI(){
+    ensureUI();
+    const title = document.getElementById('__fishTitle');
+    const nextVal = document.getElementById('__fishNext');
+    const statusEl = document.getElementById('__fishStatus');
+    const countdownEl = document.getElementById('__fishCountdown');
+    const btn = document.getElementById('__fishBtn');
+
+    const serverNow = nowServerMs();
+    const next = window._nextFishingCached || 0;
+    const inWindow = (next && serverNow >= next && serverNow < (next + WINDOW_DURATION_MS));
+    windowActive = inWindow;
+
+    if (inWindow) {
+      document.body.classList.add(BG_CLASS);
+      title.innerText = 'Fishing — ACTIVE';
+      statusEl.innerText = fishingInProgress ? 'Fishing…' : 'Ready';
+      btn.disabled = !!fishingInProgress;
+      const leftWindow = Math.max(0, (next + WINDOW_DURATION_MS) - serverNow);
+      countdownEl.innerText = 'Window ends in ' + formatTimeShort(leftWindow);
+      // show next scheduled start (one interval after current start)
+      const nextScheduled = next + SCHEDULE_INTERVAL_MS;
+      nextVal.innerText = formatAbsolute(nextScheduled) + ' (' + formatTimeShort(nextScheduled - serverNow) + ')';
+    } else {
+      document.body.classList.remove(BG_CLASS);
+      title.innerText = 'Fishing — inactive';
+      btn.disabled = true;
+      // compute time until next (if next exists)
+      if (next && next > serverNow) {
+        nextVal.innerText = formatAbsolute(next) + ' (' + formatTimeShort(next - serverNow) + ')';
+        statusEl.innerText = 'Next in ' + formatTimeShort(next - serverNow);
+        countdownEl.innerText = '';
+      } else if (next && serverNow >= next) {
+        // (shouldn't happen because inWindow false when past end) show fallback
+        nextVal.innerText = formatAbsolute(next) + ' (now)';
+        statusEl.innerText = 'Starting soon';
+        countdownEl.innerText = '';
+      } else {
+        nextVal.innerText = '—';
+        statusEl.innerText = 'Waiting for schedule...';
+        countdownEl.innerText = '';
+      }
+    }
+  }
+
+  // ------- local countdown helper -------
+  function startLocalCountdown(durationMs, onTick, onDone){
+    const end = Date.now() + durationMs;
+    onTick && onTick(Math.max(0, end - Date.now()));
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
+      const left = Math.max(0, end - Date.now());
+      onTick && onTick(left);
+      if (left <= 0) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+        onDone && onDone();
+      }
+    }, 250);
+  }
+
+  // ------- fishing flow -------
+  async function startFishingNow(){
+    if (!currentUser) return showMessage('You must be logged in to fish.');
+    if (!windowActive) return showMessage('Fishing is not active currently.');
+    if (fishingInProgress) return showMessage('You are already fishing.');
+
+    fishingInProgress = true;
+    refreshUI();
+
+    const statusEl = document.getElementById('__fishStatus');
+    const countdownEl = document.getElementById('__fishCountdown');
+    statusEl.innerText = 'Fishing...';
+
+    startLocalCountdown(FISH_WAIT_MS, (left) => {
+      countdownEl.innerText = 'Waiting: ' + formatTimeShort(left);
+    }, async () => {
+      try {
+        const reward = pickByPercent(RAW_REWARDS);
+        if (!reward) throw new Error('No reward');
+
+        const grantName = 'radioactive ' + reward.name;
+        const grantPrice = Math.round(Number(reward.price || 0) * 1.5);
+
+        const newCardId = (typeof generateCardId === 'function') ? generateCardId() : (Date.now().toString() + Math.random().toString().slice(2,8));
+        const cardObj = {
+          id: newCardId,
+          name: grantName,
+          basePrice: grantPrice,
+          currentPrice: grantPrice,
+          isLocked: false,
+          lockTime: 0,
+          lastMutationTime: Date.now(),
+          mutations: [],
+          protectAvailableAt: Date.now() + (5 * 60 * 1000),
+          protectedUntil: 0,
+          createdFrom: 'fishing',
+          grantedAt: Date.now()
+        };
+
+        const updates = {};
+        updates[`users/${currentUser}/collection/${newCardId}`] = cardObj;
+        updates[`logs/fishing/${currentUser}_${Date.now()}`] = { user: currentUser, reward: reward.name, percent: Number(reward.percent||0), grantedName: grantName, price: grantPrice, at: Date.now() };
+        await db.ref().update(updates);
+
+        if (!collection || typeof collection !== 'object') collection = {};
+        collection[newCardId] = cardObj;
+        typeof updateUI === 'function' && updateUI();
+        if (typeof attachButtonsToLuckyCards === 'function') try { attachButtonsToLuckyCards(); } catch(e){}
+        showMessage(`Fishing success! You caught "${grantName}".`);
+      } catch (err) {
+        console.error('Fishing grant failed', err);
+        showMessage('Fishing failed — please try again.');
+        try { await loadUserData(); } catch(e){}
+      } finally {
+        fishingInProgress = false;
+        refreshUI();
+      }
+    });
+  }
+
+  // ------- schedule management: ensure & claim nextFishing -------
+  async function ensureNextFishing(){
+    if (!META_REF) return;
+    try {
+      const snap = await META_REF.once('value');
+      if (!snap.exists() || typeof snap.val() !== 'number') {
+        const offSnap = await db.ref('.info/serverTimeOffset').once('value');
+        serverOffset = offSnap.val() || serverOffset;
+        const serverNow = nowServerMs();
+        const nextTop = serverNow - (serverNow % SCHEDULE_INTERVAL_MS) + SCHEDULE_INTERVAL_MS;
+        await META_REF.set(nextTop);
+      }
+    } catch(e){ console.warn('ensureNextFishing err', e); }
+  }
+
+  async function tryClaimNextFishing(){
+    if (!META_REF) return;
+    try {
+      const offSnap = await db.ref('.info/serverTimeOffset').once('value');
+      serverOffset = offSnap.val() || serverOffset;
+      const serverNow = nowServerMs();
+      META_REF.transaction(current => {
+        if (!current || Number(current) <= serverNow) {
+          const nextTop = serverNow - (serverNow % SCHEDULE_INTERVAL_MS) + SCHEDULE_INTERVAL_MS;
+          return nextTop;
+        }
+        return;
+      }, (err, committed, snap) => {
+        if (err) { console.warn('claim nextFishing tx err', err); return; }
+        if (!committed) return;
+      }, false);
+    } catch(e){ console.warn('tryClaimNextFishing err', e); }
+  }
+
+  if (META_REF) {
+    try { META_REF.on('value', snap => { const v = snap.exists() ? snap.val() : null; window._nextFishingCached = Number(v || 0); }); } catch(e){ console.warn('attach nextFishing listener failed', e); }
+  }
+
+  if (db && db.ref) {
+    try { db.ref('.info/serverTimeOffset').on('value', s=> { serverOffset = s.val() || serverOffset; }); } catch(e){ /* ignore */ }
+  }
+
+  // boot
+  (async function boot(){
+    await ensureNextFishing().catch(()=>{});
+    setInterval(() => { tryClaimNextFishing().catch(()=>{}); }, CLAIM_INTERVAL_MS);
+    refreshUI();
+    setInterval(() => { try { refreshUI(); } catch(e) { console.warn(e); } }, UI_REFRESH_MS);
+  })();
+
+  // ------- exposed helpers -------
+  window.getFishingState = function(){ return { windowActive, fishingInProgress, serverOffset, nextFishing: window._nextFishingCached || null }; };
+  window._getFishingRewardsPercent = function(){ return normalizePercents(RAW_REWARDS); };
+  window.forceAdvanceFishing = async function(){
+    if (!META_REF) return false;
+    const offSnap = await db.ref('.info/serverTimeOffset').once('value');
+    const off = offSnap.val() || 0;
+    const serverNow = Date.now() + off;
+    await META_REF.set(serverNow);
+    return true;
+  };
+
+  // ensure UI exists right away
+  setTimeout(() => { ensureUI(); refreshUI(); }, 80);
+
+  console.log('Half-hourly fishing (anchored under restock timer) installed.');
+})();
+</script>
+
 
   </body>
   </html>
