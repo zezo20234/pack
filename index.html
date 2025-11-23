@@ -3428,454 +3428,25 @@ window.openSecretAdmin = function(code){
 </script>
 <!-- ========== END SECRET BUTTON + HIDDEN INLINE ADMIN RESTOCK ========== -->
 <script>
-/* ===== Lucky Block (percent-based) — drop-in replacement =====
-   - Define REWARDS using 'percent' (summing to 100 ideally).
-   - If sum != 100, script normalizes and logs a warning.
-   - Selection uses the percentages exactly (after normalization).
+/* ===== Fishing: 5-minute active window + 25-minute cooldown (Firebase-backed) =====
+   - Active window length: WINDOW_DURATION_MS (5 minutes)
+   - Cooldown after window: COOLDOWN_MS (25 minutes)
+   - Stores meta at: meta/fishing = { activeStart, activeUntil, nextStart, lastClaimed }
+   - Safe transaction used to claim a new window.
+   - UI anchored under element with id="refill-count-small".
 */
 
-(function installLuckyBlockPercent() {
-  if (window.__luckyBlockPercentInstalled) {
-    console.log('LuckyBlockPercent already installed');
-    return;
-  }
-  window.__luckyBlockPercentInstalled = true;
-
-  const LUCKY_NAME = 'lucky block';
-
-  // === REWARDS: use percent fields here (you asked for percent, so set these)
-  // Example: 50% each
- const REWARDS = [
-  { name: 'KARKER KAR KUR KUR', price: 30000000, percent: 5 },
-  { name: 'ESOK SEKOLA',        price: 6000000, percent: 24 },
-  { name: 'NOOOO MY EXAMINE',   price: 4500000, percent: 10 },
-  { name: 'YEEEES MY EXAMINE',  price: 7000000, percent: 8 },
-  { name: 'HALLOWEEN MEOWL',    price: 60000000, percent: 3 },
-  { name: 'POT HOTSPOT',        price: 8000000, percent: 6 },
-
-  // leave these unchanged
-  { name: 'LOS 67',             price: 100000000, percent: 1 },
-  { name: 'LA CHUCARACHA',      price: 17000000, percent: 3 },
-  { name: 'GRAPUSS MEDUSI',     price: 15000000, percent: 5 },
-  { name: 'LA VACA',            price: 1000000,  percent: 35 }
-];
-
-
-  // ---- Helpers: percent normalization & formatting ----
-  function normalizePercents(list) {
-    // clone
-    const arr = list.map(it => Object.assign({}, it));
-    let total = 0;
-    for (const it of arr) total += Number(it.percent || 0);
-    if (total === 0) {
-      // fallback equal split
-      const equal = 100 / (arr.length || 1);
-      arr.forEach(it => { it.percent = equal; });
-      return arr;
-    }
-    if (Math.abs(total - 100) > 0.0001) {
-      console.warn('Lucky Block: reward percents sum to', total, '- normalizing to 100%.');
-      // normalize keeping relative proportions
-      arr.forEach(it => { it.percent = (Number(it.percent || 0) / total) * 100; });
-      // adjust rounding so sum -> 100
-      let rounded = arr.map(it => Math.round(it.percent * 10) / 10); // one decimal
-      let diff = 100 - rounded.reduce((s,v)=>s+v,0);
-      // distribute remainder in +0.1 increments
-      let i = 0;
-      while (Math.abs(diff) >= 0.1 && i < 1000) {
-        rounded[i % rounded.length] = Math.round((rounded[i % rounded.length] + Math.sign(diff) * 0.1) * 10) / 10;
-        diff = 100 - rounded.reduce((s,v)=>s+v,0);
-        i++;
-      }
-      // write back rounded values
-      arr.forEach((it, idx) => it.percent = rounded[idx]);
-    } else {
-      // small rounding to 1 decimal
-      arr.forEach(it => { it.percent = Math.round(Number(it.percent || 0) * 10) / 10; });
-    }
-    return arr;
-  }
-
-  function formatPercent(v) {
-    if (v === undefined || v === null) return '0%';
-    const n = Number(v);
-    if (Math.abs(n - Math.round(n)) < 0.01) return Math.round(n) + '%';
-    return (Math.round(n * 10) / 10).toFixed(1) + '%';
-  }
-
-  // pick by percent (input list is normalized or will be normalized)
-  function pickByPercent(list) {
-    const arr = normalizePercents(list);
-    const r = Math.random() * 100;
-    let acc = 0;
-    for (const it of arr) {
-      acc += Number(it.percent || 0);
-      if (r <= acc) return it;
-    }
-    return arr[arr.length - 1];
-  }
-
-  // ---- find card id from element (same approach as earlier) ----
-  function findCardIdFromElement(cardEl) {
-    if (!cardEl) return null;
-    if (cardEl.getAttribute) {
-      const did = cardEl.getAttribute('data-card-id');
-      if (did) return did;
-    }
-    const h3 = cardEl.querySelector && cardEl.querySelector('h3');
-    const name = h3 ? String(h3.innerText || '').trim() : '';
-    if (!name) return null;
-    try {
-      for (const id in (collection || {})) if ((collection[id] || {}).name === name) return id;
-      for (const id in (lockedCards || {})) if ((lockedCards[id] || {}).name === name) return id;
-    } catch (e) { /* ignore */ }
-    return null;
-  }
-
-  // ---- UI modal (info) ----
-  const MODAL_ID = '__luckyPercentInfoModal';
-  function createInfoModal() {
-    if (document.getElementById(MODAL_ID)) return document.getElementById(MODAL_ID);
-    const m = document.createElement('div');
-    m.id = MODAL_ID;
-    Object.assign(m.style, { position:'fixed', inset:0, display:'none', zIndex:999999, alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.45)', padding:'18px' });
-    const panel = document.createElement('div');
-    panel.setAttribute('role','dialog');
-    Object.assign(panel.style, { width:'min(560px,96%)', background:'#fff', borderRadius:'12px', padding:'16px', boxSizing:'border-box', boxShadow:'0 10px 40px rgba(0,0,0,0.35)', fontFamily:'Inter,system-ui,Arial' });
-
-    panel.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <strong style="font-size:16px">Lucky Block — Drop chances</strong>
-        <button id="${MODAL_ID}-close" style="border:none;background:transparent;cursor:pointer;font-size:18px">✕</button>
-      </div>
-      <div id="${MODAL_ID}-list" style="display:flex;flex-direction:column;gap:10px;max-height:60vh;overflow:auto;padding-right:6px"></div>
-      <div style="margin-top:12px; text-align:right;"><button id="${MODAL_ID}-ok" class="btn" style="padding:8px 12px">Close</button></div>
-    `;
-    m.appendChild(panel);
-    document.body.appendChild(m);
-
-    m.querySelector(`#${MODAL_ID}-close`).addEventListener('click', hideInfoModal);
-    m.querySelector(`#${MODAL_ID}-ok`).addEventListener('click', hideInfoModal);
-    m.addEventListener('click', (e)=> { if (e.target === m) hideInfoModal(); });
-
-    return m;
-  }
-
-  function showInfoModal() {
-    const modal = createInfoModal();
-    const listEl = modal.querySelector(`#${MODAL_ID}-list`);
-    listEl.innerHTML = '';
-    const normalized = normalizePercents(REWARDS);
-    normalized.forEach(r => {
-      const row = document.createElement('div');
-      row.style.display = 'flex';
-      row.style.alignItems = 'center';
-      row.style.justifyContent = 'space-between';
-      row.style.gap = '12px';
-
-      const left = document.createElement('div');
-      left.style.display = 'flex';
-      left.style.flexDirection = 'column';
-      left.style.minWidth = 0;
-      const title = document.createElement('div');
-      title.innerText = r.name;
-      title.style.fontWeight = 700;
-      title.style.fontSize = '14px';
-      const sub = document.createElement('div');
-      sub.style.fontSize = '12px';
-      sub.style.color = '#666';
-      sub.innerText = `Price: $${Number(r.price || 0)}`;
-
-      left.appendChild(title);
-      left.appendChild(sub);
-
-      const right = document.createElement('div');
-      right.style.width = '36%';
-      right.style.minWidth = '110px';
-      right.style.display = 'flex';
-      right.style.flexDirection = 'column';
-      right.style.alignItems = 'flex-end';
-
-      const pct = document.createElement('div');
-      pct.innerText = formatPercent(r.percent || 0);
-      pct.style.fontWeight = 800;
-      pct.style.marginBottom = '6px';
-
-      const barWrap = document.createElement('div');
-      barWrap.style.width = '100%';
-      barWrap.style.height = '8px';
-      barWrap.style.background = '#eee';
-      barWrap.style.borderRadius = '999px';
-      barWrap.style.overflow = 'hidden';
-      const inner = document.createElement('div');
-      inner.style.height = '100%';
-      inner.style.width = Math.min(100, Math.max(0, Number(r.percent || 0))) + '%';
-      inner.style.background = 'linear-gradient(90deg,#6dd3ff,#6aa6ff)';
-      inner.style.borderRadius = '999px';
-      barWrap.appendChild(inner);
-
-      right.appendChild(pct);
-      right.appendChild(barWrap);
-
-      row.appendChild(left);
-      row.appendChild(right);
-      listEl.appendChild(row);
-    });
-
-    modal.style.display = 'flex';
-  }
-
-  function hideInfoModal() {
-    const m = createInfoModal();
-    m.style.display = 'none';
-  }
-
-  // ---- Buttons creation ----
-  function makeOpenButton(cardId) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-gold lucky-open-btn';
-    btn.innerText = 'Open Lucky Block';
-    btn.style.marginTop = '6px';
-    btn.onclick = function(ev) {
-      ev.stopPropagation();
-      openLuckyBlock(cardId);
-    };
-    return btn;
-  }
-
-  function makeInfoButton() {
-    const b = document.createElement('button');
-    b.className = 'lucky-info-btn';
-    b.type = 'button';
-    b.title = 'Show Lucky Block chances';
-    Object.assign(b.style, {
-      position: 'absolute', top: '8px', right: '8px', zIndex: 6,
-      border: 'none', background: 'rgba(0,0,0,0.12)', color:'#fff',
-      width: '34px', height: '34px', borderRadius: '8px', cursor: 'pointer',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700
-    });
-    b.innerText = 'i';
-    b.onclick = function(ev) {
-      ev.stopPropagation();
-      showInfoModal();
-    };
-    return b;
-  }
-
-  // ---- Attach buttons to each Lucky Block card ----
-  function attachButtonsToLuckyCards() {
-    try {
-      const containers = [
-        document.getElementById('collection'),
-        document.getElementById('otherUserCollection'),
-        document.getElementById('openedCard'),
-        document.getElementById('cardDetailsContent')
-      ].filter(Boolean);
-
-      containers.forEach(container => {
-        container.querySelectorAll('.card').forEach(cardEl => {
-          const h3 = cardEl.querySelector('h3');
-          if (!h3) return;
-          const nm = String(h3.innerText || '').trim().toLowerCase();
-          if (nm !== LUCKY_NAME) return;
-
-          // open button
-          if (!cardEl.querySelector('.lucky-open-btn')) {
-            const cardId = findCardIdFromElement(cardEl) || '';
-            const btnWrap = cardEl.querySelector('.card-buttons') || cardEl;
-            const openBtn = makeOpenButton(cardId);
-            btnWrap.insertBefore(openBtn, btnWrap.firstChild || null);
-          }
-
-          // info button (top-right)
-          if (!cardEl.querySelector('.lucky-info-btn')) {
-            // ensure cardEl is positioned so absolute works; your CSS likely already sets it
-            const infoBtn = makeInfoButton();
-            cardEl.appendChild(infoBtn);
-          }
-        });
-      });
-    } catch (e) {
-      console.warn('attachButtonsToLuckyCards err', e);
-    }
-  }
-
-  // ---- Open logic: uses percent-based selection ----
-  async function openLuckyBlock(cardId) {
-    try {
-      if (!currentUser) return showMessage('You must be logged in to open Lucky Block.');
-      if (!cardId) return showMessage('Could not determine which Lucky Block to open.');
-
-      const isInCollection = collection && collection[cardId];
-      const isLocked = lockedCards && lockedCards[cardId];
-      if (!isInCollection && !isLocked) return showMessage('That Lucky Block is no longer in your collection.');
-      if (isLocked) return showMessage('This Lucky Block is locked — unlock it first to open.');
-
-      if (!confirm('Open this Lucky Block? It will be consumed.')) return;
-
-      // remove locally
-      delete collection[cardId];
-
-      // pick by percent
-      const reward = pickByPercent(REWARDS);
-      if (!reward) throw new Error('No reward available');
-
-      const newCardId = Date.now().toString() + Math.random().toString().substr(2,6);
-      const cardObj = {
-        id: newCardId,
-        name: reward.name,
-        basePrice: reward.price || 0,
-        currentPrice: reward.price || 0,
-        isLocked: false,
-        lockTime: 0,
-        lastMutationTime: Date.now(),
-        mutations: [],
-        protectAvailableAt: Date.now() + (5 * 60 * 1000),
-        protectedUntil: 0,
-        createdFrom: 'lucky_block',
-        grantedAt: Date.now()
-      };
-
-      const updates = {};
-      updates[`users/${currentUser}/collection/${cardId}`] = null;
-      updates[`users/${currentUser}/collection/${newCardId}`] = cardObj;
-      updates[`logs/luckyOpens/${currentUser}_${Date.now()}`] = { user: currentUser, openedCardId: cardId, reward: reward.name, at: Date.now(), percent: Number(reward.percent || 0) };
-
-      await db.ref().update(updates);
-
-      collection[newCardId] = cardObj;
-      await saveUser().catch(()=>{});
-      updateUI();
-      attachButtonsToLuckyCards();
-      showMessage(`You opened the Lucky Block and received "${reward.name}" (${formatPercent(reward.percent)})!`);
-    } catch (err) {
-      console.error('openLuckyBlock err', err);
-      showMessage('An error occurred while opening the Lucky Block.');
-      try { await loadUserData(); } catch(e){ /* ignore */ }
-    }
-  }
-
-  // Expose helpers and percent data
-  window.openLuckyBlock = openLuckyBlock;
-  window._attachLuckyButtons = attachButtonsToLuckyCards;
-  window._getLuckyRewardsPercent = function() { return normalizePercents(REWARDS); };
-
-  // Observe and attach
-  const mo = new MutationObserver(() => { attachButtonsToLuckyCards(); });
-  mo.observe(document.body, { childList: true, subtree: true });
-
-  // initial attach
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(attachButtonsToLuckyCards, 60));
-  } else {
-    setTimeout(attachButtonsToLuckyCards, 60);
-  }
-
-  console.log('Lucky Block (percent mode) installed — use _getLuckyRewardsPercent() to read normalized percentages.');
-})();
-</script>
-<script>
-/* ---- Replace only the openLuckyBlock function with this transaction-safe version ---- */
-async function openLuckyBlock(cardId) {
-  try {
-    if (!currentUser) return showMessage('You must be logged in to open Lucky Block.');
-    if (!cardId) return showMessage('Could not determine which Lucky Block to open.');
-
-    const isInCollection = collection && collection[cardId];
-    const isLocked = lockedCards && lockedCards[cardId];
-    if (!isInCollection && !isLocked) return showMessage('That Lucky Block is no longer in your collection.');
-    if (isLocked) return showMessage('This Lucky Block is locked — unlock it first to open.');
-
-    if (!confirm('Open this Lucky Block? It will be consumed.')) return;
-
-    // Choose reward deterministically now for logging and UX
-    const reward = pickByPercent(REWARDS);
-    if (!reward) throw new Error('No reward available');
-
-    const newCardId = Date.now().toString() + Math.random().toString().substr(2,6);
-    const cardObj = {
-      id: newCardId,
-      name: reward.name,
-      basePrice: reward.price || 0,
-      currentPrice: reward.price || 0,
-      isLocked: false,
-      lockTime: 0,
-      lastMutationTime: Date.now(),
-      mutations: [],
-      protectAvailableAt: Date.now() + (5 * 60 * 1000),
-      protectedUntil: 0,
-      createdFrom: 'lucky_block',
-      grantedAt: Date.now()
-    };
-
-    // Transaction on the collection map to atomically remove the Lucky Block and add the reward
-    const collRef = db.ref(`users/${currentUser}/collection`);
-    const txResult = await collRef.transaction(current => {
-      // if collection missing, abort (can't find card)
-      if (!current || typeof current !== 'object') return;
-      const existing = current[cardId];
-      if (!existing) return;           // card not present
-      if (existing.isLocked) return;   // locked in DB
-      // produce a new collection map
-      const newMap = Object.assign({}, current);
-      delete newMap[cardId];
-      newMap[newCardId] = cardObj;
-      return newMap;
-    }, undefined, false);
-
-    if (!txResult || !txResult.committed) {
-      // aborted: ensure client resync and notify user
-      await loadUserData().catch(()=>{});
-      return showMessage('Could not open the Lucky Block right now (it may have been removed or locked). Try again.');
-    }
-
-    // success -> update local collection to the snapshot returned by transaction
-    const updatedCollection = txResult.snapshot.val() || {};
-    collection = updatedCollection;
-
-    // write a log entry separately (non-transactional; doesn't touch user object)
-    await db.ref(`logs/luckyOpens/${currentUser}_${Date.now()}`).set({
-      user: currentUser,
-      openedCardId: cardId,
-      reward: reward.name,
-      at: Date.now(),
-      percent: Number(reward.percent || 0)
-    }).catch(()=>{ /* best-effort logging */ });
-
-    // IMPORTANT: do NOT call saveUser() here (it does a full set on users/{user} and may overwrite balance).
-    // Instead update the UI from the updated local collection.
-    updateUI();
-    attachButtonsToLuckyCards();
-    showMessage(`You opened the Lucky Block and received "${reward.name}" (${formatPercent(reward.percent)})!`);
-  } catch (err) {
-    console.error('openLuckyBlock err', err);
-    showMessage('An error occurred while opening the Lucky Block.');
-    try { await loadUserData(); } catch(e){ /* ignore */ }
-  }
-}
-</script>
-
-<script>
-/* ===== Half-hourly Fishing — UI placed under restock timer + "Next fishing" display =====
-   - Paste after your firebase/game code so `db`, `currentUser`, `collection`, `lockedCards`, generateCardId(), updateUI()` exist.
-   - UI is positioned just under the element with id="refill-count-small" (the restock small timer).
-   - Shows Next fishing time, relative countdown; green window remains page-wide but the UI is anchored under the restock timer.
-   - Clicking anywhere while window active still starts fishing; there's also a local "Fish now" button.
-*/
-
-(function installHourlyFishingUnderRestock(){
-  if (window.__hourlyFishingUnderRestock) return;
-  window.__hourlyFishingUnderRestock = true;
+(function installFivePlusCooldownFishing(){
+  if (window.__fivePlusCooldownFishingInstalled) return;
+  window.__fivePlusCooldownFishingInstalled = true;
 
   // ------- CONFIG -------
-  const WINDOW_DURATION_MS = 10 * 60 * 1000; // 10 minutes green window
-  const FISH_WAIT_MS = 30 * 1000;            // 30s wait after click
-  const CLAIM_INTERVAL_MS = 5000;
-  const UI_REFRESH_MS = 1000;
+  const WINDOW_DURATION_MS = 60 * 60 * 1000;   // 5 minutes active window
+  const COOLDOWN_MS      = 25 * 60 * 1000;   // 25 minutes cooldown after the window
+  const UI_REFRESH_MS    = 1000;
+  const CLAIM_INTERVAL_MS = 5000;            // background attempt to claim if due
 
-  // SCHEDULE: change to 30 minutes (was 60*60*1000 for hourly)
-  const SCHEDULE_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-
+  // rewards (keep same structure as you had)
   const RAW_REWARDS = [
     { name: 'KARKER KAR KUR KUR', price: 30000000, percent: 5 },
     { name: 'ESOK SEKOLA',        price: 6000000,  percent: 24 },
@@ -3894,7 +3465,7 @@ async function openLuckyBlock(cardId) {
   let fishingInProgress = false;
   let countdownInterval = null;
   let windowActive = false;
-  const META_REF = (db && db.ref) ? db.ref('meta/nextFishing') : null;
+  const META_REF = (db && db.ref) ? db.ref('meta/fishing') : null;
 
   // ------- helpers: server time & percent pick -------
   function nowServerMs(){ return Date.now() + (serverOffset || 0); }
@@ -3946,38 +3517,37 @@ async function openLuckyBlock(cardId) {
     try {
       if (!ts) return '—';
       const d = new Date(Number(ts));
-      return d.toLocaleString(); // uses user's locale; you can change options if desired
+      return d.toLocaleString();
     } catch(e){ return '—'; }
   }
 
   // ------- Styling (green background) -------
-  const BG_CLASS = '__fishingBgGreen_underRestock';
+  const BG_CLASS = '__fishingBgGreen_underRefill';
   (function injectCss(){
-    if (document.getElementById('__fishingCssUnderRestock')) return;
-    const s = document.createElement('style'); s.id = '__fishingCssUnderRestock';
+    if (document.getElementById('__fishingCssUnderRefill')) return;
+    const s = document.createElement('style'); s.id = '__fishingCssUnderRefill';
     s.innerHTML = `
       body.${BG_CLASS} { background: linear-gradient(180deg,#0f6f2f 0%, #26a64a 100%) !important; transition: background 0.6s ease !important; }
-      #__fishingContainerUnderRestock { pointer-events: auto; }
-      #__fishingContainerUnderRestock .__fishUI { pointer-events: auto; font-family: Inter, system-ui, Arial; }
-      #__fishingContainerUnderRestock .__fishBtn { cursor: pointer; border-radius:8px; padding:6px 8px; border:none; background:#036; color:#fff; font-weight:700; }
-      #__fishingContainerUnderRestock .__fishSmall { font-size:12px; color:#fff; opacity:0.95; }
-      #__fishingContainerUnderRestock .__fishTitle { font-weight:800; font-size:13px; color:#fff; }
-      #__fishingContainerUnderRestock { transition: opacity .25s; }
+      #__fishingContainerUnderRefill { pointer-events: auto; }
+      #__fishingContainerUnderRefill .__fishUI { pointer-events: auto; font-family: Inter, system-ui, Arial; }
+      #__fishingContainerUnderRefill .__fishBtn { cursor: pointer; border-radius:8px; padding:6px 8px; border:none; background:#036; color:#fff; font-weight:700; }
+      #__fishingContainerUnderRefill .__fishSmall { font-size:12px; color:#fff; opacity:0.95; }
+      #__fishingContainerUnderRefill .__fishTitle { font-weight:800; font-size:13px; color:#fff; }
+      #__fishingContainerUnderRefill { transition: opacity .25s; }
     `;
     document.head.appendChild(s);
   })();
 
   // ------- UI anchored under restock timer -------
   function ensureUI(){
-    // if exists, reposition (in case refilled box moved)
-    let wrap = document.getElementById('__fishingContainerUnderRestock');
+    let wrap = document.getElementById('__fishingContainerUnderRefill');
     if (wrap) {
       repositionUnderRefill();
       return wrap;
     }
 
     wrap = document.createElement('div');
-    wrap.id = '__fishingContainerUnderRestock';
+    wrap.id = '__fishingContainerUnderRefill';
     Object.assign(wrap.style, {
       position: 'fixed', left: '8px', top: '56px', zIndex: 99990, pointerEvents: 'auto'
     });
@@ -4012,7 +3582,6 @@ async function openLuckyBlock(cardId) {
     wrap.appendChild(ui);
     document.body.appendChild(wrap);
 
-    // reposition relative to refill-count-small if present
     repositionUnderRefill();
 
     // clicking anywhere when active starts fishing (but ignore clicks on inputs/controls)
@@ -4021,13 +3590,11 @@ async function openLuckyBlock(cardId) {
       const t = e.target;
       const skip = t.closest && (t.closest('input, textarea, select, button, [contenteditable="true"], .adminMsg, #adminPanel') );
       if (skip) {
-        // allow our own button clicks
-        if (!(t.id === '__fishBtn' || t.closest && t.closest('#__fishingContainerUnderRestock'))) return;
+        if (!(t.id === '__fishBtn' || t.closest && t.closest('#__fishingContainerUnderRefill'))) return;
       }
       startFishingNow();
     }, { capture: true });
 
-    // ensure reposition if window resizes
     window.addEventListener('resize', repositionUnderRefill);
     return wrap;
   }
@@ -4035,15 +3602,13 @@ async function openLuckyBlock(cardId) {
   function repositionUnderRefill(){
     try {
       const refillSpan = document.getElementById('refill-count-small');
-      const wrap = document.getElementById('__fishingContainerUnderRestock');
+      const wrap = document.getElementById('__fishingContainerUnderRefill');
       if (!wrap) return;
       if (refillSpan && refillSpan.parentElement) {
         const rect = refillSpan.parentElement.getBoundingClientRect();
-        // place just below it with 8px spacing; keep left aligned with parent
         wrap.style.left = Math.max(4, rect.left) + 'px';
         wrap.style.top = (rect.bottom + 8) + 'px';
       } else {
-        // fallback to top-left under typical offset
         wrap.style.left = '8px';
         wrap.style.top = '56px';
       }
@@ -4060,8 +3625,12 @@ async function openLuckyBlock(cardId) {
     const btn = document.getElementById('__fishBtn');
 
     const serverNow = nowServerMs();
-    const next = window._nextFishingCached || 0;
-    const inWindow = (next && serverNow >= next && serverNow < (next + WINDOW_DURATION_MS));
+
+    const activeStart = Number(window._fishingActiveStart || 0);
+    const activeUntil = Number(window._fishingActiveUntil || 0);
+    const next = Number(window._nextFishingCached || 0);
+
+    const inWindow = activeStart && serverNow >= activeStart && serverNow < activeUntil;
     windowActive = inWindow;
 
     if (inWindow) {
@@ -4069,24 +3638,17 @@ async function openLuckyBlock(cardId) {
       title.innerText = 'Fishing — ACTIVE';
       statusEl.innerText = fishingInProgress ? 'Fishing…' : 'Ready';
       btn.disabled = !!fishingInProgress;
-      const leftWindow = Math.max(0, (next + WINDOW_DURATION_MS) - serverNow);
+      const leftWindow = Math.max(0, activeUntil - serverNow);
       countdownEl.innerText = 'Window ends in ' + formatTimeShort(leftWindow);
-      // show next scheduled start (one interval after current start)
-      const nextScheduled = next + SCHEDULE_INTERVAL_MS;
-      nextVal.innerText = formatAbsolute(nextScheduled) + ' (' + formatTimeShort(nextScheduled - serverNow) + ')';
+      // next scheduled start is next
+      nextVal.innerText = formatAbsolute(next) + ' (' + formatTimeShort(next - serverNow) + ')';
     } else {
       document.body.classList.remove(BG_CLASS);
       title.innerText = 'Fishing — inactive';
       btn.disabled = true;
-      // compute time until next (if next exists)
       if (next && next > serverNow) {
         nextVal.innerText = formatAbsolute(next) + ' (' + formatTimeShort(next - serverNow) + ')';
         statusEl.innerText = 'Next in ' + formatTimeShort(next - serverNow);
-        countdownEl.innerText = '';
-      } else if (next && serverNow >= next) {
-        // (shouldn't happen because inWindow false when past end) show fallback
-        nextVal.innerText = formatAbsolute(next) + ' (now)';
-        statusEl.innerText = 'Starting soon';
         countdownEl.innerText = '';
       } else {
         nextVal.innerText = '—';
@@ -4125,6 +3687,8 @@ async function openLuckyBlock(cardId) {
     const countdownEl = document.getElementById('__fishCountdown');
     statusEl.innerText = 'Fishing...';
 
+    // short local wait to simulate fishing (configurable)
+    const FISH_WAIT_MS = 5 * 1000;
     startLocalCountdown(FISH_WAIT_MS, (left) => {
       countdownEl.innerText = 'Waiting: ' + formatTimeShort(left);
     }, async () => {
@@ -4172,74 +3736,117 @@ async function openLuckyBlock(cardId) {
     });
   }
 
-  // ------- schedule management: ensure & claim nextFishing -------
+  // ------- schedule management: ensure & claim functions -------
+  // If meta missing, compute aligned nextStart on a cycle boundary:
+  const TOTAL_CYCLE = WINDOW_DURATION_MS + COOLDOWN_MS;
+
   async function ensureNextFishing(){
     if (!META_REF) return;
     try {
+      const offSnap = await db.ref('.info/serverTimeOffset').once('value');
+      serverOffset = offSnap.val() || serverOffset;
+      const serverNow = nowServerMs();
+
       const snap = await META_REF.once('value');
-      if (!snap.exists() || typeof snap.val() !== 'number') {
-        const offSnap = await db.ref('.info/serverTimeOffset').once('value');
-        serverOffset = offSnap.val() || serverOffset;
-        const serverNow = nowServerMs();
-        const nextTop = serverNow - (serverNow % SCHEDULE_INTERVAL_MS) + SCHEDULE_INTERVAL_MS;
-        await META_REF.set(nextTop);
+      if (!snap.exists() || typeof snap.val() !== 'object' || !snap.val().nextStart) {
+        // align to next cycle boundary so windows happen predictably on a repeating schedule
+        const nextTop = serverNow - (serverNow % TOTAL_CYCLE) + TOTAL_CYCLE;
+        await META_REF.set({ nextStart: nextTop, activeStart: 0, activeUntil: 0, lastClaimed: 0 });
+      } else {
+        // update local cache from value
+        const v = snap.val();
+        window._nextFishingCached = Number(v.nextStart || 0);
+        window._fishingActiveStart = Number(v.activeStart || 0);
+        window._fishingActiveUntil = Number(v.activeUntil || 0);
       }
     } catch(e){ console.warn('ensureNextFishing err', e); }
   }
 
+  // tryClaimNextFishing: transactionally start a window when nextStart <= serverNow
   async function tryClaimNextFishing(){
     if (!META_REF) return;
     try {
       const offSnap = await db.ref('.info/serverTimeOffset').once('value');
       serverOffset = offSnap.val() || serverOffset;
       const serverNow = nowServerMs();
-      META_REF.transaction(current => {
-        if (!current || Number(current) <= serverNow) {
-          const nextTop = serverNow - (serverNow % SCHEDULE_INTERVAL_MS) + SCHEDULE_INTERVAL_MS;
-          return nextTop;
-        }
-        return;
+
+      await META_REF.transaction(current => {
+        // If no meta or malformed, create the initial structure (abort transaction now so the setter in ensureNextFishing handles it)
+        if (!current || typeof current !== 'object') return;
+        const nextStart = Number(current.nextStart || 0);
+        const activeUntil = Number(current.activeUntil || 0);
+        // If a window is currently active (activeUntil > now), do nothing
+        if (activeUntil && activeUntil > serverNow) return;
+        // If nextStart is in the future, nothing to do
+        if (nextStart && nextStart > serverNow) return;
+        // Otherwise claim the new window: set activeStart/activeUntil and nextStart for the future
+        const activeStart = serverNow;
+        const activeUntilNew = serverNow + WINDOW_DURATION_MS;
+        const nextStartNew = activeUntilNew + COOLDOWN_MS;
+        return Object.assign({}, current, {
+          activeStart: activeStart,
+          activeUntil: activeUntilNew,
+          nextStart: nextStartNew,
+          lastClaimed: serverNow
+        });
       }, (err, committed, snap) => {
         if (err) { console.warn('claim nextFishing tx err', err); return; }
-        if (!committed) return;
+        // on success, the listener will pick up the new values
       }, false);
     } catch(e){ console.warn('tryClaimNextFishing err', e); }
   }
 
+  // Listen to meta/fishing and keep local cache in window.* variables
   if (META_REF) {
-    try { META_REF.on('value', snap => { const v = snap.exists() ? snap.val() : null; window._nextFishingCached = Number(v || 0); }); } catch(e){ console.warn('attach nextFishing listener failed', e); }
+    try {
+      META_REF.on('value', snap => {
+        const v = snap.exists() ? snap.val() : {};
+        window._nextFishingCached = Number((v && v.nextStart) || 0);
+        window._fishingActiveStart = Number((v && v.activeStart) || 0);
+        window._fishingActiveUntil = Number((v && v.activeUntil) || 0);
+      });
+    } catch(e){ console.warn('attach nextFishing listener failed', e); }
   }
 
+  // Keep serverTimeOffset live if possible
   if (db && db.ref) {
     try { db.ref('.info/serverTimeOffset').on('value', s=> { serverOffset = s.val() || serverOffset; }); } catch(e){ /* ignore */ }
   }
 
-  // boot
-  (async function boot(){
-    await ensureNextFishing().catch(()=>{});
-    setInterval(() => { tryClaimNextFishing().catch(()=>{}); }, CLAIM_INTERVAL_MS);
-    refreshUI();
-    setInterval(() => { try { refreshUI(); } catch(e) { console.warn(e); } }, UI_REFRESH_MS);
-  })();
-
-  // ------- exposed helpers -------
-  window.getFishingState = function(){ return { windowActive, fishingInProgress, serverOffset, nextFishing: window._nextFishingCached || null }; };
+  // Exposed helpers
+  window.getFishingState = function(){ return { windowActive, fishingInProgress, serverOffset, nextFishing: window._nextFishingCached || null, activeStart: window._fishingActiveStart || null, activeUntil: window._fishingActiveUntil || null }; };
   window._getFishingRewardsPercent = function(){ return normalizePercents(RAW_REWARDS); };
+
+  // forceAdvanceFishing: admin helper sets the active window to now (writes actively to Firebase)
   window.forceAdvanceFishing = async function(){
     if (!META_REF) return false;
     const offSnap = await db.ref('.info/serverTimeOffset').once('value');
     const off = offSnap.val() || 0;
     const serverNow = Date.now() + off;
-    await META_REF.set(serverNow);
+    const activeStart = serverNow;
+    const activeUntil = serverNow + WINDOW_DURATION_MS;
+    const nextStart = activeUntil + COOLDOWN_MS;
+    await META_REF.set({ activeStart, activeUntil, nextStart, lastClaimed: serverNow });
     return true;
   };
 
-  // ensure UI exists right away
+  // ensure & claim on boot
+  (async function boot(){
+    await ensureNextFishing().catch(()=>{});
+    // periodically try to claim (transaction) if the schedule allows
+    setInterval(() => { tryClaimNextFishing().catch(()=>{}); }, CLAIM_INTERVAL_MS);
+    // UI refresh loop
+    refreshUI();
+    setInterval(() => { try { refreshUI(); } catch(e) { console.warn(e); } }, UI_REFRESH_MS);
+  })();
+
+  // ensure UI exists now
   setTimeout(() => { ensureUI(); refreshUI(); }, 80);
 
-  console.log('Half-hourly fishing (anchored under restock timer) installed.');
+  console.log('Fishing (5min active + 25min cooldown, firebase-backed) installed.');
 })();
 </script>
+
 
 
   </body>
