@@ -3427,26 +3427,29 @@ window.openSecretAdmin = function(code){
 };
 </script>
 <!-- ========== END SECRET BUTTON + HIDDEN INLINE ADMIN RESTOCK ========== -->
+
 <script>
 /* ===== Fishing: 5-minute active window + 25-minute cooldown (Firebase-backed) =====
    - Active window length: WINDOW_DURATION_MS (5 minutes)
    - Cooldown after window: COOLDOWN_MS (25 minutes)
+   - When a user fishes, they WAIT_FISH_MS (1 minute) before the card is granted.
    - Stores meta at: meta/fishing = { activeStart, activeUntil, nextStart, lastClaimed }
    - Safe transaction used to claim a new window.
    - UI anchored under element with id="refill-count-small".
 */
 
-(function installFivePlusCooldownFishing(){
-  if (window.__fivePlusCooldownFishingInstalled) return;
-  window.__fivePlusCooldownFishingInstalled = true;
+(function installFiveMinFishingOneMinWait(){
+  if (window.__fiveMinFishingOneMinWaitInstalled) return;
+  window.__fiveMinFishingOneMinWaitInstalled = true;
 
   // ------- CONFIG -------
-  const WINDOW_DURATION_MS = 60 * 60 * 1000;   // 5 minutes active window
-  const COOLDOWN_MS      = 25 * 60 * 1000;   // 25 minutes cooldown after the window
+  const WINDOW_DURATION_MS = 5 * 60 * 1000;    // 5 minutes active window
+  const COOLDOWN_MS      = 25 * 60 * 1000;    // 25 minutes cooldown after the window
   const UI_REFRESH_MS    = 1000;
-  const CLAIM_INTERVAL_MS = 5000;            // background attempt to claim if due
+  const CLAIM_INTERVAL_MS = 5000;             // try to claim when due
+  const WAIT_FISH_MS     = 60 * 1000;         // <-- user requested: 1 minute wait before receiving card
 
-  // rewards (keep same structure as you had)
+  // rewards (same as yours)
   const RAW_REWARDS = [
     { name: 'KARKER KAR KUR KUR', price: 30000000, percent: 5 },
     { name: 'ESOK SEKOLA',        price: 6000000,  percent: 24 },
@@ -3462,10 +3465,11 @@ window.openSecretAdmin = function(code){
 
   // ------- state -------
   let serverOffset = 0;
-  let fishingInProgress = false;
+  let fishingInProgress = false; // per-browser indicator for single click flow
   let countdownInterval = null;
   let windowActive = false;
   const META_REF = (db && db.ref) ? db.ref('meta/fishing') : null;
+  const TOTAL_CYCLE = WINDOW_DURATION_MS + COOLDOWN_MS;
 
   // ------- helpers: server time & percent pick -------
   function nowServerMs(){ return Date.now() + (serverOffset || 0); }
@@ -3640,7 +3644,6 @@ window.openSecretAdmin = function(code){
       btn.disabled = !!fishingInProgress;
       const leftWindow = Math.max(0, activeUntil - serverNow);
       countdownEl.innerText = 'Window ends in ' + formatTimeShort(leftWindow);
-      // next scheduled start is next
       nextVal.innerText = formatAbsolute(next) + ' (' + formatTimeShort(next - serverNow) + ')';
     } else {
       document.body.classList.remove(BG_CLASS);
@@ -3687,10 +3690,9 @@ window.openSecretAdmin = function(code){
     const countdownEl = document.getElementById('__fishCountdown');
     statusEl.innerText = 'Fishing...';
 
-    // short local wait to simulate fishing (configurable)
-    const FISH_WAIT_MS = 5 * 1000;
-    startLocalCountdown(FISH_WAIT_MS, (left) => {
-      countdownEl.innerText = 'Waiting: ' + formatTimeShort(left);
+    // WAIT_FISH_MS before granting (1 minute as requested)
+    startLocalCountdown(WAIT_FISH_MS, (left) => {
+      countdownEl.innerText = 'Catching: ' + formatTimeShort(left);
     }, async () => {
       try {
         const reward = pickByPercent(RAW_REWARDS);
@@ -3737,9 +3739,6 @@ window.openSecretAdmin = function(code){
   }
 
   // ------- schedule management: ensure & claim functions -------
-  // If meta missing, compute aligned nextStart on a cycle boundary:
-  const TOTAL_CYCLE = WINDOW_DURATION_MS + COOLDOWN_MS;
-
   async function ensureNextFishing(){
     if (!META_REF) return;
     try {
@@ -3749,12 +3748,13 @@ window.openSecretAdmin = function(code){
 
       const snap = await META_REF.once('value');
       if (!snap.exists() || typeof snap.val() !== 'object' || !snap.val().nextStart) {
-        // align to next cycle boundary so windows happen predictably on a repeating schedule
+        // set nextStart aligned to next TOTAL_CYCLE boundary (predictable schedule)
         const nextTop = serverNow - (serverNow % TOTAL_CYCLE) + TOTAL_CYCLE;
         await META_REF.set({ nextStart: nextTop, activeStart: 0, activeUntil: 0, lastClaimed: 0 });
       } else {
         // update local cache from value
         const v = snap.val();
+        // defensive fix: if nextStart is weirdly far in the future (existing DB), expose helper to reset (see resetFishingSchedule below)
         window._nextFishingCached = Number(v.nextStart || 0);
         window._fishingActiveStart = Number(v.activeStart || 0);
         window._fishingActiveUntil = Number(v.activeUntil || 0);
@@ -3771,7 +3771,6 @@ window.openSecretAdmin = function(code){
       const serverNow = nowServerMs();
 
       await META_REF.transaction(current => {
-        // If no meta or malformed, create the initial structure (abort transaction now so the setter in ensureNextFishing handles it)
         if (!current || typeof current !== 'object') return;
         const nextStart = Number(current.nextStart || 0);
         const activeUntil = Number(current.activeUntil || 0);
@@ -3791,7 +3790,7 @@ window.openSecretAdmin = function(code){
         });
       }, (err, committed, snap) => {
         if (err) { console.warn('claim nextFishing tx err', err); return; }
-        // on success, the listener will pick up the new values
+        // result is applied by the listener below; nothing else to do here
       }, false);
     } catch(e){ console.warn('tryClaimNextFishing err', e); }
   }
@@ -3817,7 +3816,7 @@ window.openSecretAdmin = function(code){
   window.getFishingState = function(){ return { windowActive, fishingInProgress, serverOffset, nextFishing: window._nextFishingCached || null, activeStart: window._fishingActiveStart || null, activeUntil: window._fishingActiveUntil || null }; };
   window._getFishingRewardsPercent = function(){ return normalizePercents(RAW_REWARDS); };
 
-  // forceAdvanceFishing: admin helper sets the active window to now (writes actively to Firebase)
+  // Admin helper: force an active window now (useful for testing)
   window.forceAdvanceFishing = async function(){
     if (!META_REF) return false;
     const offSnap = await db.ref('.info/serverTimeOffset').once('value');
@@ -3827,6 +3826,17 @@ window.openSecretAdmin = function(code){
     const activeUntil = serverNow + WINDOW_DURATION_MS;
     const nextStart = activeUntil + COOLDOWN_MS;
     await META_REF.set({ activeStart, activeUntil, nextStart, lastClaimed: serverNow });
+    return true;
+  };
+
+  // Admin helper: reset schedule to a sane nextStart (useful if old DB had weird values)
+  window.resetFishingSchedule = async function(offsetMsFromNow){
+    if (!META_REF) return false;
+    const offSnap = await db.ref('.info/serverTimeOffset').once('value');
+    const off = offSnap.val() || 0;
+    const serverNow = Date.now() + off;
+    const nextStart = serverNow + (typeof offsetMsFromNow === 'number' ? offsetMsFromNow : COOLDOWN_MS);
+    await META_REF.set({ nextStart, activeStart: 0, activeUntil: 0, lastClaimed: 0 });
     return true;
   };
 
@@ -3843,11 +3853,9 @@ window.openSecretAdmin = function(code){
   // ensure UI exists now
   setTimeout(() => { ensureUI(); refreshUI(); }, 80);
 
-  console.log('Fishing (5min active + 25min cooldown, firebase-backed) installed.');
+  console.log('Fishing (5min active + 25min cooldown, 1min fish wait) installed.');
 })();
 </script>
-
-
 
   </body>
   </html>
