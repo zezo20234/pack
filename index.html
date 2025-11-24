@@ -1372,7 +1372,7 @@
     -------------------- */
   document.getElementById("welcome-btn").addEventListener("click", () => {
     document.getElementById("welcome-container").style.display = "none";
-    if (!window.gAudio) { window.gAudio = new Audio('g.mp3'); window.gAudio.loop = true; window.gAudio.preload = 'auto'; window.gAudio.volume = 0.9; }
+    if (!window.gAudio) { window.gAudio = new Audio('rot.mp3'); window.gAudio.loop = true; window.gAudio.preload = 'auto'; window.gAudio.volume = 0.9; }
     if (window.gAudio.paused) window.gAudio.play().catch(()=>{});
   });
 
