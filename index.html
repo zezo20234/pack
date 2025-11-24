@@ -3859,6 +3859,41 @@
     console.log('Fishing (5min active + 25min cooldown, 1min fish wait) installed.');
   })();
   </script>
+  <script>
+function formatNumber(n) {
+  if (n == null || isNaN(n)) return '';
+
+  const abs = Math.abs(n);
+
+  // < 1K
+  if (abs < 1_000) return String(n);
+
+  // Thousand (K)
+  if (abs < 1_000_000)
+    return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+
+  // Million (M)
+  if (abs < 1_000_000_000)
+    return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+
+  // Billion (B)
+  if (abs < 1_000_000_000_000)
+    return (n / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
+
+  // Trillion (T)
+  if (abs < 1_000_000_000_000_000)
+    return (n / 1_000_000_000_000).toFixed(1).replace(/\.0$/, '') + 'T';
+
+  // Quadrillion (Q)
+  return (n / 1_000_000_000_000_000)
+    .toFixed(1)
+    .replace(/\.0$/, '') + 'Q';
+}
+
+// Examples:
+console.log(formatNumber(1.5e12));  // "1.5T"
+console.log(formatNumber(2.3e15));  // "2.3Q"
+</script>
 
     </body>
     </html>
