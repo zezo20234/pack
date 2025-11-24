@@ -378,6 +378,7 @@
       <button class="btn btn-blue" onclick="showUserCollection('asser')">Asser</button>
       <button class="btn btn-blue" onclick="showUserCollection('esok')">esok</button>
       <button class="btn btn-blue" onclick="showUserCollection('lolo')">lolo</button>
+      <button class="btn btn-blue" onclick="showUserCollection('lara')">lara</button>
       <button class="btn btn-purple" onclick="showMyCollection()">My Base</button>
     </div>
 
@@ -415,6 +416,7 @@
       <button class="btn btn-blue" onclick="sendCardToRecipient(currentSendCardId,'lilly')">Lilly</button>
       <button class="btn btn-blue" onclick="sendCardToRecipient(currentSendCardId,'lolo')">lolo</button>
       <button class="btn btn-blue" onclick="sendCardToRecipient(currentSendCardId,'esok')">esok</button>
+      <button class="btn btn-blue" onclick="sendCardToRecipient(currentSendCardId,'lara')">lara</button>
       <button class="btn btn-blue" onclick="sendCardToRecipient(currentSendCardId,'zezo')">Zezo</button>
     </div>
     <div style="margin-top:12px;"><button class="btn" onclick="closeSendModal()">Cancel</button></div>
@@ -463,7 +465,7 @@
   /* --------------------
     Game data
     -------------------- */
-  const accounts = { zezo: "000", asser: "67", lilly: "678", ab: "123",lolo: "678",esok: "67" };
+  const accounts = { zezo: "000", asser: "67", lilly: "678", ab: "123",lolo: "678",esok: "67",lara: "123" };
 
   const MUTATION_TIERS = { common: {chance:0.5}, uncommon:{chance:0.24}, rare:{chance:0.15}, veryHard:{chance:0.08}, ultra:{chance:0.03} };
   const MUTATIONS = { plasma:{priceIncrease:20000,tier:'uncommon'},
@@ -4334,6 +4336,7 @@ async function openLuckyBlock(cardId) {
     <button class="btn btn-blue" onclick="sendAllToRecipient('lilly')">Lilly</button>
     <button class="btn btn-blue" onclick="sendAllToRecipient('lolo')">Lolo</button>
     <button class="btn btn-blue" onclick="sendAllToRecipient('esok')">Esok</button>
+    <button class="btn btn-blue" onclick="sendAllToRecipient('lara')">lara</button>
     <button class="btn btn-blue" onclick="sendAllToRecipient('zezo')">Zezo</button>
   </div>
   <div style="text-align:center;"><button class="btn" onclick="closeSendAllModal()">Cancel</button></div>
