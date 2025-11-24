@@ -128,9 +128,9 @@
       box-shadow: 0 6px 20px rgba(2,6,15,0.6);
     }
 
-    /* ---------- Bloodmoon CARD: light-blue, water-like moving effect ---------- */
-    .Bloodmoon-card {
-      background: linear-gradient(180deg, #ff0000 0%, #821010 35%, #ff0000 60%, #821010 100%);
+    /* ---------- RADIOACTIVE CARD: light-blue, water-like moving effect ---------- */
+    .RADIOACTIVE-card {
+      background: linear-gradient(180deg, #047706 0%, #088f25 35%, #047706 60%, #088f25 100%);
       border-color: #ffffff;
       color: #ff0000;
       box-shadow: inset 0 -6px 30px rgba(157, 5, 228, 0.06), 0 10px 30px rgba(193, 1, 246, 0.08);
@@ -140,7 +140,7 @@
     }
 
     /* subtle flowing highlight layer */
-    .Bloodmoon-card::before {
+    .RADIOACTIVE-card::before {
       content: "";
       position: absolute;
       inset: 0;
@@ -156,7 +156,7 @@
     }
 
     /* moving wave stripe for water flow */
-    .Bloodmoon-card::after {
+    .RADIOACTIVE-card::after {
       content: "";
       position: absolute;
       left: -60%;
@@ -177,16 +177,16 @@
       animation: waveMove 8.5s linear infinite;
     }
 
-    /* text polish for headings inside an Bloodmoon card */
-    .Bloodmoon-card h3,
-    .Bloodmoon-card .card-title {
+    /* text polish for headings inside an RADIOACTIVE card */
+    .RADIOACTIVE-card h3,
+    .RADIOACTIVE-card .card-title {
       color: #022c3a;
       text-shadow: 0 1px 0 rgba(255,255,255,0.5);
       font-weight: 800;
     }
 
     /* optional little floating bubbles to add life */
-    .Bloodmoon-card .Bloodmoon-bubble {
+    .RADIOACTIVE-card .RADIOACTIVE-bubble {
       position: absolute;
       border-radius: 50%;
       background: rgba(255,255,255,0.14);
@@ -214,9 +214,9 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .Bloodmoon-card::before,
-      .Bloodmoon-card::after,
-      .Bloodmoon-card .Bloodmoon-bubble {
+      .RADIOACTIVE-card::before,
+      .RADIOACTIVE-card::after,
+      .RADIOACTIVE-card .RADIOACTIVE-bubble {
         animation: none !important;
       }
     }
@@ -224,9 +224,9 @@
 
   <script>
   /**
-   * markBloodmoonCardsByName(names)
+   * markRADIOACTIVECardsByName(names)
    * - names: string or array of strings (exact card name match, case-insensitive)
-   * Adds the .Bloodmoon-card class to matching card DOM nodes and adds decorative bubbles.
+   * Adds the .RADIOACTIVE-card class to matching card DOM nodes and adds decorative bubbles.
    *
    * This script is safe to include in <head> — it waits for DOMContentLoaded before acting.
    */
@@ -239,10 +239,10 @@
 
     function addBubbles(cardEl, count) {
       // avoid duplicate bubble groups
-      if (cardEl.querySelector('.Bloodmoon-bubble')) return;
+      if (cardEl.querySelector('.RADIOACTIVE-bubble')) return;
       for (let i = 0; i < count; i++) {
         const b = document.createElement('div');
-        b.className = 'Bloodmoon-bubble';
+        b.className = 'RADIOACTIVE-bubble';
         const size = 8 + Math.round(Math.random() * 26);
         b.style.width = b.style.height = size + 'px';
         b.style.left = (8 + Math.random() * 84) + '%';
@@ -253,7 +253,7 @@
       }
     }
 
-    window.markBloodmoonCardsByName = function(names, bubbleCount = 3) {
+    window.markRADIOACTIVECardsByName = function(names, bubbleCount = 3) {
       if (!names) return;
       const arr = Array.isArray(names) ? names.slice() : [names];
       const targets = arr.map(s => String(s || '').trim().toLowerCase());
@@ -261,20 +261,20 @@
         const h3 = card.querySelector('h3');
         const name = h3 ? String(h3.innerText || '').trim().toLowerCase() : '';
         if (isMatch(name, targets)) {
-          card.classList.add('Bloodmoon-card');
+          card.classList.add('RADIOACTIVE-card');
           addBubbles(card, bubbleCount || 2);
         } else {
-          // remove Bloodmoon visuals if present and not matched
-          card.classList.remove('Bloodmoon-card');
-          card.querySelectorAll('.Bloodmoon-bubble').forEach(n => n.remove());
+          // remove RADIOACTIVE visuals if present and not matched
+          card.classList.remove('RADIOACTIVE-card');
+          card.querySelectorAll('.RADIOACTIVE-bubble').forEach(n => n.remove());
         }
       });
     };
 
     // convenience: mark a default name on load if present in the DOM
     document.addEventListener('DOMContentLoaded', function(){
-      // auto-mark cards named "Bloodmoon CARD" and "Bloodmoon" (case-insensitive)
-      markBloodmoonCardsByName(['Bloodmoon card','Bloodmoon']);
+      // auto-mark cards named "RADIOACTIVE CARD" and "RADIOACTIVE" (case-insensitive)
+      markRADIOACTIVECardsByName(['RADIOACTIVE card','RADIOACTIVE']);
     }, { once: true });
   })();
   </script>
@@ -391,7 +391,7 @@
       <button id="buyPristimaticBtn" class="btn btn-pristimatic" onclick="openPack('pristimatic')">Buy Pristimatic Pack (100%) ($7500)</button>
       <!-- SECRET pack button (50,000) -->
       <button id="buySecretBtn" class="btn btn-secret" onclick="openPack('secret')">Buy SECRET Pack (0%) ($50,000)</button>
-      <button id="buyBloodmoonBtn" class="btn btn-Bloodmoon" onclick="openPack('Bloodmoon')">Buy Bloodmoon Pack (0%) ($1000000)</button>
+      <button id="buyRADIOACTIVEBtn" class="btn btn-RADIOACTIVE" onclick="openPack('RADIOACTIVE')">Buy RADIOACTIVE Pack (0%) ($1000000)</button>
     </div>
 
     <div id="openedCard"></div>
@@ -475,7 +475,7 @@
         chilled:{priceIncrease:45000,tier:'rare'},
         CHOCOLATE:{priceIncrease:45000,tier:'rare'},
           frozen:{priceIncrease:30000,tier:'common'},
-          Bloodmoon:{priceIncrease:100000,tier:'veryHard'},
+          RADIOACTIVE:{priceIncrease:100000,tier:'veryHard'},
             zezopilot:{priceIncrease:120000,tier:'veryHard'},
             TACO:{priceIncrease:200000,tier:'veryHard'},
             KHALTO:{priceIncrease:120500,tier:'veryHard'},
@@ -495,7 +495,7 @@
     rare: [
       { name: "Blue Asser", quantity: 70, chance: 0.30, price: 260 },
       { name: "Asser Dragon", quantity: 50, chance: 0.25, price: 280 },
-      { name: "Asser Bloodmoon", quantity: 40, chance: 0.20, price: 300 },
+      { name: "Asser RADIOACTIVE", quantity: 40, chance: 0.20, price: 300 },
       { name: "Asser Legend", quantity: 40, chance: 0.15, price: 350 },
       { name: "Asser Mythic", quantity: 40, chance: 0.10, price: 400 }
     ],
@@ -542,19 +542,18 @@
       { name: "Zezo SECRET", quantity: 10, chance: 0.05, price: 13500 }
     ],
 
-    /* NEW: Bloodmoon pack — very low quantities, extremely rare */
-    Bloodmoon: [
-      { name: "Bloodmoon GARAMA AND MADUNG", quantity: 1, chance: 0.02, price: 2000000 },
-      { name: "Bloodmoon MEOWL", quantity: 0, chance: 0.02, price: 90000000 },
-      { name: "Bloodmoon 67", quantity: 0, chance: 0.02, price: 70000000 },
-      { name: "Bloodmoon LOS TRALALITOS", quantity: 0, chance: 0.02, price: 75000000 },
-      { name: "Bloodmoon LOS BROS", quantity: 0, chance: 0.02, price: 80000000 },
-      { name: "Bloodmoon LOS TUNGTUNGCITOS", quantity: 0, chance: 0.02, price: 80000000 },
-      { name: "Bloodmoon MADRID VS BARCA", quantity: 0, chance: 0.02, price: 35000000 },
-      { name: "Bloodmoon JOB JOB JOB SAHUR!", quantity: 0, chance: 0.02, price: 70000000 },
-      { name: "Bloodmoon LOS JOB SAUHUR!", quantity: 0, chance: 0.02, price: 100000000 },
-      { name: "Bloodmoon LOS 67", quantity: 0, chance: 0.02, price: 150000000 },
-      { name: "Bloodmoon LOS ZEZOS", quantity: 0, chance: 0.02, price: 100000000 },
+    /* NEW: RADIOACTIVE pack — very low quantities, extremely rare */
+    RADIOACTIVE: [
+      { name: "RADIOACTIVE LA CASA BO", quantity: 1, chance: 0.02, price: 40000000 },
+      { name: "RADIOACTIVE SPOOKY AND PUMPKIN", quantity: 0, chance: 0.02, price: 20000000 },
+      { name: "RADIOACTIVE LOS TIPI TACOS", quantity: 0, chance: 0.02, price: 5000000 },
+      { name: "RADIOACTIVE BLACK HOLE GOAT", quantity: 0, chance: 0.02, price: 5000000 },
+      { name: "RADIOACTIVE DULL DULL DULL", quantity: 0, chance: 0.02, price: 35000000 },
+      { name: "RADIOACTIVE Chicleteira Bicicleteira", quantity: 0, chance: 0.02, price: 75000000 },
+      { name: "RADIOACTIVE STRAWBERRY ELEPHANT", quantity: 0, chance: 0.02, price: 200000000 },
+      { name: "RADIOACTIVE LOS CHICHAUNES", quantity: 0, chance: 0.02, price: 1500000 },
+      { name: "RADIOACTIVE 1X1X1X1", quantity: 0, chance: 0.02, price: 90000000 },
+      { name: "RADIOACTIVE ZEZO RACING", quantity: 0, chance: 0.02, price: 100000000 },
       
     ],
 
@@ -613,7 +612,7 @@
     if (cardPools.mythical && cardPools.mythical.some(c=>c.name===cardName)) return 'mythical';
     if (cardPools.divine.some(c=>c.name===cardName)) return 'divine';
     if (cardPools.pristimatic.some(c=>c.name===cardName)) return 'pristimatic';
-    if (cardPools.Bloodmoon && cardPools.Bloodmoon.some(c=>c.name===cardName)) return 'Bloodmoon';
+    if (cardPools.RADIOACTIVE && cardPools.RADIOACTIVE.some(c=>c.name===cardName)) return 'RADIOACTIVE';
     if (cardPools.secret && cardPools.secret.some(c=>c.name===cardName)) return 'secret';
     return '';
   }
@@ -626,7 +625,7 @@
       ...(cardPools.mythical||[]),
       ...cardPools.divine,
       ...cardPools.pristimatic,
-      ...(cardPools.Bloodmoon||[]),
+      ...(cardPools.RADIOACTIVE||[]),
       ...(cardPools.secret||[])
     ];
     const c = all.find(x=>x.name===cardName);
@@ -641,7 +640,7 @@
       ...(cardPools.mythical||[]),
       ...cardPools.divine,
       ...cardPools.pristimatic,
-      ...(cardPools.Bloodmoon||[]),
+      ...(cardPools.RADIOACTIVE||[]),
       ...(cardPools.secret||[])
     ];
     const c = all.find(x=>x.name===cardName);
@@ -990,7 +989,7 @@
       { type: 'mythical', pool: cardPools.mythical, buttonId: 'buyMythicalBtn' },
       { type: 'divine', pool: cardPools.divine, buttonId: 'buyDivineBtn' },
       { type: 'pristimatic', pool: cardPools.pristimatic, buttonId: 'buyPristimaticBtn' },
-      { type: 'Bloodmoon', pool: cardPools.Bloodmoon, buttonId: 'buyBloodmoonBtn' }, // <-- Bloodmoon added
+      { type: 'RADIOACTIVE', pool: cardPools.RADIOACTIVE, buttonId: 'buyRADIOACTIVEBtn' }, // <-- RADIOACTIVE added
       { type: 'secret', pool: cardPools.secret, buttonId: 'buySecretBtn' }
     ];
     packs.forEach(pack=>{
@@ -998,7 +997,7 @@
       const availableCards = (pack.pool || []).filter(card => getCardQuantity(card.name) > 0);
       availableCards.forEach(card => totalChance += card.chance);
       const chanceText = `(${Math.round(totalChance*100)}%)`;
-      const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='mythical'?3000:pack.type==='divine'?5000:pack.type==='pristimatic'?7500:(pack.type==='secret'?50000:(pack.type==='Bloodmoon'?1000000:0));
+      const packPrice = pack.type==='common'?100:pack.type==='rare'?250:pack.type==='epic'?350:pack.type==='legendary'?1500:pack.type==='mythical'?3000:pack.type==='divine'?5000:pack.type==='pristimatic'?7500:(pack.type==='secret'?50000:(pack.type==='RADIOACTIVE'?1000000:0));
       const btn = document.getElementById(pack.buttonId);
       if (btn) {
         btn.innerText = `Buy ${pack.type.charAt(0).toUpperCase()+pack.type.slice(1)} Pack ${chanceText} ($${packPrice})`;
@@ -1052,7 +1051,7 @@
     else if (type === "mythical") { packPrice = 3000; pool = cardPools.mythical; }
     else if (type === "divine") { packPrice = 5000; pool = cardPools.divine; }
     else if (type === "pristimatic") { packPrice = 7500; pool = cardPools.pristimatic; }
-    else if (type === "Bloodmoon") { packPrice = 1000000; pool = cardPools.Bloodmoon; } // <-- Bloodmoon support
+    else if (type === "RADIOACTIVE") { packPrice = 1000000; pool = cardPools.RADIOACTIVE; } // <-- RADIOACTIVE support
     else if (type === "secret") { packPrice = 50000; pool = cardPools.secret; }
 
     if (balance < packPrice) { showMessage("You don't have enough money to buy this pack."); return; }
@@ -1245,7 +1244,7 @@
     document.getElementById('stealAnswerInput').value = '';
     document.getElementById('stealModalHint').innerText = `Solve the question correctly as fast as you can. First correct answer wins.`;
     document.getElementById('stealModal').style.display = 'block';
-    if (session.defender === currentUser) { const audio = new Audio('steal.mp3'); audio.play().catch(()=>{}); }
+    if (session.defender === currentUser) { const audio = new Audio('g.mp3'); audio.play().catch(()=>{}); }
     setTimeout(()=>{ try { document.getElementById('stealAnswerInput').focus(); } catch(e){} }, 200);
   }
 
@@ -2736,13 +2735,13 @@
         { level: 10, card: "CANDY MR.ZEZO", money: "1.5B" },
         { level: 11, card: "CANDY 67", money: "2.25B" },
         { level: 12, card: "CANDY MEOWL", money: "2.75B" },
-        { level: 13, card: "BLOODMOON GARAMA AND MADUNG", money: "3B" },
-        { level: 14, card: "BLOODMOON MEOWL", money: "3.25B" },
-        { level: 15, card: "BLOODMOON 67", money: "3.5B" },
-        { level: 16, card: "BLOODMOON LOS BROS", money: "3.75B" },
-        { level: 17, card: "BLOODMOON LOS ZEZOS", money: "4B" },
-        { level: 18, card: "BLOODMOON LOS TUNGTUNGCITOS", money: "4.25B" },
-        { level: 19, card: "BLOODMOON MADRID VS BARCA", money: "4.5B" },
+        { level: 13, card: "RADIOACTIVE GARAMA AND MADUNG", money: "3B" },
+        { level: 14, card: "RADIOACTIVE MEOWL", money: "3.25B" },
+        { level: 15, card: "RADIOACTIVE 67", money: "3.5B" },
+        { level: 16, card: "RADIOACTIVE LOS BROS", money: "3.75B" },
+        { level: 17, card: "RADIOACTIVE LOS ZEZOS", money: "4B" },
+        { level: 18, card: "RADIOACTIVE LOS TUNGTUNGCITOS", money: "4.25B" },
+        { level: 19, card: "RADIOACTIVE MADRID VS BARCA", money: "4.5B" },
       ];
 
       // ==== HELPERS ====
@@ -3914,19 +3913,21 @@ console.log(formatNumber(2.3e15));  // "2.3Q"
   // === REWARDS: use percent fields here (you asked for percent, so set these)
   // Example: 50% each
  const REWARDS = [
-  { name: 'KARKER KAR KUR KUR', price: 30000000, percent: 5 },
-  { name: 'ESOK SEKOLA',        price: 6000000, percent: 24 },
-  { name: 'NOOOO MY EXAMINE',   price: 4500000, percent: 10 },
-  { name: 'YEEEES MY EXAMINE',  price: 7000000, percent: 8 },
-  { name: 'HALLOWEEN MEOWL',    price: 60000000, percent: 3 },
-  { name: 'POT HOTSPOT',        price: 8000000, percent: 6 },
+  { name: "RADIOACTIVE LA CASA BO",                price: 40000000,  percent: 4 },
+  { name: "RADIOACTIVE SPOOKY AND PUMPKIN",        price: 20000000,  percent: 7 },
+  { name: "RADIOACTIVE LOS TIPI TACOS",            price: 5000000,   percent: 16 },
+  { name: "RADIOACTIVE BLACK HOLE GOAT",           price: 5000000,   percent: 16 },
+  { name: "RADIOACTIVE DULL DULL DULL",            price: 35000000,  percent: 4 },
+  { name: "RADIOACTIVE Chicleteira Bicicleteira",  price: 75000000,  percent: 2 },
 
-  // leave these unchanged
-  { name: 'LOS 67',             price: 100000000, percent: 1 },
-  { name: 'LA CHUCARACHA',      price: 17000000, percent: 3 },
-  { name: 'GRAPUSS MEDUSI',     price: 15000000, percent: 5 },
-  { name: 'LA VACA',            price: 1000000,  percent: 35 }
+  // forced values
+  { name: "RADIOACTIVE STRAWBERRY ELEPHANT",       price: 200000000, percent: 1 },
+  { name: "RADIOACTIVE LOS CHICHAUNES",            price: 1500000,   percent: 35 },
+
+  { name: "RADIOACTIVE 1X1X1X1",                   price: 90000000,  percent: 1 },
+  { name: "RADIOACTIVE ZEZO RACING",               price: 100000000, percent: 1 }
 ];
+
 
 
   // ---- Helpers: percent normalization & formatting ----
