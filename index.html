@@ -4325,5 +4325,101 @@ async function openLuckyBlock(cardId) {
   }
 }
 </script>
+<!-- ===== SEND ALL: button + modal + bulk-send logic (paste BEFORE </body>) ===== -->
+<div id="sendAllModal" style="display:none; position:fixed; z-index:10000; left:50%; top:50%; transform:translate(-50%,-50%); background:#fff; padding:18px; border-radius:10px; max-width:420px; box-shadow:0 10px 30px rgba(0,0,0,0.25);">
+  <h3 style="margin:0 0 8px 0;">Send ALL Cards</h3>
+  <p style="margin:0 0 12px 0;">Send all your cards to:</p>
+  <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:12px;">
+    <button class="btn btn-blue" onclick="sendAllToRecipient('asser')">Asser</button>
+    <button class="btn btn-blue" onclick="sendAllToRecipient('lilly')">Lilly</button>
+    <button class="btn btn-blue" onclick="sendAllToRecipient('lolo')">Lolo</button>
+    <button class="btn btn-blue" onclick="sendAllToRecipient('esok')">Esok</button>
+    <button class="btn btn-blue" onclick="sendAllToRecipient('zezo')">Zezo</button>
+  </div>
+  <div style="text-align:center;"><button class="btn" onclick="closeSendAllModal()">Cancel</button></div>
+</div>
+
+<script>
+/* Inject a small "Send All" button into header-right (if present) */
+(function(){
+  function injectSendAllBtn(){
+    try {
+      const hdr = document.querySelector('.header-right');
+      if (!hdr) return;
+      if (document.getElementById('sendAllHeaderBtn')) return;
+      const btn = document.createElement('button');
+      btn.id = 'sendAllHeaderBtn';
+      btn.className = 'btn btn-small';
+      btn.style.marginBottom = '4px';
+      btn.innerText = 'Send All';
+      btn.onclick = openSendAllModal;
+      hdr.prepend(btn);
+    } catch(e){ console.warn('injectSendAllBtn err', e); }
+  }
+  document.addEventListener('DOMContentLoaded', injectSendAllBtn);
+  // also try now in case script is appended after DOM
+  setTimeout(injectSendAllBtn, 120);
+})();
+
+function openSendAllModal(){ document.getElementById('sendAllModal').style.display = 'block'; }
+function closeSendAllModal(){ document.getElementById('sendAllModal').style.display = 'none'; }
+
+/**
+ * sendAllToRecipient(recipient) - bulk moves all local `collection` and `lockedCards`
+ * into recipient's `collection` in Firebase, removing them from the sender.
+ */
+async function sendAllToRecipient(recipient){
+  try {
+    if (!currentUser) { showMessage("You must be logged in to send cards."); return; }
+    if (!recipient || recipient === currentUser) { showMessage("Select a valid recipient (not yourself)."); return; }
+
+    // ensure recipient exists (same approach as single-send)
+    const rRef = db.ref(`users/${recipient}`);
+    const rSnap = await rRef.once('value');
+    if (!rSnap.exists()) { showMessage("Recipient does not exist."); return; }
+
+    // combine local snapshots (current in-memory state kept by your listeners)
+    const myCollection = collection || {};
+    const myLocked = lockedCards || {};
+    const cardIds = [...Object.keys(myCollection), ...Object.keys(myLocked)];
+    if (cardIds.length === 0) { showMessage("You have no cards to send."); closeSendAllModal(); return; }
+
+    // build batch update
+    const updates = {};
+    const now = Date.now();
+    // move each card: remove from sender path(s) and set on recipient.collection
+    cardIds.forEach(id => {
+      const card = myCollection[id] || myLocked[id];
+      if (!card) return;
+      const cardCopy = Object.assign({}, card);
+      // ensure card isn't left as locked on recipient
+      cardCopy.isLocked = false;
+      cardCopy.lockTime = 0;
+      // clear sender entries
+      updates[`users/${currentUser}/collection/${id}`] = null;
+      updates[`users/${currentUser}/lockedCards/${id}`] = null;
+      // write to recipient collection
+      updates[`users/${recipient}/collection/${id}`] = cardCopy;
+    });
+
+    // perform batched update
+    await db.ref().update(updates);
+
+    // notify recipient with single summary notification
+    const note = `${currentUser} sent you ${cardIds.length} card${cardIds.length>1?'s':''}.`;
+    await db.ref(`notifications/${recipient}`).push(note);
+
+    // refresh local state: clear local objects and persist
+    collection = {}; lockedCards = {};
+    await saveUser(); updateUI(); closeSendAllModal();
+    showMessage(`Sent ${cardIds.length} card${cardIds.length>1?'s':''} to ${recipient}.`);
+  } catch (err) {
+    console.error("sendAllToRecipient err", err);
+    showMessage("Error sending cards — check console for details.");
+  }
+}
+</script>
+<!-- ===== END SEND ALL ===== -->
+
     </body>
     </html>
