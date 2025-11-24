@@ -544,14 +544,14 @@
 
     /* NEW: RADIOACTIVE pack — very low quantities, extremely rare */
     RADIOACTIVE: [
-      { name: "RADIOACTIVE LA CASA BO", quantity: 1, chance: 0.02, price: 40000000 },
+      { name: "RADIOACTIVE LA CASA BO", quantity: 0, chance: 0.02, price: 40000000 },
       { name: "RADIOACTIVE SPOOKY AND PUMPKIN", quantity: 0, chance: 0.02, price: 20000000 },
       { name: "RADIOACTIVE LOS TIPI TACOS", quantity: 0, chance: 0.02, price: 5000000 },
       { name: "RADIOACTIVE BLACK HOLE GOAT", quantity: 0, chance: 0.02, price: 5000000 },
       { name: "RADIOACTIVE DULL DULL DULL", quantity: 0, chance: 0.02, price: 35000000 },
       { name: "RADIOACTIVE Chicleteira Bicicleteira", quantity: 0, chance: 0.02, price: 75000000 },
       { name: "RADIOACTIVE STRAWBERRY ELEPHANT", quantity: 0, chance: 0.02, price: 200000000 },
-      { name: "RADIOACTIVE LOS CHICHAUNES", quantity: 0, chance: 0.02, price: 1500000 },
+      { name: "RADIOACTIVE LOS CHICHAUNES", quantity: 1, chance: 0.02, price: 1000000 },
       { name: "RADIOACTIVE 1X1X1X1", quantity: 0, chance: 0.02, price: 90000000 },
       { name: "RADIOACTIVE ZEZO RACING", quantity: 0, chance: 0.02, price: 100000000 },
       
@@ -1244,7 +1244,7 @@
     document.getElementById('stealAnswerInput').value = '';
     document.getElementById('stealModalHint').innerText = `Solve the question correctly as fast as you can. First correct answer wins.`;
     document.getElementById('stealModal').style.display = 'block';
-    if (session.defender === currentUser) { const audio = new Audio('g.mp3'); audio.play().catch(()=>{}); }
+    if (session.defender === currentUser) { const audio = new Audio('steal.mp3'); audio.play().catch(()=>{}); }
     setTimeout(()=>{ try { document.getElementById('stealAnswerInput').focus(); } catch(e){} }, 200);
   }
 
@@ -1370,7 +1370,7 @@
     -------------------- */
   document.getElementById("welcome-btn").addEventListener("click", () => {
     document.getElementById("welcome-container").style.display = "none";
-    if (!window.gAudio) { window.gAudio = new Audio('rot.mp3'); window.gAudio.loop = true; window.gAudio.preload = 'auto'; window.gAudio.volume = 0.9; }
+    if (!window.gAudio) { window.gAudio = new Audio('g.mp3'); window.gAudio.loop = true; window.gAudio.preload = 'auto'; window.gAudio.volume = 0.9; }
     if (window.gAudio.paused) window.gAudio.play().catch(()=>{});
   });
 
