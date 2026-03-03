@@ -339,12 +339,39 @@
             if(!global.stocks || (global.stocks[type] || 0) <= 0) return alert("Out of stock!");
 
             let luck = (global.luckExpiry && Date.now() < global.luckExpiry) ? global.luckMult : 1;
-            let roll = Math.random() * 100;
-            let rarity = "Common"; let baseChance = pack.odds[0];
+            
+            // --- NEW LUCK SYSTEM: WEIGHTED PROBABILITY ---
+            let adjustedOdds = [...pack.odds];
+            
+            if (luck > 1) {
+                // Multiplies the weights of rarer cards by your luck level.
+                // If a card type previously had a 0% chance (e.g. Legendary in a Common Pack), 
+                // it is given a tiny base chance so luck makes it possible to pull!
+                adjustedOdds[3] = (pack.odds[3] === 0 ? 0.2 : pack.odds[3]) * luck; 
+                adjustedOdds[2] = (pack.odds[2] === 0 ? 1.0 : pack.odds[2]) * luck;
+                adjustedOdds[1] = (pack.odds[1] === 0 ? 2.0 : pack.odds[1]) * luck;
+            }
 
-            if(roll < pack.odds[3] * luck) { rarity = "Legendary"; baseChance = pack.odds[3]; }
-            else if(roll < (pack.odds[3]+pack.odds[2]) * luck) { rarity = "Epic"; baseChance = pack.odds[2]; }
-            else if(roll < (pack.odds[3]+pack.odds[2]+pack.odds[1]) * luck) { rarity = "Rare"; baseChance = pack.odds[1]; }
+            // Sum up the new odds to create a total weight threshold
+            let totalWeight = adjustedOdds.reduce((a, b) => a + b, 0);
+            let roll = Math.random() * totalWeight;
+            
+            let rarity = "Common"; 
+            let baseChance = pack.odds[0];
+
+            // Evaluate from rarest to most common
+            if(roll < adjustedOdds[3]) { 
+                rarity = "Legendary"; 
+                baseChance = pack.odds[3] || 0.2; 
+            }
+            else if(roll < adjustedOdds[3] + adjustedOdds[2]) { 
+                rarity = "Epic"; 
+                baseChance = pack.odds[2] || 1.0; 
+            }
+            else if(roll < adjustedOdds[3] + adjustedOdds[2] + adjustedOdds[1]) { 
+                rarity = "Rare"; 
+                baseChance = pack.odds[1] || 2.0; 
+            }
 
             const name = CARD_LIBRARY[rarity][Math.floor(Math.random() * CARD_LIBRARY[rarity].length)];
             
