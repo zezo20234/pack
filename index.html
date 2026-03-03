@@ -191,9 +191,10 @@
     </div>
 
     <script type="module">
+        // Added onDisconnect to the imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, set, get, onValue, update, push, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, get, onValue, update, push, remove, serverTimestamp, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const config = {
             apiKey: "AIzaSyDclp6rqCZRVreOzTcxv840mXcl6nDKAv8",
@@ -271,6 +272,10 @@
         });
 
         function initGame() {
+            // INSTANT OFFLINE HOOK: The second the tab is closed, Firebase resets lastActive to 0
+            const userActiveRef = ref(db, `users/${uid}/lastActive`);
+            onDisconnect(userActiveRef).set(0);
+
             onValue(ref(db, `users/${uid}`), s => {
                 userData = s.val();
                 if(!userData) return;
@@ -302,7 +307,8 @@
             if(!global.nextRestock || now > global.nextRestock) {
                 const stocks = {};
                 Object.keys(PACK_TYPES).forEach(k => stocks[k] = (Math.random()*100 < PACK_TYPES[k].restockChance) ? PACK_TYPES[k].max : 0);
-                update(ref(db, `global`), { stocks, nextRestock: now + (20 * 60000) });
+                // Updated to 10 minutes (10 * 60000)
+                update(ref(db, `global`), { stocks, nextRestock: now + (10 * 60000) });
             }
             if(!global.nextMutation || now > global.nextMutation) {
                 triggerGlobalMutationWave();
@@ -433,7 +439,8 @@
                 Object.keys(users).forEach(k => {
                     if(k === uid) return;
                     const u = users[k];
-                    const isOnline = (Date.now() - u.lastActive) < 15000;
+                    // Narrowed threshold to 5000ms for faster offline updates
+                    const isOnline = u.lastActive > 0 && (Date.now() - u.lastActive) < 5000;
                     html += `
                         <div onclick="${isOnline ? `openBase('${k}', '${u.username}')` : `alert('Offline!')`}" class="flex-shrink-0 flex flex-col items-center opacity-${isOnline ? '100' : '40'} cursor-pointer hover:scale-105 transition-transform">
                             <div class="w-10 h-10 rounded-full border-2 ${isOnline ? 'border-green-400 bg-green-900/20' : 'border-zinc-700 bg-zinc-800'} flex items-center justify-center font-black text-sm shadow-lg">
@@ -522,13 +529,11 @@
         window.adminSetLuck = (m, min) => update(ref(db, `global`), { luckMult: m, luckExpiry: Date.now() + (min*60000) });
         window.adminSendMsg = () => update(ref(db, `global`), { announcement: document.getElementById('admin-msg').value, annExpiry: Date.now() + 60000 });
 
-        // NEW: Grab values from inputs to set custom luck
         window.adminApplyCustomLuck = () => {
             const mult = parseFloat(document.getElementById('admin-luck-mult').value) || 1;
             const mins = parseFloat(document.getElementById('admin-luck-time').value) || 0;
             adminSetLuck(mult, mins);
             
-            // Clear inputs after applying
             document.getElementById('admin-luck-mult').value = '';
             document.getElementById('admin-luck-time').value = '';
             
@@ -538,7 +543,6 @@
         function updateUIState() {
             if(!global.nextRestock) return;
             
-            // LUCK UI UPDATE WITH TIMER
             const luckStatusEl = document.getElementById('ui-luck-status');
             if (global.luckExpiry && Date.now() < global.luckExpiry) {
                 const luck = global.luckMult || 1;
