@@ -310,7 +310,7 @@
         let global = {};
         let currentRobbery = null;
         let baseUnsubscribe = null; 
-        let detailsInterval = null; // Used to clear the cooldown loop
+        let detailsInterval = null; 
 
         window.onload = () => {
             const savedUid = localStorage.getItem('realm_uid') || sessionStorage.getItem('realm_uid');
@@ -384,7 +384,7 @@
                 document.getElementById('ui-money').innerText = Math.floor(userData.money);
                 document.getElementById('ui-level').innerText = userData.level >= 100 ? "100 (MAX)" : userData.level;
                 renderInventory();
-                renderPowersUI(); // Updates power shop inventory counts
+                renderPowersUI(); 
             });
 
             onValue(ref(db, `global`), s => {
@@ -456,7 +456,6 @@
             }
         }
 
-        // --- NEW: Buy Power Logic ---
         window.buyPower = async (key) => {
             const p = POWERS[key];
             if(userData.money < p.price) return alert("Insufficient funds!");
@@ -521,7 +520,6 @@
             await update(ref(db, `users/${uid}`), { money: userData.money - pack.price });
             await update(ref(db, `global/stocks`), { [type]: global.stocks[type] - 1 });
             
-            // NEW: Add acquiredAt timestamp for the 1-minute cooldown
             await set(ref(db, `users/${uid}/inventory/${cardId}`), { 
                 name, rarity, baseChance: absoluteChance, price: finalPrice, mutations: [],
                 acquiredAt: Date.now() 
@@ -549,26 +547,24 @@
             let skippedCount = 0;
             let updates = {};
             
-            // Loop through inventory, calculate what CAN be sold.
             Object.keys(userData.inventory).forEach(id => {
                 const card = userData.inventory[id];
-                const cd = (card.acquiredAt || 0) + 60000 - Date.now();
+                // CHANGED: 30 seconds cooldown (30000ms)
+                const cd = (card.acquiredAt || 0) + 30000 - Date.now();
                 
                 if (cd <= 0) {
-                    // Card is eligible to be sold
                     totalValue += card.price;
                     soldCount++;
-                    updates[`inventory/${id}`] = null; // Mark for deletion
+                    updates[`inventory/${id}`] = null; 
                 } else {
-                    // Card still on cooldown
                     skippedCount++;
                 }
             });
 
-            if(soldCount === 0) return alert(`No cards available to sell! (${skippedCount} cards still on 1-min cooldown)`);
+            if(soldCount === 0) return alert(`No cards available to sell! (${skippedCount} cards still on 30-sec cooldown)`);
 
             let msg = `Sell ${soldCount} cards for $${totalValue}?`;
-            if (skippedCount > 0) msg += `\n(${skippedCount} cards skipped due to 1-min cooldown)`;
+            if (skippedCount > 0) msg += `\n(${skippedCount} cards skipped due to 30-sec cooldown)`;
 
             if(confirm(msg)) {
                 updates[`money`] = userData.money + totalValue;
@@ -614,11 +610,12 @@
                 Object.keys(userData.inventory).forEach(id => {
                     const c = userData.inventory[id];
                     const isShielded = c.shieldUntil && c.shieldUntil > Date.now();
+                    const remMins = isShielded ? Math.ceil((c.shieldUntil - Date.now()) / 60000) : 0;
                     
                     html += `
                         <div onclick="openDetails('${id}')" class="card-${c.rarity} aspect-[5/7] rounded-xl p-3 flex flex-col justify-between active:scale-95 transition-transform relative overflow-hidden shadow-lg cursor-pointer">
                             ${c.mutations && c.mutations.length > 0 ? `<div class="absolute -right-6 top-4 bg-green-500 text-black text-[8px] font-black px-8 py-1 rotate-45 shadow-lg shadow-green-500/50 z-10">MUTATED</div>` : ''}
-                            ${isShielded ? `<div class="absolute -left-6 top-4 bg-blue-500 text-black text-[8px] font-black px-8 py-1 -rotate-45 shadow-lg shadow-blue-500/50 z-10">SHIELDED</div>` : ''}
+                            ${isShielded ? `<div class="absolute -left-6 top-4 bg-blue-500 text-black text-[7px] font-black px-8 py-1 -rotate-45 shadow-lg shadow-blue-500/50 z-10 shield-timer" data-until="${c.shieldUntil}">${remMins}M LEFT</div>` : ''}
                             
                             <div>
                                 <p class="text-[9px] font-black opacity-70 uppercase tracking-widest text-white drop-shadow-md">${c.rarity}</p>
@@ -639,7 +636,7 @@
             const c = userData.inventory[id];
             if(!c) return;
             
-            clearInterval(detailsInterval); // clear any previous loop
+            clearInterval(detailsInterval); 
             
             document.getElementById('det-card-visual').className = `w-32 h-44 mx-auto rounded-xl mb-4 shadow-2xl border border-white/20 card-${c.rarity}`;
             document.getElementById('det-name').innerText = c.name;
@@ -650,9 +647,9 @@
             const mutDiv = document.getElementById('det-mutations');
             mutDiv.innerHTML = (c.mutations && c.mutations.length > 0) ? c.mutations.map(m => `<div>✦ ${m}</div>`).join('') : "None";
 
-            // -- Cooldown Update Loop --
             const updateSellButton = () => {
-                const cd = (c.acquiredAt || 0) + 60000 - Date.now();
+                // CHANGED: 30 seconds cooldown
+                const cd = (c.acquiredAt || 0) + 30000 - Date.now();
                 const btn = document.getElementById('det-sell-btn');
                 
                 if (cd > 0) {
@@ -674,15 +671,13 @@
             updateSellButton();
             detailsInterval = setInterval(updateSellButton, 1000);
 
-            // -- Shielding Status / Power Application --
             const isShielded = c.shieldUntil && c.shieldUntil > Date.now();
             if (isShielded) {
                 const remMins = Math.ceil((c.shieldUntil - Date.now()) / 60000);
                 document.getElementById('det-shield-status').innerHTML = `<div class="bg-blue-900/50 border border-blue-500 p-2 rounded-lg text-xs font-bold text-blue-400">🛡️ SECURED FOR ${remMins} MINS</div>`;
-                document.getElementById('det-powers-container').innerHTML = ''; // Hide buttons
+                document.getElementById('det-powers-container').innerHTML = ''; 
             } else {
                 document.getElementById('det-shield-status').innerHTML = '';
-                // Render apply power buttons if user has them
                 let powerHtml = '';
                 Object.keys(POWERS).forEach(k => {
                     const count = (userData.powers && userData.powers[k]) ? userData.powers[k] : 0;
@@ -700,7 +695,7 @@
                         let tUid = null; s.forEach(u => { if(u.val().username.toLowerCase() === target.toLowerCase()) tUid = u.key; });
                         if(tUid) { 
                             remove(ref(db, `users/${uid}/inventory/${id}`)); 
-                            c.acquiredAt = Date.now(); // Reset the cooldown for the receiver!
+                            c.acquiredAt = Date.now(); 
                             push(ref(db, `users/${tUid}/inventory`), c); 
                             alert("Sent!"); 
                             closeDetails(); 
@@ -762,13 +757,13 @@
                     Object.keys(inv).forEach(id => {
                         const c = inv[id];
                         const isShielded = c.shieldUntil && c.shieldUntil > Date.now();
+                        const remMins = isShielded ? Math.ceil((c.shieldUntil - Date.now()) / 60000) : 0;
                         
-                        // NEW: Render shielded cards differently and disable click
                         html += `
                             <div ${isShielded ? '' : `onclick="startSteal('${targetId}', '${id}', '${c.name}')"`} class="card-${c.rarity} aspect-[5/7] rounded-xl p-3 flex flex-col justify-between ${isShielded ? 'opacity-40 grayscale cursor-not-allowed' : 'active:scale-95 transition-transform cursor-pointer opacity-90 hover:opacity-100'}">
                                 <div><p class="text-[9px] font-black opacity-70 uppercase">${c.rarity}</p><p class="font-black text-sm text-white">${c.name}</p></div>
                                 <div class="${isShielded ? 'bg-blue-900/80 border-blue-500/50' : 'bg-red-900/80 border-red-500/50'} p-2 rounded-lg text-center border">
-                                    <p class="text-[10px] text-white font-black uppercase">${isShielded ? 'LOCKED' : 'EXTRACT'}</p>
+                                    <p class="text-[10px] text-white font-black uppercase base-shield-timer" data-until="${isShielded ? c.shieldUntil : ''}">${isShielded ? `LOCKED (${remMins}M)` : 'EXTRACT'}</p>
                                 </div>
                             </div>
                         `;
@@ -824,7 +819,7 @@
                     const cSnap = await get(ref(db, `users/${currentRobbery.targetId}/inventory/${currentRobbery.cardId}`));
                     if(cSnap.exists()) { 
                         let stolenCard = cSnap.val();
-                        stolenCard.acquiredAt = Date.now(); // RESET THE 1 MINUTE COOLDOWN FOR THE THIEF
+                        stolenCard.acquiredAt = Date.now(); 
                         
                         await push(ref(db, `users/${uid}/inventory`), stolenCard); 
                         await remove(ref(db, `users/${currentRobbery.targetId}/inventory/${currentRobbery.cardId}`)); 
@@ -916,6 +911,28 @@
                 document.getElementById('ui-steal-cd').innerText = cd > 0 ? `${Math.floor(cd/60)}:${(cd%60).toString().padStart(2,'0')}` : "READY";
                 document.getElementById('ui-steal-cd').className = cd > 0 ? "text-lg font-black text-red-500" : "text-lg font-black text-green-400";
             }
+
+            // Dynamically update the shield timers so they tick down without a page refresh
+            document.querySelectorAll('.shield-timer').forEach(el => {
+                const until = parseInt(el.getAttribute('data-until'));
+                if (until > Date.now()) {
+                    el.innerText = `${Math.ceil((until - Date.now()) / 60000)}M LEFT`;
+                } else {
+                    el.remove();
+                }
+            });
+
+            document.querySelectorAll('.base-shield-timer').forEach(el => {
+                const untilAttr = el.getAttribute('data-until');
+                if (untilAttr) {
+                    const until = parseInt(untilAttr);
+                    if (until > Date.now()) {
+                        el.innerText = `LOCKED (${Math.ceil((until - Date.now()) / 60000)}M)`;
+                    } else {
+                        el.innerText = 'EXTRACT (RELOAD)';
+                    }
+                }
+            });
         }
     </script>
 </body>
