@@ -25,6 +25,7 @@
         .hide { display: none !important; }
         input { background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; backdrop-filter: blur(5px); }
         input:focus { border-color: #eab308 !important; }
+        select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
         
         /* Card Gradients & Styles */
         .card-Common { background: linear-gradient(135deg, #374151, #111827); border: 2px solid #6b7280; }
@@ -103,7 +104,10 @@
             </section>
 
             <section>
-                <h2 class="font-black text-sm tracking-widest text-zinc-300 mb-3 px-1">MY DECK</h2>
+                <div class="flex justify-between items-end mb-3 px-1">
+                    <h2 class="font-black text-sm tracking-widest text-zinc-300">MY DECK</h2>
+                    <button onclick="sellAll()" class="text-[10px] text-red-500 font-bold bg-red-900/20 border border-red-900/50 px-3 py-1 rounded active:scale-95">SELL ALL</button>
+                </div>
                 <div id="ui-inventory" class="grid grid-cols-2 gap-3"></div>
             </section>
         </div>
@@ -170,8 +174,23 @@
             <h1 class="text-red-600 font-black text-2xl tracking-tighter">SYSTEM ROOT</h1>
             <button onclick="closeAdmin()" class="bg-white/10 px-4 py-2 rounded-lg text-xs font-bold">CLOSE</button>
         </div>
-        <div class="space-y-4 overflow-y-auto bg-black p-4 rounded-2xl border border-red-900/30">
-            <button onclick="adminRestockAll()" class="w-full bg-zinc-900 border border-white/10 p-4 rounded-xl text-xs font-bold">FORCE RESTOCK ALL</button>
+        <div class="space-y-4 overflow-y-auto bg-black p-4 rounded-2xl border border-red-900/30 pb-20">
+            
+            <div class="flex flex-col gap-2 bg-zinc-900 border border-white/10 p-4 rounded-xl">
+                <p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Specific Restock</p>
+                <div class="flex gap-2">
+                    <select id="admin-pack-type" class="w-1/2 p-3 rounded-xl text-sm font-bold bg-black text-white border border-white/10 outline-none">
+                        <option value="Common">Common</option>
+                        <option value="Rare">Rare</option>
+                        <option value="Epic">Epic</option>
+                        <option value="Legendary">Legendary</option>
+                    </select>
+                    <input type="number" id="admin-pack-qty" placeholder="Qty" class="w-1/2 p-3 rounded-xl text-sm font-bold text-center">
+                </div>
+                <button onclick="adminRestockSpecific()" class="w-full bg-blue-900/50 border border-blue-500/50 text-blue-400 p-3 rounded-xl text-xs font-bold active:scale-95">RESTOCK PACK</button>
+            </div>
+
+            <button onclick="adminRestockAll()" class="w-full bg-zinc-900 border border-white/10 p-4 rounded-xl text-xs font-bold">FORCE RESTOCK ALL (MAX)</button>
             
             <div class="flex flex-col gap-2 bg-zinc-900 border border-white/10 p-4 rounded-xl">
                 <p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Custom Luck Modifier</p>
@@ -186,14 +205,13 @@
             </div>
 
             <input type="text" id="admin-msg" placeholder="Global Alert..." class="w-full p-4 rounded-xl text-sm">
-            <button onclick="adminSendMsg()" class="w-full bg-red-600 font-black p-4 rounded-xl">BROADCAST ALERT</button>
+            <button onclick="adminSendMsg()" class="w-full bg-red-600 font-black p-4 rounded-xl active:scale-95">BROADCAST ALERT</button>
         </div>
     </div>
 
     <script type="module">
-        // Added onDisconnect to the imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        // Removed Auth imports - using pure RTDB now
         import { getDatabase, ref, set, get, onValue, update, push, remove, serverTimestamp, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const config = {
@@ -207,7 +225,6 @@
         };
 
         const app = initializeApp(config);
-        const authObj = getAuth(app);
         const db = getDatabase(app);
 
         // BALANCED ECONOMY
@@ -240,36 +257,69 @@
         let currentRobbery = null;
         let baseUnsubscribe = null; 
 
-        window.auth = async (type) => {
-            const u = document.getElementById('username').value.trim();
-            const p = document.getElementById('password').value;
-            if(p.length < 3) return alert("Password too short!");
-            try {
-                await setPersistence(authObj, browserLocalPersistence);
-                if(type === 'register') {
-                    const res = await createUserWithEmailAndPassword(authObj, `${u}@realm.com`, p);
-                    await set(ref(db, `users/${res.user.uid}`), { username: u, money: 500, level: 1, inventory: {}, lastStealTime: 0 });
-                } else {
-                    await signInWithEmailAndPassword(authObj, `${u}@realm.com`, p);
-                }
-            } catch(e) { alert(e.message.replace("Firebase: ", "")); }
-        };
-
-        window.logout = async () => {
-            if(confirm("Log out completely?")) {
-                await signOut(authObj);
-                window.location.reload();
-            }
-        };
-
-        onAuthStateChanged(authObj, (u) => {
-            if(u) {
-                uid = u.uid;
+        // Auto-login check on load
+        window.onload = () => {
+            const savedUid = localStorage.getItem('realm_uid') || sessionStorage.getItem('realm_uid');
+            if(savedUid) {
+                uid = savedUid;
                 document.getElementById('view-auth').classList.add('hide');
                 document.getElementById('view-game').classList.remove('hide');
                 initGame();
             }
-        });
+        };
+
+        window.auth = async (type) => {
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value;
+            const stayLogged = document.getElementById('stay-logged').checked;
+            
+            if(!u) return alert("Enter a username!");
+            if(p.length < 3) return alert("Password too short!");
+            
+            // Format to use as RTDB key cleanly
+            const userId = u.toLowerCase().replace(/[^a-z0-9]/g, ''); 
+            if(userId.length < 3) return alert("Username invalid! Use alphanumeric characters.");
+
+            try {
+                const userRef = ref(db, `users/${userId}`);
+                const snap = await get(userRef);
+
+                if(type === 'register') {
+                    if(snap.exists()) return alert("Username already taken!");
+                    await set(userRef, { 
+                        username: u, 
+                        password: p, 
+                        money: 500, 
+                        level: 1, 
+                        lastActive: serverTimestamp() 
+                    });
+                    loginSuccess(userId, stayLogged);
+                } else {
+                    if(!snap.exists()) return alert("User not found!");
+                    if(snap.val().password !== p) return alert("Incorrect password!");
+                    loginSuccess(userId, stayLogged);
+                }
+            } catch(e) { alert("Database Error: " + e.message); }
+        };
+
+        function loginSuccess(userId, stayLogged) {
+            uid = userId;
+            if(stayLogged) localStorage.setItem('realm_uid', uid);
+            else sessionStorage.setItem('realm_uid', uid);
+            
+            document.getElementById('view-auth').classList.add('hide');
+            document.getElementById('view-game').classList.remove('hide');
+            initGame();
+        }
+
+        window.logout = async () => {
+            if(confirm("Log out completely?")) {
+                localStorage.removeItem('realm_uid');
+                sessionStorage.removeItem('realm_uid');
+                if(uid) await update(ref(db, `users/${uid}`), { lastActive: 0 });
+                window.location.reload();
+            }
+        };
 
         function initGame() {
             // INSTANT OFFLINE HOOK: The second the tab is closed, Firebase resets lastActive to 0
@@ -307,7 +357,6 @@
             if(!global.nextRestock || now > global.nextRestock) {
                 const stocks = {};
                 Object.keys(PACK_TYPES).forEach(k => stocks[k] = (Math.random()*100 < PACK_TYPES[k].restockChance) ? PACK_TYPES[k].max : 0);
-                // Updated to 10 minutes (10 * 60000)
                 update(ref(db, `global`), { stocks, nextRestock: now + (5 * 60000) });
             }
             if(!global.nextMutation || now > global.nextMutation) {
@@ -340,38 +389,24 @@
 
             let luck = (global.luckExpiry && Date.now() < global.luckExpiry) ? global.luckMult : 1;
             
-            // --- NEW LUCK SYSTEM: WEIGHTED PROBABILITY ---
+            // WEIGHTED PROBABILITY
             let adjustedOdds = [...pack.odds];
             
             if (luck > 1) {
-                // Multiplies the weights of rarer cards by your luck level.
-                // If a card type previously had a 0% chance (e.g. Legendary in a Common Pack), 
-                // it is given a tiny base chance so luck makes it possible to pull!
                 adjustedOdds[3] = (pack.odds[3] === 0 ? 0.2 : pack.odds[3]) * luck; 
                 adjustedOdds[2] = (pack.odds[2] === 0 ? 1.0 : pack.odds[2]) * luck;
                 adjustedOdds[1] = (pack.odds[1] === 0 ? 2.0 : pack.odds[1]) * luck;
             }
 
-            // Sum up the new odds to create a total weight threshold
             let totalWeight = adjustedOdds.reduce((a, b) => a + b, 0);
             let roll = Math.random() * totalWeight;
             
             let rarity = "Common"; 
             let baseChance = pack.odds[0];
 
-            // Evaluate from rarest to most common
-            if(roll < adjustedOdds[3]) { 
-                rarity = "Legendary"; 
-                baseChance = pack.odds[3] || 0.2; 
-            }
-            else if(roll < adjustedOdds[3] + adjustedOdds[2]) { 
-                rarity = "Epic"; 
-                baseChance = pack.odds[2] || 1.0; 
-            }
-            else if(roll < adjustedOdds[3] + adjustedOdds[2] + adjustedOdds[1]) { 
-                rarity = "Rare"; 
-                baseChance = pack.odds[1] || 2.0; 
-            }
+            if(roll < adjustedOdds[3]) { rarity = "Legendary"; baseChance = pack.odds[3] || 0.2; }
+            else if(roll < adjustedOdds[3] + adjustedOdds[2]) { rarity = "Epic"; baseChance = pack.odds[2] || 1.0; }
+            else if(roll < adjustedOdds[3] + adjustedOdds[2] + adjustedOdds[1]) { rarity = "Rare"; baseChance = pack.odds[1] || 2.0; }
 
             const name = CARD_LIBRARY[rarity][Math.floor(Math.random() * CARD_LIBRARY[rarity].length)];
             
@@ -394,12 +429,30 @@
             }
         };
 
+        window.sellAll = async () => {
+            if(!userData || !userData.inventory) return alert("Your deck is empty!");
+            
+            let totalValue = 0;
+            const cardCount = Object.keys(userData.inventory).length;
+            
+            Object.values(userData.inventory).forEach(card => {
+                totalValue += card.price;
+            });
+
+            if(confirm(`Sell all ${cardCount} cards for $${totalValue}?`)) {
+                await update(ref(db, `users/${uid}`), {
+                    money: userData.money + totalValue,
+                    inventory: null
+                });
+            }
+        };
+
         function renderPacks() {
             let html = '';
             Object.keys(PACK_TYPES).forEach(k => {
                 const stock = (global.stocks && global.stocks[k]) || 0;
                 html += `
-                    <div onclick="buyPack('${k}')" class="bg-zinc-900/80 p-5 rounded-2xl border border-white/5 active:scale-95 transition-transform relative overflow-hidden">
+                    <div onclick="buyPack('${k}')" class="bg-zinc-900/80 p-5 rounded-2xl border border-white/5 active:scale-95 transition-transform relative overflow-hidden cursor-pointer">
                         <div class="absolute -right-4 -bottom-4 opacity-10 text-6xl font-black">${k[0]}</div>
                         <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">${k}</p>
                         <p class="text-2xl font-black text-white mt-1">$${PACK_TYPES[k].price}</p>
@@ -466,7 +519,7 @@
                 Object.keys(users).forEach(k => {
                     if(k === uid) return;
                     const u = users[k];
-                    // Narrowed threshold to 5000ms for faster offline updates
+                    // 5000ms threshold for connection loss check
                     const isOnline = u.lastActive > 0 && (Date.now() - u.lastActive) < 5000;
                     html += `
                         <div onclick="${isOnline ? `openBase('${k}', '${u.username}')` : `alert('Offline!')`}" class="flex-shrink-0 flex flex-col items-center opacity-${isOnline ? '100' : '40'} cursor-pointer hover:scale-105 transition-transform">
@@ -552,18 +605,38 @@
         // --- ADMIN & UI UPDATES ---
         window.handleAdmin = () => { if(prompt("Passcode:") === "555") document.getElementById('view-admin').classList.remove('hide'); };
         window.closeAdmin = () => document.getElementById('view-admin').classList.add('hide');
-        window.adminRestockAll = () => { let s = {}; Object.keys(PACK_TYPES).forEach(k => s[k] = PACK_TYPES[k].max); update(ref(db, `global/stocks`), s); };
+        
+        window.adminRestockAll = () => { 
+            let s = {}; Object.keys(PACK_TYPES).forEach(k => s[k] = PACK_TYPES[k].max); update(ref(db, `global/stocks`), s); 
+            alert("All packs force restocked to MAX!");
+        };
+        
+        window.adminRestockSpecific = async () => {
+            const packType = document.getElementById('admin-pack-type').value;
+            const qty = parseInt(document.getElementById('admin-pack-qty').value);
+            if(isNaN(qty) || qty < 0) return alert("Enter a valid quantity!");
+            
+            const currentStock = (global.stocks && global.stocks[packType]) ? global.stocks[packType] : 0;
+            await update(ref(db, `global/stocks`), { [packType]: currentStock + qty });
+            
+            document.getElementById('admin-pack-qty').value = '';
+            alert(`Added ${qty} to ${packType} stock!`);
+        };
+
         window.adminSetLuck = (m, min) => update(ref(db, `global`), { luckMult: m, luckExpiry: Date.now() + (min*60000) });
-        window.adminSendMsg = () => update(ref(db, `global`), { announcement: document.getElementById('admin-msg').value, annExpiry: Date.now() + 60000 });
+        window.adminSendMsg = () => {
+            const msg = document.getElementById('admin-msg').value;
+            if(!msg) return;
+            update(ref(db, `global`), { announcement: msg, annExpiry: Date.now() + 60000 });
+            document.getElementById('admin-msg').value = '';
+        };
 
         window.adminApplyCustomLuck = () => {
             const mult = parseFloat(document.getElementById('admin-luck-mult').value) || 1;
             const mins = parseFloat(document.getElementById('admin-luck-time').value) || 0;
             adminSetLuck(mult, mins);
-            
             document.getElementById('admin-luck-mult').value = '';
             document.getElementById('admin-luck-time').value = '';
-            
             alert(`Global Luck set to ${mult}x for ${mins} minutes!`);
         };
 
