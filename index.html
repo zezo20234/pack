@@ -365,22 +365,54 @@
             }
         }
 
+        // ==========================================
+        // UPDATED MUTATION LOGIC
+        // ==========================================
         async function triggerGlobalMutationWave() {
-            if(!userData || !userData.inventory) return;
-            let updates = {};
-            Object.keys(userData.inventory).forEach(id => {
-                if(Math.random() < 0.10) {
-                    const c = userData.inventory[id];
-                    const mutName = MUTATIONS[Math.floor(Math.random() * MUTATIONS.length)];
-                    const bonus = Math.floor(Math.random() * 41) + 10; 
-                    c.price = Math.floor(c.price * (1 + (bonus/100)));
-                    if(!c.mutations) c.mutations = [];
-                    c.mutations.push(`${mutName} (+${bonus}%)`);
-                    updates[`users/${uid}/inventory/${id}`] = c;
+            try {
+                // 1. Fetch ALL users from the database to ensure everyone gets hit by the wave
+                const snap = await get(ref(db, 'users'));
+                if (!snap.exists()) return;
+                
+                let updates = {};
+                const allUsers = snap.val();
+
+                // 2. Iterate through every single user
+                Object.keys(allUsers).forEach(userId => {
+                    const user = allUsers[userId];
+                    
+                    // 3. Check if the user has an inventory
+                    if (user.inventory) {
+                        const cardIds = Object.keys(user.inventory);
+                        
+                        // 4. If they have at least one card, pick EXACTLY ONE randomly
+                        if (cardIds.length > 0) {
+                            const randomId = cardIds[Math.floor(Math.random() * cardIds.length)];
+                            const c = user.inventory[randomId];
+                            
+                            // 5. Generate and apply the mutation to that specific card
+                            const mutName = MUTATIONS[Math.floor(Math.random() * MUTATIONS.length)];
+                            const bonus = Math.floor(Math.random() * 41) + 10; 
+                            
+                            c.price = Math.floor(c.price * (1 + (bonus/100)));
+                            if(!c.mutations) c.mutations = [];
+                            c.mutations.push(`${mutName} (+${bonus}%)`);
+                            
+                            // Queue the update for the database
+                            updates[`users/${userId}/inventory/${randomId}`] = c;
+                        }
+                    }
+                });
+
+                // 6. Push all the mutated cards to the database at once
+                if(Object.keys(updates).length > 0) {
+                    await update(ref(db, `/`), updates);
                 }
-            });
-            if(Object.keys(updates).length > 0) update(ref(db, `/`), updates);
+            } catch (error) {
+                console.error("Mutation Error:", error);
+            }
         }
+        // ==========================================
 
         window.buyPack = async (type) => {
             const pack = PACK_TYPES[type];
