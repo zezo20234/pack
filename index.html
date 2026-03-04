@@ -99,6 +99,13 @@
 
             <section>
                 <div class="flex justify-between items-end mb-3 px-1">
+                    <h2 class="font-black text-sm tracking-widest text-blue-400">POWER SHOP</h2>
+                </div>
+                <div id="ui-powers" class="grid grid-cols-3 gap-2"></div>
+            </section>
+
+            <section>
+                <div class="flex justify-between items-end mb-3 px-1">
                     <h2 class="font-black text-sm tracking-widest text-zinc-300">STORE</h2>
                     <p class="text-[10px] text-zinc-500 font-bold bg-zinc-900 px-2 py-1 rounded">Restock: <span id="ui-restock-timer" class="text-white">--:--</span></p>
                 </div>
@@ -118,15 +125,17 @@
     </div>
 
     <div id="view-details" class="hide fixed inset-0 z-[120] glass-panel p-6 flex flex-col justify-center items-center text-center transition-opacity">
-        <div class="bg-[#111] w-full max-w-sm p-6 rounded-3xl border border-white/10 relative shadow-2xl">
-            <button onclick="closeDetails()" class="absolute top-4 right-4 text-zinc-500 font-black text-xl w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center">✕</button>
+        <div class="bg-[#111] w-full max-w-sm p-6 rounded-3xl border border-white/10 relative shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
+            <button onclick="closeDetails()" class="absolute top-4 right-4 text-zinc-500 font-black text-xl w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center z-50">✕</button>
             
-            <div id="det-card-visual" class="w-32 h-44 mx-auto rounded-xl mb-6 shadow-2xl border border-white/20"></div>
+            <div id="det-card-visual" class="w-32 h-44 mx-auto rounded-xl mb-4 shadow-2xl border border-white/20 mt-4"></div>
             
             <h2 id="det-name" class="text-3xl font-black mb-1 text-white">Name</h2>
-            <p id="det-rarity" class="text-xs uppercase font-bold text-zinc-400 mb-6 tracking-widest">Rarity</p>
+            <p id="det-rarity" class="text-xs uppercase font-bold text-zinc-400 mb-4 tracking-widest">Rarity</p>
+
+            <div id="det-shield-status" class="mb-4"></div>
             
-            <div class="grid grid-cols-2 gap-3 mb-6 text-left">
+            <div class="grid grid-cols-2 gap-3 mb-4 text-left">
                 <div class="bg-black/50 p-4 rounded-xl border border-white/5">
                     <p class="text-[10px] text-zinc-500 font-bold uppercase mb-1">Value</p>
                     <p id="det-price" class="text-xl font-black text-yellow-500">$0</p>
@@ -137,10 +146,12 @@
                 </div>
             </div>
 
-            <div class="bg-black/50 p-4 rounded-xl text-left mb-6 border border-white/5 min-h-[80px]">
+            <div class="bg-black/50 p-4 rounded-xl text-left mb-4 border border-white/5 min-h-[60px]">
                 <p class="text-[10px] text-zinc-500 font-bold uppercase mb-2">Enhancements</p>
                 <div id="det-mutations" class="text-xs font-bold text-green-400 space-y-1">None</div>
             </div>
+
+            <div id="det-powers-container" class="grid grid-cols-3 gap-2 mb-4"></div>
             
             <div class="flex gap-3">
                 <button id="det-sell-btn" class="flex-1 bg-red-500/10 border border-red-500/30 text-red-500 py-4 rounded-xl font-black text-sm active:scale-95 transition-transform">SELL ITEM</button>
@@ -230,7 +241,7 @@
         const app = initializeApp(config);
         const db = getDatabase(app);
 
-        // BALANCED ECONOMY (Odds Array Mapping: [Common, Uncommon, Rare, Epic, Legendary, Mythic])
+        // ECONOMY
         const PACK_TYPES = {
             Common: { price: 100, odds: [80, 15, 4, 1, 0, 0], max: 100, restockChance: 100 },
             Uncommon: { price: 250, odds: [0, 80, 15, 4, 1, 0], max: 75, restockChance: 80 },
@@ -240,8 +251,12 @@
             Mythic: { price: 50000, odds: [0, 0, 0, 0, 0, 100], max: 2, restockChance: 5 }
         };
 
-        // NEW: Minimum card value is explicitly 5-10% MORE than the pack price to guarantee profit!
-        // Exactly 5 Items Per Pool
+        const POWERS = {
+            shield10: { name: "10m Defend", duration: 10, price: 500 },
+            shield30: { name: "30m Defend", duration: 30, price: 1200 },
+            shield60: { name: "1hr Defend", duration: 60, price: 2000 }
+        };
+
         const CARD_LIBRARY = {
             Common: [
                 { name: "Harry Maguire", value: 105, chanceInRarity: 40 },
@@ -295,6 +310,7 @@
         let global = {};
         let currentRobbery = null;
         let baseUnsubscribe = null; 
+        let detailsInterval = null; // Used to clear the cooldown loop
 
         window.onload = () => {
             const savedUid = localStorage.getItem('realm_uid') || sessionStorage.getItem('realm_uid');
@@ -368,6 +384,7 @@
                 document.getElementById('ui-money').innerText = Math.floor(userData.money);
                 document.getElementById('ui-level').innerText = userData.level >= 100 ? "100 (MAX)" : userData.level;
                 renderInventory();
+                renderPowersUI(); // Updates power shop inventory counts
             });
 
             onValue(ref(db, `global`), s => {
@@ -439,6 +456,20 @@
             }
         }
 
+        // --- NEW: Buy Power Logic ---
+        window.buyPower = async (key) => {
+            const p = POWERS[key];
+            if(userData.money < p.price) return alert("Insufficient funds!");
+            
+            const currentCount = (userData.powers && userData.powers[key]) ? userData.powers[key] : 0;
+            
+            let updates = {};
+            updates[`users/${uid}/money`] = userData.money - p.price;
+            updates[`users/${uid}/powers/${key}`] = currentCount + 1;
+            
+            await update(ref(db, `/`), updates);
+        };
+
         window.buyPack = async (type) => {
             const pack = PACK_TYPES[type];
             if(userData.money < pack.price) return alert("Insufficient funds!");
@@ -460,7 +491,6 @@
             let rarityBaseChance = adjustedOdds[0];
             let sum = 0;
             
-            // Loop from highest to lowest rarity checking the roll
             for(let i = 5; i >= 0; i--) {
                 sum += adjustedOdds[i];
                 if(roll < sum) {
@@ -470,7 +500,6 @@
                 }
             }
 
-            // Pick specific card based on its own drop rate weight
             const pool = CARD_LIBRARY[rarity];
             let cardRoll = Math.random() * 100;
             let sumChance = 0;
@@ -491,7 +520,12 @@
             
             await update(ref(db, `users/${uid}`), { money: userData.money - pack.price });
             await update(ref(db, `global/stocks`), { [type]: global.stocks[type] - 1 });
-            await set(ref(db, `users/${uid}/inventory/${cardId}`), { name, rarity, baseChance: absoluteChance, price: finalPrice, mutations: [] });
+            
+            // NEW: Add acquiredAt timestamp for the 1-minute cooldown
+            await set(ref(db, `users/${uid}/inventory/${cardId}`), { 
+                name, rarity, baseChance: absoluteChance, price: finalPrice, mutations: [],
+                acquiredAt: Date.now() 
+            });
         };
 
         window.rebirth = async () => {
@@ -503,10 +537,7 @@
             if(confirm(`Rebirth wipes deck & costs $${cost}. Proceed?`)) {
                 let nextLevel = userData.level + 1;
                 await update(ref(db, `users/${uid}`), { level: nextLevel, money: nextLevel * 500, inventory: null });
-                
-                if (nextLevel >= 100) {
-                    alert("congrats u have beat the game!");
-                }
+                if (nextLevel >= 100) alert("congrats u have beat the game!");
             }
         };
 
@@ -514,19 +545,52 @@
             if(!userData || !userData.inventory) return alert("Your deck is empty!");
             
             let totalValue = 0;
-            const cardCount = Object.keys(userData.inventory).length;
+            let soldCount = 0;
+            let skippedCount = 0;
+            let updates = {};
             
-            Object.values(userData.inventory).forEach(card => {
-                totalValue += card.price;
+            // Loop through inventory, calculate what CAN be sold.
+            Object.keys(userData.inventory).forEach(id => {
+                const card = userData.inventory[id];
+                const cd = (card.acquiredAt || 0) + 60000 - Date.now();
+                
+                if (cd <= 0) {
+                    // Card is eligible to be sold
+                    totalValue += card.price;
+                    soldCount++;
+                    updates[`inventory/${id}`] = null; // Mark for deletion
+                } else {
+                    // Card still on cooldown
+                    skippedCount++;
+                }
             });
 
-            if(confirm(`Sell all ${cardCount} cards for $${totalValue}?`)) {
-                await update(ref(db, `users/${uid}`), {
-                    money: userData.money + totalValue,
-                    inventory: null
-                });
+            if(soldCount === 0) return alert(`No cards available to sell! (${skippedCount} cards still on 1-min cooldown)`);
+
+            let msg = `Sell ${soldCount} cards for $${totalValue}?`;
+            if (skippedCount > 0) msg += `\n(${skippedCount} cards skipped due to 1-min cooldown)`;
+
+            if(confirm(msg)) {
+                updates[`money`] = userData.money + totalValue;
+                await update(ref(db, `users/${uid}`), updates);
             }
         };
+
+        function renderPowersUI() {
+            let html = '';
+            Object.keys(POWERS).forEach(k => {
+                const p = POWERS[k];
+                const owned = (userData && userData.powers && userData.powers[k]) ? userData.powers[k] : 0;
+                html += `
+                    <div onclick="buyPower('${k}')" class="bg-blue-900/20 p-3 rounded-xl border border-blue-500/20 active:scale-95 transition-transform text-center cursor-pointer hover:bg-blue-900/40">
+                        <p class="text-[9px] font-black text-blue-400 uppercase tracking-widest">${p.name}</p>
+                        <p class="text-sm font-black text-white mt-1">$${p.price}</p>
+                        <p class="text-[9px] mt-1 text-zinc-400 font-bold">OWNED: ${owned}</p>
+                    </div>
+                `;
+            });
+            document.getElementById('ui-powers').innerHTML = html;
+        }
 
         function renderPacks() {
             let html = '';
@@ -549,9 +613,13 @@
             if(userData && userData.inventory) {
                 Object.keys(userData.inventory).forEach(id => {
                     const c = userData.inventory[id];
+                    const isShielded = c.shieldUntil && c.shieldUntil > Date.now();
+                    
                     html += `
                         <div onclick="openDetails('${id}')" class="card-${c.rarity} aspect-[5/7] rounded-xl p-3 flex flex-col justify-between active:scale-95 transition-transform relative overflow-hidden shadow-lg cursor-pointer">
-                            ${c.mutations && c.mutations.length > 0 ? `<div class="absolute -right-6 top-4 bg-green-500 text-black text-[8px] font-black px-8 py-1 rotate-45 shadow-lg shadow-green-500/50">MUTATED</div>` : ''}
+                            ${c.mutations && c.mutations.length > 0 ? `<div class="absolute -right-6 top-4 bg-green-500 text-black text-[8px] font-black px-8 py-1 rotate-45 shadow-lg shadow-green-500/50 z-10">MUTATED</div>` : ''}
+                            ${isShielded ? `<div class="absolute -left-6 top-4 bg-blue-500 text-black text-[8px] font-black px-8 py-1 -rotate-45 shadow-lg shadow-blue-500/50 z-10">SHIELDED</div>` : ''}
+                            
                             <div>
                                 <p class="text-[9px] font-black opacity-70 uppercase tracking-widest text-white drop-shadow-md">${c.rarity}</p>
                                 <p class="font-black text-sm text-white drop-shadow-md leading-tight mt-1">${c.name}</p>
@@ -570,7 +638,10 @@
         window.openDetails = (id) => {
             const c = userData.inventory[id];
             if(!c) return;
-            document.getElementById('det-card-visual').className = `w-32 h-44 mx-auto rounded-xl mb-6 shadow-2xl border border-white/20 card-${c.rarity}`;
+            
+            clearInterval(detailsInterval); // clear any previous loop
+            
+            document.getElementById('det-card-visual').className = `w-32 h-44 mx-auto rounded-xl mb-4 shadow-2xl border border-white/20 card-${c.rarity}`;
             document.getElementById('det-name').innerText = c.name;
             document.getElementById('det-rarity').innerText = c.rarity;
             document.getElementById('det-price').innerText = `$${c.price}`;
@@ -579,20 +650,84 @@
             const mutDiv = document.getElementById('det-mutations');
             mutDiv.innerHTML = (c.mutations && c.mutations.length > 0) ? c.mutations.map(m => `<div>✦ ${m}</div>`).join('') : "None";
 
-            document.getElementById('det-sell-btn').onclick = () => { remove(ref(db, `users/${uid}/inventory/${id}`)); update(ref(db, `users/${uid}`), { money: userData.money + c.price }); closeDetails(); };
+            // -- Cooldown Update Loop --
+            const updateSellButton = () => {
+                const cd = (c.acquiredAt || 0) + 60000 - Date.now();
+                const btn = document.getElementById('det-sell-btn');
+                
+                if (cd > 0) {
+                    btn.disabled = true;
+                    btn.className = "flex-1 bg-red-900/50 border border-red-900/50 text-red-500/50 py-4 rounded-xl font-black text-sm cursor-not-allowed";
+                    btn.innerText = `WAIT ${Math.ceil(cd/1000)}s`;
+                } else {
+                    btn.disabled = false;
+                    btn.className = "flex-1 bg-red-500/10 border border-red-500/30 text-red-500 py-4 rounded-xl font-black text-sm active:scale-95 transition-transform cursor-pointer";
+                    btn.innerText = "SELL ITEM";
+                    btn.onclick = () => { 
+                        remove(ref(db, `users/${uid}/inventory/${id}`)); 
+                        update(ref(db, `users/${uid}`), { money: userData.money + c.price }); 
+                        closeDetails(); 
+                    };
+                }
+            };
+            
+            updateSellButton();
+            detailsInterval = setInterval(updateSellButton, 1000);
+
+            // -- Shielding Status / Power Application --
+            const isShielded = c.shieldUntil && c.shieldUntil > Date.now();
+            if (isShielded) {
+                const remMins = Math.ceil((c.shieldUntil - Date.now()) / 60000);
+                document.getElementById('det-shield-status').innerHTML = `<div class="bg-blue-900/50 border border-blue-500 p-2 rounded-lg text-xs font-bold text-blue-400">🛡️ SECURED FOR ${remMins} MINS</div>`;
+                document.getElementById('det-powers-container').innerHTML = ''; // Hide buttons
+            } else {
+                document.getElementById('det-shield-status').innerHTML = '';
+                // Render apply power buttons if user has them
+                let powerHtml = '';
+                Object.keys(POWERS).forEach(k => {
+                    const count = (userData.powers && userData.powers[k]) ? userData.powers[k] : 0;
+                    if (count > 0) {
+                        powerHtml += `<button onclick="applyShield('${id}', '${k}')" class="bg-blue-600 border border-blue-400 text-white p-2 rounded-lg text-[10px] font-black active:scale-95">APPLY ${POWERS[k].name}</button>`;
+                    }
+                });
+                document.getElementById('det-powers-container').innerHTML = powerHtml;
+            }
+
             document.getElementById('det-send-btn').onclick = () => {
                 const target = prompt("Target Username:");
                 if(target) {
                     get(ref(db, `users`)).then(s => {
                         let tUid = null; s.forEach(u => { if(u.val().username.toLowerCase() === target.toLowerCase()) tUid = u.key; });
-                        if(tUid) { remove(ref(db, `users/${uid}/inventory/${id}`)); push(ref(db, `users/${tUid}/inventory`), c); alert("Sent!"); closeDetails(); }
+                        if(tUid) { 
+                            remove(ref(db, `users/${uid}/inventory/${id}`)); 
+                            c.acquiredAt = Date.now(); // Reset the cooldown for the receiver!
+                            push(ref(db, `users/${tUid}/inventory`), c); 
+                            alert("Sent!"); 
+                            closeDetails(); 
+                        }
                         else alert("User not found!");
                     });
                 }
             };
+            
             document.getElementById('view-details').classList.remove('hide');
         };
-        window.closeDetails = () => document.getElementById('view-details').classList.add('hide');
+
+        window.closeDetails = () => {
+            clearInterval(detailsInterval);
+            document.getElementById('view-details').classList.add('hide');
+        };
+
+        window.applyShield = async (cardId, powerKey) => {
+            if(!userData.powers || !userData.powers[powerKey] || userData.powers[powerKey] <= 0) return;
+            const power = POWERS[powerKey];
+            
+            await update(ref(db, `users/${uid}/powers`), { [powerKey]: userData.powers[powerKey] - 1 });
+            await update(ref(db, `users/${uid}/inventory/${cardId}`), { shieldUntil: Date.now() + power.duration * 60000 });
+            
+            alert(`${power.name} applied successfully! Card is safe.`);
+            closeDetails();
+        };
 
         function renderUserBar(users) {
             let html = '';
@@ -626,10 +761,15 @@
                 else {
                     Object.keys(inv).forEach(id => {
                         const c = inv[id];
+                        const isShielded = c.shieldUntil && c.shieldUntil > Date.now();
+                        
+                        // NEW: Render shielded cards differently and disable click
                         html += `
-                            <div onclick="startSteal('${targetId}', '${id}', '${c.name}')" class="card-${c.rarity} aspect-[5/7] rounded-xl p-3 flex flex-col justify-between active:scale-95 transition-transform cursor-pointer opacity-90 hover:opacity-100">
+                            <div ${isShielded ? '' : `onclick="startSteal('${targetId}', '${id}', '${c.name}')"`} class="card-${c.rarity} aspect-[5/7] rounded-xl p-3 flex flex-col justify-between ${isShielded ? 'opacity-40 grayscale cursor-not-allowed' : 'active:scale-95 transition-transform cursor-pointer opacity-90 hover:opacity-100'}">
                                 <div><p class="text-[9px] font-black opacity-70 uppercase">${c.rarity}</p><p class="font-black text-sm text-white">${c.name}</p></div>
-                                <div class="bg-red-900/80 p-2 rounded-lg text-center border border-red-500/50"><p class="text-[10px] text-white font-black uppercase">EXTRACT</p></div>
+                                <div class="${isShielded ? 'bg-blue-900/80 border-blue-500/50' : 'bg-red-900/80 border-red-500/50'} p-2 rounded-lg text-center border">
+                                    <p class="text-[10px] text-white font-black uppercase">${isShielded ? 'LOCKED' : 'EXTRACT'}</p>
+                                </div>
                             </div>
                         `;
                     });
@@ -683,7 +823,10 @@
                 if (currentRobbery.robberId === uid) {
                     const cSnap = await get(ref(db, `users/${currentRobbery.targetId}/inventory/${currentRobbery.cardId}`));
                     if(cSnap.exists()) { 
-                        await push(ref(db, `users/${uid}/inventory`), cSnap.val()); 
+                        let stolenCard = cSnap.val();
+                        stolenCard.acquiredAt = Date.now(); // RESET THE 1 MINUTE COOLDOWN FOR THE THIEF
+                        
+                        await push(ref(db, `users/${uid}/inventory`), stolenCard); 
                         await remove(ref(db, `users/${currentRobbery.targetId}/inventory/${currentRobbery.cardId}`)); 
                         alert("Extracted Successfully!"); 
                     } else {
