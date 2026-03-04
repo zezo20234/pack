@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#000000">
     <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkNhcmQgUmVhbG0iLAogICJzaG9ydF9uYW1lIjogIlJlYWxtIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMDAwMDAwIiwKICAidGhlbWVfY29sb3ciOiAiI2VhYjMwOCIKfQ==">
     
-    <title>CARD REALM</title>
+    <title>CARD REALM: FOOTBALL EDITION</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;800&display=swap');
@@ -29,9 +29,11 @@
         
         /* Card Gradients & Styles */
         .card-Common { background: linear-gradient(135deg, #374151, #111827); border: 2px solid #6b7280; }
+        .card-Uncommon { background: linear-gradient(135deg, #059669, #064e3b); border: 2px solid #34d399; box-shadow: inset 0 0 20px rgba(52,211,153,0.3), 0 0 10px rgba(5,150,105,0.4); }
         .card-Rare { background: linear-gradient(135deg, #2563eb, #1e3a8a); border: 2px solid #60a5fa; box-shadow: inset 0 0 20px rgba(96,165,250,0.3), 0 0 10px rgba(37,99,235,0.4); }
         .card-Epic { background: linear-gradient(135deg, #9333ea, #581c87); border: 2px solid #c084fc; box-shadow: inset 0 0 20px rgba(192,132,252,0.3), 0 0 15px rgba(147,51,234,0.5); }
         .card-Legendary { background: linear-gradient(135deg, #d97706, #78350f); border: 2px solid #fde047; box-shadow: inset 0 0 30px rgba(253,224,71,0.4), 0 0 20px rgba(234,179,8,0.6); }
+        .card-Mythic { background: linear-gradient(135deg, #e11d48, #881337); border: 2px solid #fb7185; box-shadow: inset 0 0 30px rgba(251,113,133,0.4), 0 0 20px rgba(225,29,72,0.6); }
         
         .glass-panel { background: rgba(10,10,10,0.85); backdrop-filter: blur(15px); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -181,9 +183,11 @@
                 <div class="flex gap-2">
                     <select id="admin-pack-type" class="w-1/2 p-3 rounded-xl text-sm font-bold bg-black text-white border border-white/10 outline-none">
                         <option value="Common">Common</option>
+                        <option value="Uncommon">Uncommon</option>
                         <option value="Rare">Rare</option>
                         <option value="Epic">Epic</option>
                         <option value="Legendary">Legendary</option>
+                        <option value="Mythic">Mythic</option>
                     </select>
                     <input type="number" id="admin-pack-qty" placeholder="Qty" class="w-1/2 p-3 rounded-xl text-sm font-bold text-center">
                 </div>
@@ -211,7 +215,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // Removed Auth imports - using pure RTDB now
         import { getDatabase, ref, set, get, onValue, update, push, remove, serverTimestamp, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const config = {
@@ -227,29 +230,65 @@
         const app = initializeApp(config);
         const db = getDatabase(app);
 
-        // BALANCED ECONOMY
+        // BALANCED ECONOMY (Odds Array Mapping: [Common, Uncommon, Rare, Epic, Legendary, Mythic])
         const PACK_TYPES = {
-            Common: { price: 100, odds: [85, 12, 3, 0], max: 100, restockChance: 100 },
-            Rare: { price: 600, odds: [20, 65, 10, 5], max: 50, restockChance: 50 },
-            Epic: { price: 2500, odds: [0, 20, 70, 10], max: 15, restockChance: 25 },
-            Legendary: { price: 12000, odds: [0, 0, 30, 70], max: 5, restockChance: 10 }
+            Common: { price: 100, odds: [80, 15, 4, 1, 0, 0], max: 100, restockChance: 100 },
+            Uncommon: { price: 250, odds: [0, 80, 15, 4, 1, 0], max: 75, restockChance: 80 },
+            Rare: { price: 600, odds: [0, 0, 80, 15, 4, 1], max: 50, restockChance: 50 },
+            Epic: { price: 2500, odds: [0, 0, 0, 80, 15, 5], max: 15, restockChance: 25 },
+            Legendary: { price: 12000, odds: [0, 0, 0, 0, 80, 20], max: 5, restockChance: 10 },
+            Mythic: { price: 50000, odds: [0, 0, 0, 0, 0, 100], max: 2, restockChance: 5 }
         };
 
-        const CARD_VALUES = {
-            Common: 115,    
-            Rare: 700,      
-            Epic: 2900,     
-            Legendary: 15000 
-        };
-
+        // NEW: Minimum card value is explicitly 5-10% MORE than the pack price to guarantee profit!
+        // Exactly 5 Items Per Pool
         const CARD_LIBRARY = {
-            Common: ["Rust Core", "Iron Shield", "Neon Dagger"],
-            Rare: ["Silver Wyrm", "Crystal Eye", "Plasma Rifle"],
-            Epic: ["Void Reactor", "Phantom Cloak", "Meteor Strike"],
-            Legendary: ["Godslayer", "Infinity Prism", "Dark Matter"]
+            Common: [
+                { name: "Harry Maguire", value: 105, chanceInRarity: 40 },
+                { name: "Antony", value: 110, chanceInRarity: 30 },
+                { name: "Everton FC", value: 120, chanceInRarity: 15 },
+                { name: "Jordan Henderson", value: 130, chanceInRarity: 10 },
+                { name: "Kalvin Phillips", value: 150, chanceInRarity: 5 }
+            ],
+            Uncommon: [
+                { name: "Nicolas Jackson", value: 265, chanceInRarity: 40 },
+                { name: "Darwin Nunez", value: 280, chanceInRarity: 30 },
+                { name: "West Ham United", value: 300, chanceInRarity: 15 },
+                { name: "Timo Werner", value: 350, chanceInRarity: 10 },
+                { name: "Joao Felix", value: 400, chanceInRarity: 5 }
+            ],
+            Rare: [
+                { name: "Marcus Rashford", value: 630, chanceInRarity: 40 },
+                { name: "Ousmane Dembele", value: 660, chanceInRarity: 30 },
+                { name: "AC Milan", value: 750, chanceInRarity: 15 },
+                { name: "Trent Alexander-Arnold", value: 850, chanceInRarity: 10 },
+                { name: "Gabriel Jesus", value: 1000, chanceInRarity: 5 }
+            ],
+            Epic: [
+                { name: "Phil Foden", value: 2625, chanceInRarity: 40 },
+                { name: "Bukayo Saka", value: 2800, chanceInRarity: 30 },
+                { name: "Arsenal FC", value: 3200, chanceInRarity: 15 },
+                { name: "Jamal Musiala", value: 3800, chanceInRarity: 10 },
+                { name: "Jude Bellingham", value: 4500, chanceInRarity: 5 }
+            ],
+            Legendary: [
+                { name: "Kevin De Bruyne", value: 12600, chanceInRarity: 40 },
+                { name: "Mohamed Salah", value: 13500, chanceInRarity: 30 },
+                { name: "Bayern Munich", value: 15000, chanceInRarity: 15 },
+                { name: "Vinicius Jr", value: 18000, chanceInRarity: 10 },
+                { name: "Kylian Mbappe", value: 25000, chanceInRarity: 5 }
+            ],
+            Mythic: [
+                { name: "Erling Haaland", value: 52500, chanceInRarity: 40 },
+                { name: "Real Madrid", value: 56000, chanceInRarity: 30 },
+                { name: "Cristiano Ronaldo", value: 65000, chanceInRarity: 15 },
+                { name: "Lionel Messi", value: 80000, chanceInRarity: 10 },
+                { name: "Pele", value: 100000, chanceInRarity: 5 }
+            ]
         };
 
-        const MUTATIONS = ["Holo", "Glitched", "Cursed", "Radiant", "Golden"];
+        const MUTATIONS = ["In-Form", "Icon", "Team of the Year", "Signed Edition", "Match Worn"];
+        const RARITIES_ORDER = ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic"];
 
         let uid = null;
         let userData = null;
@@ -257,7 +296,6 @@
         let currentRobbery = null;
         let baseUnsubscribe = null; 
 
-        // Auto-login check on load
         window.onload = () => {
             const savedUid = localStorage.getItem('realm_uid') || sessionStorage.getItem('realm_uid');
             if(savedUid) {
@@ -276,7 +314,6 @@
             if(!u) return alert("Enter a username!");
             if(p.length < 3) return alert("Password too short!");
             
-            // Format to use as RTDB key cleanly
             const userId = u.toLowerCase().replace(/[^a-z0-9]/g, ''); 
             if(userId.length < 3) return alert("Username invalid! Use alphanumeric characters.");
 
@@ -322,7 +359,6 @@
         };
 
         function initGame() {
-            // INSTANT OFFLINE HOOK: The second the tab is closed, Firebase resets lastActive to 0
             const userActiveRef = ref(db, `users/${uid}/lastActive`);
             onDisconnect(userActiveRef).set(0);
 
@@ -330,7 +366,7 @@
                 userData = s.val();
                 if(!userData) return;
                 document.getElementById('ui-money').innerText = Math.floor(userData.money);
-                document.getElementById('ui-level').innerText = userData.level;
+                document.getElementById('ui-level').innerText = userData.level >= 100 ? "100 (MAX)" : userData.level;
                 renderInventory();
             });
 
@@ -365,32 +401,24 @@
             }
         }
 
-        // ==========================================
-        // UPDATED MUTATION LOGIC
-        // ==========================================
         async function triggerGlobalMutationWave() {
             try {
-                // 1. Fetch ALL users from the database to ensure everyone gets hit by the wave
                 const snap = await get(ref(db, 'users'));
                 if (!snap.exists()) return;
                 
                 let updates = {};
                 const allUsers = snap.val();
 
-                // 2. Iterate through every single user
                 Object.keys(allUsers).forEach(userId => {
                     const user = allUsers[userId];
                     
-                    // 3. Check if the user has an inventory
                     if (user.inventory) {
                         const cardIds = Object.keys(user.inventory);
                         
-                        // 4. If they have at least one card, pick EXACTLY ONE randomly
                         if (cardIds.length > 0) {
                             const randomId = cardIds[Math.floor(Math.random() * cardIds.length)];
                             const c = user.inventory[randomId];
                             
-                            // 5. Generate and apply the mutation to that specific card
                             const mutName = MUTATIONS[Math.floor(Math.random() * MUTATIONS.length)];
                             const bonus = Math.floor(Math.random() * 41) + 10; 
                             
@@ -398,13 +426,11 @@
                             if(!c.mutations) c.mutations = [];
                             c.mutations.push(`${mutName} (+${bonus}%)`);
                             
-                            // Queue the update for the database
                             updates[`users/${userId}/inventory/${randomId}`] = c;
                         }
                     }
                 });
 
-                // 6. Push all the mutated cards to the database at once
                 if(Object.keys(updates).length > 0) {
                     await update(ref(db, `/`), updates);
                 }
@@ -412,7 +438,6 @@
                 console.error("Mutation Error:", error);
             }
         }
-        // ==========================================
 
         window.buyPack = async (type) => {
             const pack = PACK_TYPES[type];
@@ -420,44 +445,68 @@
             if(!global.stocks || (global.stocks[type] || 0) <= 0) return alert("Out of stock!");
 
             let luck = (global.luckExpiry && Date.now() < global.luckExpiry) ? global.luckMult : 1;
-            
-            // WEIGHTED PROBABILITY
             let adjustedOdds = [...pack.odds];
             
             if (luck > 1) {
-                adjustedOdds[3] = (pack.odds[3] === 0 ? 0.2 : pack.odds[3]) * luck; 
-                adjustedOdds[2] = (pack.odds[2] === 0 ? 1.0 : pack.odds[2]) * luck;
-                adjustedOdds[1] = (pack.odds[1] === 0 ? 2.0 : pack.odds[1]) * luck;
+                for(let i = 1; i <= 5; i++) {
+                    adjustedOdds[i] = (pack.odds[i] === 0 ? (i * 0.5) : pack.odds[i]) * luck; 
+                }
             }
 
             let totalWeight = adjustedOdds.reduce((a, b) => a + b, 0);
             let roll = Math.random() * totalWeight;
             
             let rarity = "Common"; 
-            let baseChance = pack.odds[0];
-
-            if(roll < adjustedOdds[3]) { rarity = "Legendary"; baseChance = pack.odds[3] || 0.2; }
-            else if(roll < adjustedOdds[3] + adjustedOdds[2]) { rarity = "Epic"; baseChance = pack.odds[2] || 1.0; }
-            else if(roll < adjustedOdds[3] + adjustedOdds[2] + adjustedOdds[1]) { rarity = "Rare"; baseChance = pack.odds[1] || 2.0; }
-
-            const name = CARD_LIBRARY[rarity][Math.floor(Math.random() * CARD_LIBRARY[rarity].length)];
+            let rarityBaseChance = adjustedOdds[0];
+            let sum = 0;
             
-            const baseVal = CARD_VALUES[rarity];
-            const variance = Math.floor(baseVal * (Math.random() * 0.10 - 0.05));
-            const finalPrice = baseVal + variance;
+            // Loop from highest to lowest rarity checking the roll
+            for(let i = 5; i >= 0; i--) {
+                sum += adjustedOdds[i];
+                if(roll < sum) {
+                    rarity = RARITIES_ORDER[i];
+                    rarityBaseChance = pack.odds[i] || adjustedOdds[i];
+                    break;
+                }
+            }
 
+            // Pick specific card based on its own drop rate weight
+            const pool = CARD_LIBRARY[rarity];
+            let cardRoll = Math.random() * 100;
+            let sumChance = 0;
+            let selectedCard = pool[0];
+            
+            for(let i = 0; i < pool.length; i++) {
+                sumChance += pool[i].chanceInRarity;
+                if(cardRoll <= sumChance) {
+                    selectedCard = pool[i];
+                    break;
+                }
+            }
+
+            const name = selectedCard.name;
+            const finalPrice = selectedCard.value; 
+            const absoluteChance = ((rarityBaseChance / 100) * (selectedCard.chanceInRarity / 100) * 100).toFixed(2);
             const cardId = push(ref(db, `users/${uid}/inventory`)).key;
             
             await update(ref(db, `users/${uid}`), { money: userData.money - pack.price });
             await update(ref(db, `global/stocks`), { [type]: global.stocks[type] - 1 });
-            await set(ref(db, `users/${uid}/inventory/${cardId}`), { name, rarity, baseChance, price: finalPrice, mutations: [] });
+            await set(ref(db, `users/${uid}/inventory/${cardId}`), { name, rarity, baseChance: absoluteChance, price: finalPrice, mutations: [] });
         };
 
         window.rebirth = async () => {
+            if (userData.level >= 100) return alert("congrats u have beat the game!");
+
             const cost = userData.level * 20000;
             if(userData.money < cost) return alert(`Need $${cost} to Rebirth!`);
+            
             if(confirm(`Rebirth wipes deck & costs $${cost}. Proceed?`)) {
-                await update(ref(db, `users/${uid}`), { level: userData.level + 1, money: (userData.level + 1) * 500, inventory: null });
+                let nextLevel = userData.level + 1;
+                await update(ref(db, `users/${uid}`), { level: nextLevel, money: nextLevel * 500, inventory: null });
+                
+                if (nextLevel >= 100) {
+                    alert("congrats u have beat the game!");
+                }
             }
         };
 
@@ -551,7 +600,6 @@
                 Object.keys(users).forEach(k => {
                     if(k === uid) return;
                     const u = users[k];
-                    // 5000ms threshold for connection loss check
                     const isOnline = u.lastActive > 0 && (Date.now() - u.lastActive) < 5000;
                     html += `
                         <div onclick="${isOnline ? `openBase('${k}', '${u.username}')` : `alert('Offline!')`}" class="flex-shrink-0 flex flex-col items-center opacity-${isOnline ? '100' : '40'} cursor-pointer hover:scale-105 transition-transform">
@@ -620,21 +668,43 @@
 
         window.submitMath = async () => {
             const val = parseInt(document.getElementById('math-input').value);
-            if(val === currentRobbery.answer) {
-                const snap = await get(ref(db, `robberies/${currentRobbery.targetId}`));
-                if(snap.exists() && snap.val().status !== 'solved') {
-                    await update(ref(db, `robberies/${currentRobbery.targetId}`), { status: 'solved', winner: uid });
-                    if(currentRobbery.robberId === uid) {
-                        const cSnap = await get(ref(db, `users/${currentRobbery.targetId}/inventory/${currentRobbery.cardId}`));
-                        if(cSnap.exists()) { await push(ref(db, `users/${uid}/inventory`), cSnap.val()); await remove(ref(db, `users/${currentRobbery.targetId}/inventory/${currentRobbery.cardId}`)); alert("Extracted Successfully!"); }
-                    } else alert("Firewall secured! Card saved.");
-                } else alert("Too slow!");
-            } else { alert("Incorrect!"); document.getElementById('math-input').value = ''; return; }
-            await remove(ref(db, `robberies/${currentRobbery.targetId}`));
+            
+            if (val !== currentRobbery.answer) {
+                alert("Incorrect!");
+                document.getElementById('math-input').value = '';
+                return;
+            }
+
+            const snap = await get(ref(db, `robberies/${currentRobbery.targetId}`));
+            
+            if (snap.exists() && snap.val().status !== 'solved') {
+                await update(ref(db, `robberies/${currentRobbery.targetId}`), { status: 'solved', winner: uid });
+                
+                if (currentRobbery.robberId === uid) {
+                    const cSnap = await get(ref(db, `users/${currentRobbery.targetId}/inventory/${currentRobbery.cardId}`));
+                    if(cSnap.exists()) { 
+                        await push(ref(db, `users/${uid}/inventory`), cSnap.val()); 
+                        await remove(ref(db, `users/${currentRobbery.targetId}/inventory/${currentRobbery.cardId}`)); 
+                        alert("Extracted Successfully!"); 
+                    } else {
+                        alert("Card not found. It may have already been sold or moved.");
+                    }
+                } else {
+                    alert("Firewall secured! Card saved.");
+                }
+                
+                await remove(ref(db, `robberies/${currentRobbery.targetId}`));
+            } else {
+                if (currentRobbery.robberId === uid) {
+                    alert("Too late! The defender solved the encryption first. The card is saved.");
+                } else {
+                    alert("Too late! The attacker bypassed the firewall first. Your card was stolen!");
+                }
+            }
+            
             document.getElementById('view-math').classList.add('hide');
         };
 
-        // --- ADMIN & UI UPDATES ---
         window.handleAdmin = () => { if(prompt("Passcode:") === "555") document.getElementById('view-admin').classList.remove('hide'); };
         window.closeAdmin = () => document.getElementById('view-admin').classList.add('hide');
         
