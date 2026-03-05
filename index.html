@@ -241,6 +241,15 @@
         const app = initializeApp(config);
         const db = getDatabase(app);
 
+        // Helper function to format numbers
+        window.formatNumber = (num) => {
+            if (num >= 1000000000000) return (num / 1000000000000).toFixed(1).replace(/\.0$/, '') + 'T';
+            if (num >= 1000000000) return (num / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
+            if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+            return num.toString();
+        };
+
         // ECONOMY
         const PACK_TYPES = {
             Common: { price: 100, odds: [80, 15, 4, 1, 0, 0], max: 100, restockChance: 100 },
@@ -381,7 +390,7 @@
             onValue(ref(db, `users/${uid}`), s => {
                 userData = s.val();
                 if(!userData) return;
-                document.getElementById('ui-money').innerText = Math.floor(userData.money);
+                document.getElementById('ui-money').innerText = window.formatNumber(Math.floor(userData.money));
                 document.getElementById('ui-level').innerText = userData.level >= 100 ? "100 (MAX)" : userData.level;
                 renderInventory();
                 renderPowersUI(); 
@@ -530,9 +539,9 @@
             if (userData.level >= 100) return alert("congrats u have beat the game!");
 
             const cost = userData.level * 20000;
-            if(userData.money < cost) return alert(`Need $${cost} to Rebirth!`);
+            if(userData.money < cost) return alert(`Need $${window.formatNumber(cost)} to Rebirth!`);
             
-            if(confirm(`Rebirth wipes deck & costs $${cost}. Proceed?`)) {
+            if(confirm(`Rebirth wipes deck & costs $${window.formatNumber(cost)}. Proceed?`)) {
                 let nextLevel = userData.level + 1;
                 await update(ref(db, `users/${uid}`), { level: nextLevel, money: nextLevel * 500, inventory: null });
                 if (nextLevel >= 100) alert("congrats u have beat the game!");
@@ -563,7 +572,7 @@
 
             if(soldCount === 0) return alert(`No cards available to sell! (${skippedCount} cards still on 30-sec cooldown)`);
 
-            let msg = `Sell ${soldCount} cards for $${totalValue}?`;
+            let msg = `Sell ${soldCount} cards for $${window.formatNumber(totalValue)}?`;
             if (skippedCount > 0) msg += `\n(${skippedCount} cards skipped due to 30-sec cooldown)`;
 
             if(confirm(msg)) {
@@ -580,7 +589,7 @@
                 html += `
                     <div onclick="buyPower('${k}')" class="bg-blue-900/20 p-3 rounded-xl border border-blue-500/20 active:scale-95 transition-transform text-center cursor-pointer hover:bg-blue-900/40">
                         <p class="text-[9px] font-black text-blue-400 uppercase tracking-widest">${p.name}</p>
-                        <p class="text-sm font-black text-white mt-1">$${p.price}</p>
+                        <p class="text-sm font-black text-white mt-1">$${window.formatNumber(p.price)}</p>
                         <p class="text-[9px] mt-1 text-zinc-400 font-bold">OWNED: ${owned}</p>
                     </div>
                 `;
@@ -596,7 +605,7 @@
                     <div onclick="buyPack('${k}')" class="bg-zinc-900/80 p-5 rounded-2xl border border-white/5 active:scale-95 transition-transform relative overflow-hidden cursor-pointer">
                         <div class="absolute -right-4 -bottom-4 opacity-10 text-6xl font-black">${k[0]}</div>
                         <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">${k}</p>
-                        <p class="text-2xl font-black text-white mt-1">$${PACK_TYPES[k].price}</p>
+                        <p class="text-2xl font-black text-white mt-1">$${window.formatNumber(PACK_TYPES[k].price)}</p>
                         <p class="text-[10px] mt-3 ${stock > 0 ? 'text-green-400' : 'text-red-500'} font-bold">STOCK: ${stock}</p>
                     </div>
                 `;
@@ -623,7 +632,7 @@
                             </div>
                             <div class="bg-black/40 backdrop-blur-sm p-2 rounded-lg border border-white/10 text-center">
                                 <p class="text-[10px] text-zinc-300 font-bold uppercase mb-0.5">Value</p>
-                                <p class="text-sm font-black text-yellow-400">$${c.price}</p>
+                                <p class="text-sm font-black text-yellow-400">$${window.formatNumber(c.price)}</p>
                             </div>
                         </div>
                     `;
@@ -641,7 +650,7 @@
             document.getElementById('det-card-visual').className = `w-32 h-44 mx-auto rounded-xl mb-4 shadow-2xl border border-white/20 card-${c.rarity}`;
             document.getElementById('det-name').innerText = c.name;
             document.getElementById('det-rarity').innerText = c.rarity;
-            document.getElementById('det-price').innerText = `$${c.price}`;
+            document.getElementById('det-price').innerText = `$${window.formatNumber(c.price)}`;
             document.getElementById('det-chance').innerText = `${c.baseChance}%`;
             
             const mutDiv = document.getElementById('det-mutations');
