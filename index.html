@@ -606,7 +606,7 @@
             
             Object.keys(userData.inventory).forEach(id => {
                 const card = userData.inventory[id];
-                const cd = (card.acquiredAt || 0) + 30000 - Date.now();
+                const cd = (card.acquiredAt || 0) + 15000 - Date.now();
                 
                 if (cd <= 0) {
                     totalValue += card.price;
@@ -705,7 +705,7 @@
             mutDiv.innerHTML = (c.mutations && c.mutations.length > 0) ? c.mutations.map(m => `<div>✦ ${m}</div>`).join('') : "None";
 
             const updateSellButton = () => {
-                const cd = (c.acquiredAt || 0) + 30000 - Date.now();
+                const cd = (c.acquiredAt || 0) + 15000 - Date.now();
                 const btn = document.getElementById('det-sell-btn');
                 
                 if (cd > 0) {
@@ -837,7 +837,7 @@
 
         window.startSteal = async (targetId, cardId, cardName) => {
             const now = Date.now();
-            if(now - (userData.lastStealTime || 0) < 300000) return alert("Cooldown active!");
+            if(now - (userData.lastStealTime || 0) < 150000) return alert("Cooldown active!");
             
             const isPlus = Math.random() > 0.5;
             let n1 = Math.floor(Math.random() * 50) + 10; let n2 = Math.floor(Math.random() * 50) + 10;
@@ -963,7 +963,7 @@
             document.getElementById('ui-mut-timer').innerText = `${Math.floor(mut/60)}:${(mut%60).toString().padStart(2,'0')}`;
 
             if(userData) {
-                const cd = Math.max(0, Math.floor(((userData.lastStealTime||0) + 300000 - Date.now())/1000));
+                const cd = Math.max(0, Math.floor(((userData.lastStealTime||0) + 150000 - Date.now())/1000));
                 document.getElementById('ui-steal-cd').innerText = cd > 0 ? `${Math.floor(cd/60)}:${(cd%60).toString().padStart(2,'0')}` : "READY";
                 document.getElementById('ui-steal-cd').className = cd > 0 ? "text-lg font-black text-red-500" : "text-lg font-black text-green-400";
             }
