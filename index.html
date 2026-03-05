@@ -429,11 +429,11 @@
             if(!global.nextRestock || now > global.nextRestock) {
                 const stocks = {};
                 Object.keys(PACK_TYPES).forEach(k => stocks[k] = (Math.random()*100 < PACK_TYPES[k].restockChance) ? PACK_TYPES[k].max : 0);
-                update(ref(db, `global`), { stocks, nextRestock: now + (5 * 60000) });
+                update(ref(db, `global`), { stocks, nextRestock: now + (4.5 * 60000) });
             }
             if(!global.nextMutation || now > global.nextMutation) {
                 triggerGlobalMutationWave();
-                update(ref(db, `global`), { nextMutation: now + (5 * 60000) });
+                update(ref(db, `global`), { nextMutation: now + (4.5 * 60000) });
             }
         }
 
