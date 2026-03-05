@@ -191,6 +191,14 @@
         <div class="space-y-4 overflow-y-auto bg-black p-4 rounded-2xl border border-red-900/30 pb-20">
             
             <div class="flex flex-col gap-2 bg-zinc-900 border border-white/10 p-4 rounded-xl">
+                <p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Stealing Control</p>
+                <div class="flex gap-2">
+                    <button onclick="adminSetStealing(true)" class="w-1/2 bg-green-900/50 border border-green-500/50 text-green-400 p-3 rounded-xl text-xs font-bold active:scale-95">ENABLE</button>
+                    <button onclick="adminSetStealing(false)" class="w-1/2 bg-red-900/50 border border-red-500/50 text-red-400 p-3 rounded-xl text-xs font-bold active:scale-95">DISABLE</button>
+                </div>
+            </div>
+            
+            <div class="flex flex-col gap-2 bg-zinc-900 border border-white/10 p-4 rounded-xl">
                 <p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Specific Restock</p>
                 <div class="flex gap-2">
                     <select id="admin-pack-type" class="w-1/2 p-3 rounded-xl text-sm font-bold bg-black text-white border border-white/10 outline-none">
@@ -429,11 +437,11 @@
             if(!global.nextRestock || now > global.nextRestock) {
                 const stocks = {};
                 Object.keys(PACK_TYPES).forEach(k => stocks[k] = (Math.random()*100 < PACK_TYPES[k].restockChance) ? PACK_TYPES[k].max : 0);
-                update(ref(db, `global`), { stocks, nextRestock: now + (4.5 * 60000) });
+                update(ref(db, `global`), { stocks, nextRestock: now + (5 * 60000) });
             }
             if(!global.nextMutation || now > global.nextMutation) {
                 triggerGlobalMutationWave();
-                update(ref(db, `global`), { nextMutation: now + (4.5 * 60000) });
+                update(ref(db, `global`), { nextMutation: now + (5 * 60000) });
             }
         }
 
@@ -496,15 +504,14 @@
             let luck = (global.luckExpiry && Date.now() < global.luckExpiry) ? global.luckMult : 1;
             let adjustedOdds = [...pack.odds];
             
-            // NEW LUCK LOGIC: Only boosts existing drops, ignores 0% chances.
             if (luck > 1) {
                 let foundBase = false;
                 for(let i = 0; i < RARITIES_ORDER.length; i++) {
                     if (pack.odds[i] > 0) {
                         if (!foundBase) {
-                            foundBase = true; // The most common card in this pack. Leave its weight alone.
+                            foundBase = true; 
                         } else {
-                            adjustedOdds[i] = pack.odds[i] * luck; // Multiplies the weights of rarer cards
+                            adjustedOdds[i] = pack.odds[i] * luck; 
                         }
                     }
                 }
@@ -514,7 +521,7 @@
             let roll = Math.random() * totalWeight;
             
             let rarity = "Common"; 
-            let rarityBaseChance = 100; // Will be calculated dynamically
+            let rarityBaseChance = 100; 
             let sum = 0;
             
             for(let i = RARITIES_ORDER.length - 1; i >= 0; i--) {
@@ -606,7 +613,7 @@
             
             Object.keys(userData.inventory).forEach(id => {
                 const card = userData.inventory[id];
-                const cd = (card.acquiredAt || 0) + 15000 - Date.now();
+                const cd = (card.acquiredAt || 0) + 30000 - Date.now();
                 
                 if (cd <= 0) {
                     totalValue += card.price;
@@ -705,7 +712,7 @@
             mutDiv.innerHTML = (c.mutations && c.mutations.length > 0) ? c.mutations.map(m => `<div>✦ ${m}</div>`).join('') : "None";
 
             const updateSellButton = () => {
-                const cd = (c.acquiredAt || 0) + 15000 - Date.now();
+                const cd = (c.acquiredAt || 0) + 30000 - Date.now();
                 const btn = document.getElementById('det-sell-btn');
                 
                 if (cd > 0) {
@@ -836,8 +843,11 @@
         };
 
         window.startSteal = async (targetId, cardId, cardName) => {
+            // Check if stealing has been disabled globally
+            if (global.stealingEnabled === false) return alert("STEALING IS DISABLED IN ADMIN ABUSE");
+
             const now = Date.now();
-            if(now - (userData.lastStealTime || 0) < 150000) return alert("Cooldown active!");
+            if(now - (userData.lastStealTime || 0) < 300000) return alert("Cooldown active!");
             
             const isPlus = Math.random() > 0.5;
             let n1 = Math.floor(Math.random() * 50) + 10; let n2 = Math.floor(Math.random() * 50) + 10;
@@ -902,6 +912,11 @@
         window.handleAdmin = () => { if(prompt("Passcode:") === "555") document.getElementById('view-admin').classList.remove('hide'); };
         window.closeAdmin = () => document.getElementById('view-admin').classList.add('hide');
         
+        window.adminSetStealing = async (enabled) => {
+            await update(ref(db, `global`), { stealingEnabled: enabled });
+            alert(`Stealing has been ${enabled ? 'ENABLED' : 'DISABLED'}.`);
+        };
+
         window.adminRestockAll = () => { 
             let s = {}; Object.keys(PACK_TYPES).forEach(k => s[k] = PACK_TYPES[k].max); update(ref(db, `global/stocks`), s); 
             alert("All packs force restocked to MAX!");
@@ -963,7 +978,7 @@
             document.getElementById('ui-mut-timer').innerText = `${Math.floor(mut/60)}:${(mut%60).toString().padStart(2,'0')}`;
 
             if(userData) {
-                const cd = Math.max(0, Math.floor(((userData.lastStealTime||0) + 150000 - Date.now())/1000));
+                const cd = Math.max(0, Math.floor(((userData.lastStealTime||0) + 300000 - Date.now())/1000));
                 document.getElementById('ui-steal-cd').innerText = cd > 0 ? `${Math.floor(cd/60)}:${(cd%60).toString().padStart(2,'0')}` : "READY";
                 document.getElementById('ui-steal-cd').className = cd > 0 ? "text-lg font-black text-red-500" : "text-lg font-black text-green-400";
             }
