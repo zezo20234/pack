@@ -584,13 +584,13 @@
             if (level < 70) return "PS5"; 
             if (level < 85) return "Lionel Messi";
             if (level < 95) return "Pele";
-            return "AT7ADDAK TO GET"; 
+            return "AT7ADDAK"; 
         };
 
         window.rebirth = async () => {
             if (userData.level >= 100) return alert("Congrats, you have beat the game!");
 
-            const cost = userData.level * 20000;
+            const cost = userData.level * 25000;
             const reqCard = getRequiredRebirthCard(userData.level);
             
             let hasCard = false;
