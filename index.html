@@ -34,6 +34,7 @@
         .card-Epic { background: linear-gradient(135deg, #9333ea, #581c87); border: 2px solid #c084fc; box-shadow: inset 0 0 20px rgba(192,132,252,0.3), 0 0 15px rgba(147,51,234,0.5); }
         .card-Legendary { background: linear-gradient(135deg, #d97706, #78350f); border: 2px solid #fde047; box-shadow: inset 0 0 30px rgba(253,224,71,0.4), 0 0 20px rgba(234,179,8,0.6); }
         .card-Mythic { background: linear-gradient(135deg, #e11d48, #881337); border: 2px solid #fb7185; box-shadow: inset 0 0 30px rgba(251,113,133,0.4), 0 0 20px rgba(225,29,72,0.6); }
+        .card-Shabab { background: linear-gradient(135deg, #ec4899, #831843); border: 2px solid #f472b6; box-shadow: inset 0 0 30px rgba(244,114,182,0.4), 0 0 20px rgba(236,72,153,0.6); }
         
         .glass-panel { background: rgba(10,10,10,0.85); backdrop-filter: blur(15px); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -199,6 +200,7 @@
                         <option value="Epic">Epic</option>
                         <option value="Legendary">Legendary</option>
                         <option value="Mythic">Mythic</option>
+                        <option value="ShababElBomb">ShababElBomb</option>
                     </select>
                     <input type="number" id="admin-pack-qty" placeholder="Qty" class="w-1/2 p-3 rounded-xl text-sm font-bold text-center">
                 </div>
@@ -252,12 +254,13 @@
 
         // ECONOMY
         const PACK_TYPES = {
-            Common: { price: 100, odds: [80, 15, 4, 1, 0, 0], max: 100, restockChance: 100 },
-            Uncommon: { price: 250, odds: [0, 80, 15, 4, 1, 0], max: 75, restockChance: 80 },
-            Rare: { price: 600, odds: [0, 0, 80, 15, 4, 1], max: 50, restockChance: 50 },
-            Epic: { price: 2500, odds: [0, 0, 0, 80, 15, 5], max: 15, restockChance: 25 },
-            Legendary: { price: 12000, odds: [0, 0, 0, 0, 80, 20], max: 5, restockChance: 10 },
-            Mythic: { price: 50000, odds: [0, 0, 0, 0, 0, 100], max: 2, restockChance: 5 }
+            Common: { price: 100, odds: [80, 15, 4, 1, 0, 0, 0], max: 100, restockChance: 100 },
+            Uncommon: { price: 250, odds: [0, 80, 15, 4, 1, 0, 0], max: 75, restockChance: 80 },
+            Rare: { price: 600, odds: [0, 0, 80, 15, 4, 1, 0], max: 50, restockChance: 50 },
+            Epic: { price: 2500, odds: [0, 0, 0, 80, 15, 5, 0], max: 15, restockChance: 25 },
+            Legendary: { price: 12000, odds: [0, 0, 0, 0, 80, 20, 0], max: 5, restockChance: 10 },
+            Mythic: { price: 50000, odds: [0, 0, 0, 0, 0, 100, 0], max: 2, restockChance: 5 },
+            ShababElBomb: { price: 100000, odds: [0, 0, 0, 0, 0, 0, 100], max: 1, restockChance: 2.5 }
         };
 
         const POWERS = {
@@ -307,12 +310,19 @@
                 { name: "Real Madrid", value: 56000, chanceInRarity: 30 },
                 { name: "Cristiano Ronaldo", value: 65000, chanceInRarity: 15 },
                 { name: "Lionel Messi", value: 80000, chanceInRarity: 10 },
-                { name: "Pele", value: 100000, chanceInRarity: 5 }
+                { name: "DIEGO JOTA", value: 100000, chanceInRarity: 5 }
+            ],
+            Shabab: [
+                { name: "3amer", value: 2500, chanceInRarity: 40 },
+                { name: "istira7a", value: 4000, chanceInRarity: 30 },
+                { name: "rotana khaleej", value: 8000, chanceInRarity: 15 },
+                { name: "PS5", value: 15000, chanceInRarity: 10 },
+                { name: "AT7ADDAK", value: 30000, chanceInRarity: 5 }
             ]
         };
 
         const MUTATIONS = ["In-Form", "Icon", "Team of the Year", "Signed Edition", "Match Worn"];
-        const RARITIES_ORDER = ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic"];
+        const RARITIES_ORDER = ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Shabab"];
 
         let uid = null;
         let userData = null;
@@ -486,9 +496,17 @@
             let luck = (global.luckExpiry && Date.now() < global.luckExpiry) ? global.luckMult : 1;
             let adjustedOdds = [...pack.odds];
             
+            // NEW LUCK LOGIC: Only boosts existing drops, ignores 0% chances.
             if (luck > 1) {
-                for(let i = 1; i <= 5; i++) {
-                    adjustedOdds[i] = (pack.odds[i] === 0 ? (i * 0.5) : pack.odds[i]) * luck; 
+                let foundBase = false;
+                for(let i = 0; i < RARITIES_ORDER.length; i++) {
+                    if (pack.odds[i] > 0) {
+                        if (!foundBase) {
+                            foundBase = true; // The most common card in this pack. Leave its weight alone.
+                        } else {
+                            adjustedOdds[i] = pack.odds[i] * luck; // Multiplies the weights of rarer cards
+                        }
+                    }
                 }
             }
 
@@ -496,14 +514,14 @@
             let roll = Math.random() * totalWeight;
             
             let rarity = "Common"; 
-            let rarityBaseChance = adjustedOdds[0];
+            let rarityBaseChance = 100; // Will be calculated dynamically
             let sum = 0;
             
-            for(let i = 5; i >= 0; i--) {
+            for(let i = RARITIES_ORDER.length - 1; i >= 0; i--) {
                 sum += adjustedOdds[i];
                 if(roll < sum) {
                     rarity = RARITIES_ORDER[i];
-                    rarityBaseChance = pack.odds[i] || adjustedOdds[i];
+                    rarityBaseChance = (adjustedOdds[i] / totalWeight) * 100;
                     break;
                 }
             }
@@ -535,16 +553,46 @@
             });
         };
 
+        window.getRequiredRebirthCard = (level) => {
+            if (level < 3) return "Harry Maguire";
+            if (level < 6) return "Nicolas Jackson";
+            if (level < 10) return "Marcus Rashford";
+            if (level < 15) return "3amer"; 
+            if (level < 20) return "Phil Foden";
+            if (level < 25) return "istira7a"; 
+            if (level < 35) return "Kevin De Bruyne";
+            if (level < 45) return "rotana khaleej"; 
+            if (level < 55) return "Erling Haaland";
+            if (level < 70) return "PS5"; 
+            if (level < 85) return "Lionel Messi";
+            if (level < 95) return "Pele";
+            return "AT7ADDAK TO GET"; 
+        };
+
         window.rebirth = async () => {
-            if (userData.level >= 100) return alert("congrats u have beat the game!");
+            if (userData.level >= 100) return alert("Congrats, you have beat the game!");
 
             const cost = userData.level * 20000;
-            if(userData.money < cost) return alert(`Need $${window.formatNumber(cost)} to Rebirth!`);
+            const reqCard = getRequiredRebirthCard(userData.level);
             
-            if(confirm(`Rebirth wipes deck & costs $${window.formatNumber(cost)}. Proceed?`)) {
+            let hasCard = false;
+            if (userData.inventory) {
+                hasCard = Object.values(userData.inventory).some(c => c.name === reqCard);
+            }
+
+            if (userData.money < cost || !hasCard) {
+                return alert(
+                    `To Rebirth to Level ${userData.level + 1}, you need:\n` +
+                    `- $${window.formatNumber(cost)}\n` +
+                    `- The specific card: "${reqCard}"\n\n` +
+                    `You currently have $${window.formatNumber(userData.money)} and ${hasCard ? 'DO' : 'DO NOT'} have the required card in your deck.`
+                );
+            }
+            
+            if (confirm(`Rebirth will consume your $${window.formatNumber(cost)} AND your entire deck (including your "${reqCard}"). Proceed?`)) {
                 let nextLevel = userData.level + 1;
                 await update(ref(db, `users/${uid}`), { level: nextLevel, money: nextLevel * 500, inventory: null });
-                if (nextLevel >= 100) alert("congrats u have beat the game!");
+                if (nextLevel >= 100) alert("Congrats, you have beat the game!");
             }
         };
 
@@ -558,7 +606,6 @@
             
             Object.keys(userData.inventory).forEach(id => {
                 const card = userData.inventory[id];
-                // CHANGED: 30 seconds cooldown (30000ms)
                 const cd = (card.acquiredAt || 0) + 30000 - Date.now();
                 
                 if (cd <= 0) {
@@ -601,10 +648,11 @@
             let html = '';
             Object.keys(PACK_TYPES).forEach(k => {
                 const stock = (global.stocks && global.stocks[k]) || 0;
+                const titleStyle = k === "ShababElBomb" ? "text-pink-500 font-black drop-shadow-md" : "text-zinc-500";
                 html += `
                     <div onclick="buyPack('${k}')" class="bg-zinc-900/80 p-5 rounded-2xl border border-white/5 active:scale-95 transition-transform relative overflow-hidden cursor-pointer">
                         <div class="absolute -right-4 -bottom-4 opacity-10 text-6xl font-black">${k[0]}</div>
-                        <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">${k}</p>
+                        <p class="text-[10px] font-black uppercase tracking-widest ${titleStyle}">${k}</p>
                         <p class="text-2xl font-black text-white mt-1">$${window.formatNumber(PACK_TYPES[k].price)}</p>
                         <p class="text-[10px] mt-3 ${stock > 0 ? 'text-green-400' : 'text-red-500'} font-bold">STOCK: ${stock}</p>
                     </div>
@@ -657,7 +705,6 @@
             mutDiv.innerHTML = (c.mutations && c.mutations.length > 0) ? c.mutations.map(m => `<div>✦ ${m}</div>`).join('') : "None";
 
             const updateSellButton = () => {
-                // CHANGED: 30 seconds cooldown
                 const cd = (c.acquiredAt || 0) + 30000 - Date.now();
                 const btn = document.getElementById('det-sell-btn');
                 
@@ -921,7 +968,6 @@
                 document.getElementById('ui-steal-cd').className = cd > 0 ? "text-lg font-black text-red-500" : "text-lg font-black text-green-400";
             }
 
-            // Dynamically update the shield timers so they tick down without a page refresh
             document.querySelectorAll('.shield-timer').forEach(el => {
                 const until = parseInt(el.getAttribute('data-until'));
                 if (until > Date.now()) {
