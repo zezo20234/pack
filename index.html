@@ -254,11 +254,11 @@
 
         // ECONOMY
         const PACK_TYPES = {
-            Common: { price: 100, odds: [80, 15, 4, 1, 0, 0, 0], max: 100, restockChance: 100 },
-            Uncommon: { price: 250, odds: [0, 80, 15, 4, 1, 0, 0], max: 75, restockChance: 80 },
-            Rare: { price: 600, odds: [0, 0, 80, 15, 4, 1, 0], max: 50, restockChance: 50 },
-            Epic: { price: 2500, odds: [0, 0, 0, 80, 15, 5, 0], max: 15, restockChance: 25 },
-            Legendary: { price: 12000, odds: [0, 0, 0, 0, 80, 20, 0], max: 5, restockChance: 10 },
+            Common: { price: 100, odds: [100, 0, 0, 0, 0, 0, 0], max: 100, restockChance: 100 },
+            Uncommon: { price: 250, odds: [0, 100, 0, 0, 0, 0, 0], max: 75, restockChance: 80 },
+            Rare: { price: 600, odds: [0, 0, 100, 0, 0, 0, 0], max: 50, restockChance: 50 },
+            Epic: { price: 2500, odds: [0, 0, 0, 100, 0, 0, 0], max: 15, restockChance: 25 },
+            Legendary: { price: 12000, odds: [0, 0, 0, 0, 100, 0, 0], max: 5, restockChance: 10 },
             Mythic: { price: 50000, odds: [0, 0, 0, 0, 0, 100, 0], max: 2, restockChance: 5 },
             ShababElBomb: { price: 100000, odds: [0, 0, 0, 0, 0, 0, 100], max: 1, restockChance: 2.5 }
         };
@@ -429,11 +429,11 @@
             if(!global.nextRestock || now > global.nextRestock) {
                 const stocks = {};
                 Object.keys(PACK_TYPES).forEach(k => stocks[k] = (Math.random()*100 < PACK_TYPES[k].restockChance) ? PACK_TYPES[k].max : 0);
-                update(ref(db, `global`), { stocks, nextRestock: now + (4.5 * 60000) });
+                update(ref(db, `global`), { stocks, nextRestock: now + (5 * 60000) });
             }
             if(!global.nextMutation || now > global.nextMutation) {
                 triggerGlobalMutationWave();
-                update(ref(db, `global`), { nextMutation: now + (4.5 * 60000) });
+                update(ref(db, `global`), { nextMutation: now + (5 * 60000) });
             }
         }
 
