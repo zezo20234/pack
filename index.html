@@ -100,9 +100,9 @@
 
             <section>
                 <div class="flex justify-between items-end mb-3 px-1">
-                    <h2 class="font-black text-sm tracking-widest text-blue-400">POWER SHOP</h2>
+                    <h2 class="font-black text-sm tracking-widest text-blue-400">POWER SHOP (MAX 5)</h2>
                 </div>
-                <div id="ui-powers" class="grid grid-cols-3 gap-2"></div>
+                <div id="ui-powers" class="grid grid-cols-2 gap-2"></div>
             </section>
 
             <section>
@@ -177,9 +177,13 @@
         <div class="w-full max-w-md bg-red-950/40 p-8 rounded-3xl border border-red-900/50 shadow-[0_0_50px_rgba(220,38,38,0.2)]">
             <h2 class="text-3xl font-black text-red-500 mb-2 tracking-tighter">FIREWALL DETECTED</h2>
             <p class="text-sm text-red-400/80 mb-8 font-medium">Solve the encryption to proceed:</p>
-            <p id="ui-math-eq" class="text-6xl font-black mb-10 tracking-widest text-white drop-shadow-lg">-- ? --</p>
-            <input type="number" id="math-input" class="w-full p-5 rounded-2xl text-4xl font-black text-center outline-none mb-4 bg-black/50 border-red-900/50 focus:border-red-500 placeholder:text-zinc-700">
-            <button onclick="submitMath()" class="w-full bg-red-600 text-white p-5 rounded-2xl font-black text-xl active:scale-95 transition-transform shadow-lg shadow-red-600/30">BYPASS</button>
+            <p id="ui-math-eq" class="text-6xl font-black mb-10 tracking-widest text-white drop-shadow-lg transition-all duration-300">-- ? --</p>
+            <input type="number" id="math-input" class="w-full p-5 rounded-2xl text-4xl font-black text-center outline-none mb-4 bg-black/50 border-red-900/50 focus:border-red-500 placeholder:text-zinc-700 disabled:opacity-50">
+            <button id="math-submit-btn" onclick="submitMath()" class="w-full bg-red-600 text-white p-5 rounded-2xl font-black text-xl active:scale-95 transition-transform shadow-lg shadow-red-600/30 disabled:opacity-50 disabled:active:scale-100">BYPASS</button>
+            
+            <div id="math-powers-container" class="mt-4 flex flex-col gap-2 hide">
+                <button id="btn-use-blind" class="w-full bg-purple-600 border border-purple-400 text-white p-4 rounded-xl font-black text-lg active:scale-95 transition-transform shadow-[0_0_20px_rgba(147,51,234,0.4)]">USE BLIND 5s</button>
+            </div>
         </div>
     </div>
 
@@ -274,8 +278,10 @@
         const POWERS = {
             shield10: { name: "10m Defend", duration: 10, price: 5000 },
             shield30: { name: "30m Defend", duration: 30, price: 10000 },
-            shield60: { name: "1hr Defend", duration: 60, price: 15000 }
+            shield60: { name: "1hr Defend", duration: 60, price: 15000 },
+            blind5:   { name: "Blind 5s", duration: 5, price: 100000 } // NEW POWER
         };
+        const MAX_POWER_LIMIT = 5;
 
         const CARD_LIBRARY = {
             Common: [
@@ -335,7 +341,12 @@
         let uid = null;
         let userData = null;
         let global = {};
+        
+        // Math Challenge Variables
         let currentRobbery = null;
+        let activeRobberyUnsub = null;
+        let blindTimeout = null;
+        
         let baseUnsubscribe = null; 
         let detailsInterval = null; 
 
@@ -413,10 +424,8 @@
                 renderInventory();
                 renderPowersUI(); 
 
-                // NEW: Admin button check
                 const sysBtn = document.getElementById('btn-sys');
                 if (sysBtn) {
-                    // Check if the current user's username is 'zezo' (case-insensitive)
                     if (userData.username && userData.username.toLowerCase() === 'zezo') {
                         sysBtn.classList.remove('hide');
                     } else {
@@ -433,8 +442,13 @@
 
             onValue(ref(db, `users`), s => renderUserBar(s.val()));
 
+            // DEFENDER listens globally to robberies against them
             onValue(ref(db, `robberies/${uid}`), s => {
-                if(s.exists()) triggerMathChallenge(s.val(), s.key);
+                if(s.exists()) {
+                    triggerMathChallenge(s.val(), s.key);
+                } else {
+                    closeMathChallenge();
+                }
             });
 
             setInterval(() => {
@@ -466,10 +480,8 @@
 
                 Object.keys(allUsers).forEach(userId => {
                     const user = allUsers[userId];
-                    
                     if (user.inventory) {
                         const cardIds = Object.keys(user.inventory);
-                        
                         if (cardIds.length > 0) {
                             const randomId = cardIds[Math.floor(Math.random() * cardIds.length)];
                             const c = user.inventory[randomId];
@@ -496,9 +508,10 @@
 
         window.buyPower = async (key) => {
             const p = POWERS[key];
-            if(userData.money < p.price) return alert("Insufficient funds!");
-            
             const currentCount = (userData.powers && userData.powers[key]) ? userData.powers[key] : 0;
+            
+            if(currentCount >= MAX_POWER_LIMIT) return alert(`You reached the max limit (${MAX_POWER_LIMIT}) for this power!`);
+            if(userData.money < p.price) return alert("Insufficient funds!");
             
             let updates = {};
             updates[`users/${uid}/money`] = userData.money - p.price;
@@ -651,11 +664,17 @@
             Object.keys(POWERS).forEach(k => {
                 const p = POWERS[k];
                 const owned = (userData && userData.powers && userData.powers[k]) ? userData.powers[k] : 0;
+                
+                // Style the blind button slightly differently to distinguish it
+                const styleClass = k === 'blind5' 
+                    ? 'bg-purple-900/20 border-purple-500/20 hover:bg-purple-900/40 text-purple-400' 
+                    : 'bg-blue-900/20 border-blue-500/20 hover:bg-blue-900/40 text-blue-400';
+
                 html += `
-                    <div onclick="buyPower('${k}')" class="bg-blue-900/20 p-3 rounded-xl border border-blue-500/20 active:scale-95 transition-transform text-center cursor-pointer hover:bg-blue-900/40">
-                        <p class="text-[9px] font-black text-blue-400 uppercase tracking-widest">${p.name}</p>
+                    <div onclick="buyPower('${k}')" class="${styleClass} p-3 rounded-xl border active:scale-95 transition-transform text-center cursor-pointer">
+                        <p class="text-[9px] font-black uppercase tracking-widest">${p.name}</p>
                         <p class="text-sm font-black text-white mt-1">$${window.formatNumber(p.price)}</p>
-                        <p class="text-[9px] mt-1 text-zinc-400 font-bold">OWNED: ${owned}</p>
+                        <p class="text-[9px] mt-1 text-zinc-400 font-bold">OWNED: ${owned}/${MAX_POWER_LIMIT}</p>
                     </div>
                 `;
             });
@@ -754,6 +773,7 @@
                 document.getElementById('det-shield-status').innerHTML = '';
                 let powerHtml = '';
                 Object.keys(POWERS).forEach(k => {
+                    if (k === 'blind5') return; // Skip blind power for shields
                     const count = (userData.powers && userData.powers[k]) ? userData.powers[k] : 0;
                     if (count > 0) {
                         powerHtml += `<button onclick="applyShield('${id}', '${k}')" class="bg-blue-600 border border-blue-400 text-white p-2 rounded-lg text-[10px] font-black active:scale-95">APPLY ${POWERS[k].name}</button>`;
@@ -854,7 +874,6 @@
         };
 
         window.startSteal = async (targetId, cardId, cardName) => {
-            // Check if stealing has been disabled globally
             if (global.stealingEnabled === false) return alert("STEALING IS DISABLED IN ADMIN ABUSE");
 
             const now = Date.now();
@@ -867,18 +886,101 @@
             const rData = { robberId: uid, robberName: userData.username, cardId, cardName, equation: `${n1} ${isPlus?'+':'-'} ${n2}`, answer: isPlus ? n1+n2 : n1-n2, status: 'pending' };
             await update(ref(db, `users/${uid}`), { lastStealTime: now });
             await set(ref(db, `robberies/${targetId}`), rData);
-            triggerMathChallenge(rData, targetId);
+            
+            // Attacker listens to their own active robbery to catch if defender uses 'Blind'
+            if(activeRobberyUnsub) activeRobberyUnsub();
+            activeRobberyUnsub = onValue(ref(db, `robberies/${targetId}`), s => {
+                if(s.exists()) {
+                    triggerMathChallenge(s.val(), targetId);
+                } else {
+                    closeMathChallenge();
+                }
+            });
         };
 
         function triggerMathChallenge(data, targetId) {
             currentRobbery = { ...data, targetId };
-            document.getElementById('ui-math-eq').innerText = data.equation;
-            document.getElementById('math-input').value = '';
-            document.getElementById('view-math').classList.remove('hide');
-            setTimeout(() => document.getElementById('math-input').focus(), 100);
+            
+            const mathEq = document.getElementById('ui-math-eq');
+            const mathInput = document.getElementById('math-input');
+            const submitBtn = document.getElementById('math-submit-btn');
+            const powersContainer = document.getElementById('math-powers-container');
+            const blindBtn = document.getElementById('btn-use-blind');
+            
+            if(blindTimeout) clearTimeout(blindTimeout);
+
+            const isAttacker = uid === data.robberId;
+            const isDefender = uid === targetId;
+
+            // Attacker logic: Handle if blinded
+            if (isAttacker && data.blindedUntil && Date.now() < data.blindedUntil) {
+                const timeLeft = data.blindedUntil - Date.now();
+                mathEq.innerText = "BLINDED!";
+                mathEq.classList.add("text-purple-500", "scale-110");
+                mathInput.disabled = true;
+                submitBtn.disabled = true;
+                submitBtn.innerText = "WAIT...";
+                
+                blindTimeout = setTimeout(() => {
+                    mathEq.innerText = data.equation;
+                    mathEq.classList.remove("text-purple-500", "scale-110");
+                    mathInput.disabled = false;
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "BYPASS";
+                    mathInput.focus();
+                }, timeLeft);
+            } else {
+                mathEq.innerText = data.equation;
+                mathEq.classList.remove("text-purple-500", "scale-110");
+                mathInput.disabled = false;
+                submitBtn.disabled = false;
+                submitBtn.innerText = "BYPASS";
+            }
+
+            // Defender logic: Handle showing the power button
+            if (isDefender) {
+                const ownsBlind = userData.powers && userData.powers.blind5 > 0;
+                if (ownsBlind && !data.blindedUntil) {
+                    powersContainer.classList.remove('hide');
+                    blindBtn.innerText = `USE BLIND 5s (OWNED: ${userData.powers.blind5})`;
+                    blindBtn.onclick = () => useBlindPower(targetId);
+                } else {
+                    powersContainer.classList.add('hide');
+                }
+            } else {
+                powersContainer.classList.add('hide');
+            }
+
+            // Show UI
+            if(document.getElementById('view-math').classList.contains('hide')) {
+                document.getElementById('math-input').value = '';
+                document.getElementById('view-math').classList.remove('hide');
+                if(!mathInput.disabled) setTimeout(() => mathInput.focus(), 100);
+            }
         }
 
+        window.useBlindPower = async (targetId) => {
+            if(!userData.powers || userData.powers.blind5 <= 0) return;
+            
+            // Deduct power count and set blind timer in DB
+            const currentCount = userData.powers.blind5;
+            let updates = {};
+            updates[`users/${uid}/powers/blind5`] = currentCount - 1;
+            updates[`robberies/${targetId}/blindedUntil`] = Date.now() + 5000;
+            
+            await update(ref(db, `/`), updates);
+            document.getElementById('math-powers-container').classList.add('hide');
+        };
+
+        window.closeMathChallenge = () => {
+            document.getElementById('view-math').classList.add('hide');
+            if(activeRobberyUnsub) { activeRobberyUnsub(); activeRobberyUnsub = null; }
+            if(blindTimeout) clearTimeout(blindTimeout);
+            currentRobbery = null;
+        };
+
         window.submitMath = async () => {
+            if(!currentRobbery) return;
             const val = parseInt(document.getElementById('math-input').value);
             
             if (val !== currentRobbery.answer) {
@@ -909,15 +1011,15 @@
                 }
                 
                 await remove(ref(db, `robberies/${currentRobbery.targetId}`));
+                closeMathChallenge();
             } else {
                 if (currentRobbery.robberId === uid) {
                     alert("Too late! The defender solved the encryption first. The card is saved.");
                 } else {
                     alert("Too late! The attacker bypassed the firewall first. Your card was stolen!");
                 }
+                closeMathChallenge();
             }
-            
-            document.getElementById('view-math').classList.add('hide');
         };
 
         window.handleAdmin = () => { if(prompt("Passcode:") === "555") document.getElementById('view-admin').classList.remove('hide'); };
