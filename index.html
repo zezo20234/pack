@@ -10,7 +10,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      font-family: Arial, sans-serif;
+      font-family: 'Arial Black', Impact, sans-serif;
     }
     #slide-container {
       width: 100vw;
@@ -20,7 +20,7 @@
       justify-content: center;
       text-align: center;
       padding: 40px;
-      transition: background-color 0.5s ease;
+      transition: background-color 0.8s ease;
     }
     #slide-text {
       line-height: 1.2;
@@ -31,23 +31,47 @@
       justify-content: center;
       align-items: baseline;
       gap: 0.3em;
-      transition: opacity 0.3s ease;
     }
 
-    /* Word Styling */
+    /* Word Animation Classes */
     .word {
       display: inline-block;
       transition: color 0.3s ease, font-size 0.3s ease;
     }
     
-    /* Animations */
-    .bounce { animation: bounce 0.8s infinite alternate; }
+    /* Word Animations */
+    .bounce { animation: bounce 0.8s infinite alternate ease-in-out; }
     .glow { text-shadow: 0 0 20px currentColor, 0 0 40px currentColor; }
-    
+    .pulse { animation: pulse 1.2s infinite alternate ease-in-out; }
+    .rainbow { animation: rainbow 3s linear infinite; }
+    .wave { animation: wave 1.5s infinite ease-in-out; }
+
     @keyframes bounce {
       from { transform: translateY(0); }
-      to { transform: translateY(-15px); }
+      to { transform: translateY(-20px); }
     }
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.15); }
+    }
+    @keyframes wave {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px) rotate(3deg); }
+    }
+    @keyframes rainbow {
+      0% { filter: hue-rotate(0deg); }
+      100% { filter: hue-rotate(360deg); }
+    }
+
+    /* Slide Transitions */
+    .trans-fade { opacity: 0; transition: opacity 0.6s ease; }
+    .trans-fade.active { opacity: 1; }
+
+    .trans-slide { opacity: 0; transform: translateY(50px); transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .trans-slide.active { opacity: 1; transform: translateY(0); }
+
+    .trans-zoom { opacity: 0; transform: scale(0.5); transition: all 0.6s ease; }
+    .trans-zoom.active { opacity: 1; transform: scale(1); }
 
     /* Subtle UI Buttons */
     .top-btn {
@@ -78,6 +102,7 @@
       right: 15px;
       padding: 8px 14px;
       font-size: 14px;
+      font-family: Arial, sans-serif;
       font-weight: bold;
     }
 
@@ -90,20 +115,20 @@
       z-index: 10000;
       align-items: center;
       justify-content: center;
+      font-family: Arial, sans-serif;
     }
     .modal-box {
       background: #1e1e1e;
       color: #ffffff;
       padding: 24px;
       border-radius: 10px;
-      width: 520px;
+      width: 540px;
       max-height: 90vh;
       overflow-y: auto;
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
     .modal-box h3 { margin-bottom: 16px; font-size: 18px; text-align: center; }
     
-    /* Tabs */
     .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 8px; }
     .tab-btn { flex: 1; padding: 8px; background: #2a2a2a; border: none; color: #aaa; cursor: pointer; border-radius: 4px; font-weight: bold; }
     .tab-btn.active { background: #007bff; color: #fff; }
@@ -118,6 +143,8 @@
       background: #2a2a2a;
       color: #fff;
     }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
 
     /* Words Builder UI */
     #words-builder {
@@ -125,7 +152,7 @@
       flex-direction: column;
       gap: 8px;
       margin-top: 8px;
-      max-height: 180px;
+      max-height: 200px;
       overflow-y: auto;
       padding-right: 5px;
     }
@@ -140,7 +167,7 @@
     .word-row input[type="text"] { flex: 2; }
     .word-row input[type="color"] { width: 35px; height: 35px; padding: 0; cursor: pointer; }
     .word-row input[type="number"] { width: 55px; }
-    .word-row select { flex: 1; }
+    .word-row select { flex: 1.2; }
 
     /* Manage List UI */
     #manage-list {
@@ -204,7 +231,7 @@
   <button id="fullscreen-btn" class="top-btn" onclick="toggleFullscreen()">Fullscreen</button>
 
   <div id="slide-container">
-    <div id="slide-text">Loading Firebase...</div>
+    <div id="slide-text" class="trans-fade">Loading Firebase...</div>
   </div>
 
   <div id="modal-overlay">
@@ -216,11 +243,21 @@
       </div>
 
       <div id="tab-create">
-        <h3 id="form-title">Add Custom Word Slide</h3>
+        <h3 id="form-title">Add Animated Slide</h3>
 
-        <div class="form-group">
-          <label>Slide Duration (Seconds)</label>
-          <input type="number" id="input-duration" value="5" min="1">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Duration (Seconds)</label>
+            <input type="number" id="input-duration" value="5" min="1">
+          </div>
+          <div class="form-group">
+            <label>Slide Transition</label>
+            <select id="input-transition">
+              <option value="trans-fade">Fade In</option>
+              <option value="trans-slide">Slide Up</option>
+              <option value="trans-zoom">Zoom In</option>
+            </select>
+          </div>
         </div>
 
         <div class="form-group">
@@ -229,7 +266,7 @@
         </div>
 
         <div class="form-group">
-          <label>Customize Words</label>
+          <label>Customize Words & Animations</label>
           <div id="words-builder"></div>
           <button type="button" class="btn-add-word" onclick="addWordRow()">+ Add Another Word</button>
         </div>
@@ -269,12 +306,11 @@
     let slides = [];
     let currentIndex = 0;
     let slideTimer = null;
-    let editingIndex = null; // Tracks if we are editing an existing slide
+    let editingIndex = null;
 
     const container = document.getElementById('slide-container');
     const textElement = document.getElementById('slide-text');
 
-    // Realtime Database Listener
     db.ref('slides').on('value', (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -295,7 +331,9 @@
       if (!slides || slides.length === 0) return;
 
       const currentSlide = slides[currentIndex];
-      textElement.style.opacity = 0;
+      const transitionClass = currentSlide.transition || 'trans-fade';
+
+      textElement.className = transitionClass;
 
       setTimeout(() => {
         container.style.backgroundColor = currentSlide.backgroundColor || '#000000';
@@ -319,7 +357,7 @@
           textElement.appendChild(span);
         }
 
-        textElement.style.opacity = 1;
+        textElement.classList.add('active');
       }, 300);
 
       const duration = (currentSlide.duration || 5) * 1000;
@@ -330,7 +368,6 @@
       }, duration);
     }
 
-    // Modal & UI Functions
     function openModal() {
       resetForm();
       switchTab('create');
@@ -358,12 +395,13 @@
 
     function resetForm() {
       editingIndex = null;
-      document.getElementById('form-title').textContent = "Add Custom Word Slide";
+      document.getElementById('form-title').textContent = "Add Animated Slide";
       document.getElementById('input-duration').value = 5;
+      document.getElementById('input-transition').value = 'trans-fade';
       document.getElementById('input-bg').value = '#004d98';
       document.getElementById('words-builder').innerHTML = '';
-      addWordRow('Welcome to', '#edbb00', 6);
-      addWordRow('Barcelona', '#ffffff', 8);
+      addWordRow('Welcome to', '#edbb00', 6, 'bounce');
+      addWordRow('Barcelona', '#ffffff', 8, 'glow');
     }
 
     function addWordRow(text = '', color = '#ffffff', size = 6, animation = '') {
@@ -378,6 +416,9 @@
           <option value="" ${animation===''?'selected':''}>Static</option>
           <option value="bounce" ${animation==='bounce'?'selected':''}>Bounce</option>
           <option value="glow" ${animation==='glow'?'selected':''}>Glow</option>
+          <option value="pulse" ${animation==='pulse'?'selected':''}>Pulse</option>
+          <option value="wave" ${animation==='wave'?'selected':''}>Wave</option>
+          <option value="rainbow" ${animation==='rainbow'?'selected':''}>Rainbow Color Shift</option>
         </select>
         <button type="button" class="btn-action btn-delete" onclick="this.parentElement.remove()">X</button>
       `;
@@ -386,6 +427,7 @@
 
     function saveSlide() {
       const duration = parseInt(document.getElementById('input-duration').value) || 5;
+      const transition = document.getElementById('input-transition').value;
       const backgroundColor = document.getElementById('input-bg').value;
       const rows = document.querySelectorAll('.word-row');
 
@@ -407,7 +449,7 @@
         return;
       }
 
-      const slideData = { duration, backgroundColor, words };
+      const slideData = { duration, transition, backgroundColor, words };
 
       if (editingIndex !== null) {
         slides[editingIndex] = slideData;
@@ -422,7 +464,6 @@
       });
     }
 
-    // Edit and Delete Logic
     function renderManageList() {
       const list = document.getElementById('manage-list');
       list.innerHTML = '';
@@ -446,7 +487,7 @@
         item.innerHTML = `
           <div class="manage-info">
             <div class="manage-text">${slideTitle}</div>
-            <div class="manage-meta">Duration: ${slide.duration || 5}s</div>
+            <div class="manage-meta">Duration: ${slide.duration || 5}s | Transition: ${(slide.transition || 'trans-fade').replace('trans-', '')}</div>
           </div>
           <div class="manage-actions">
             <button class="btn-action btn-edit" onclick="loadEditSlide(${index})">Edit</button>
@@ -463,6 +504,7 @@
 
       document.getElementById('form-title').textContent = `Edit Slide #${index + 1}`;
       document.getElementById('input-duration').value = slide.duration || 5;
+      document.getElementById('input-transition').value = slide.transition || 'trans-fade';
       document.getElementById('input-bg').value = slide.backgroundColor || '#000000';
       document.getElementById('words-builder').innerHTML = '';
 
