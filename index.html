@@ -28,25 +28,79 @@
       max-width: 90vw;
       transition: opacity 0.3s ease, color 0.5s ease;
     }
-    #fullscreen-btn {
+
+    /* Subtle UI Buttons */
+    .top-btn {
       position: fixed;
       top: 15px;
-      right: 15px;
       z-index: 9999;
-      background: rgba(0, 0, 0, 0.7);
-      color: #ffffff;
-      border: 2px solid #ffffff;
-      padding: 10px 18px;
-      font-size: 16px;
-      font-weight: bold;
+      background: rgba(0, 0, 0, 0.2);
+      color: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 6px;
       cursor: pointer;
-      opacity: 0.4;
-      transition: opacity 0.2s ease;
+      transition: all 0.2s ease;
     }
-    #fullscreen-btn:hover {
-      opacity: 1;
+    .top-btn:hover {
+      background: rgba(0, 0, 0, 0.8);
+      color: #ffffff;
+      border-color: #ffffff;
     }
+    #add-btn {
+      left: 15px;
+      width: 36px;
+      height: 36px;
+      font-size: 22px;
+      line-height: 30px;
+      text-align: center;
+    }
+    #fullscreen-btn {
+      right: 15px;
+      padding: 8px 14px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+    }
+
+    /* Modal Form Overlay */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+    }
+    .modal-box {
+      background: #1e1e1e;
+      color: #ffffff;
+      padding: 24px;
+      border-radius: 10px;
+      width: 320px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .modal-box h3 { margin-bottom: 16px; font-size: 18px; text-align: center; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 12px; margin-bottom: 4px; color: #aaa; }
+    .form-group input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #2a2a2a;
+      color: #fff;
+    }
+    .color-pickers { display: flex; gap: 10px; }
+    .color-pickers div { flex: 1; }
+    .color-pickers input { height: 38px; cursor: pointer; padding: 2px; }
+    .modal-buttons { display: flex; gap: 10px; margin-top: 18px; }
+    .modal-buttons button {
+      flex: 1; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;
+    }
+    .btn-save { background: #28a745; color: #fff; }
+    .btn-cancel { background: #dc3545; color: #fff; }
   </style>
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -54,10 +108,43 @@
 </head>
 <body>
 
-  <button id="fullscreen-btn" onclick="toggleFullscreen()">Fullscreen</button>
+  <button id="add-btn" class="top-btn" onclick="openModal()">+</button>
+  <button id="fullscreen-btn" class="top-btn" onclick="toggleFullscreen()">Fullscreen</button>
 
   <div id="slide-container">
     <h1 id="slide-text">Loading Firebase...</h1>
+  </div>
+
+  <div id="modal-overlay">
+    <div class="modal-box">
+      <h3>Add New Slide</h3>
+      <div class="form-group">
+        <label>Slide Text</label>
+        <input type="text" id="input-text" placeholder="e.g. Welcome to Barcelona">
+      </div>
+      <div class="form-group">
+        <label>Duration (Seconds)</label>
+        <input type="number" id="input-duration" value="5" min="1">
+      </div>
+      <div class="form-group color-pickers">
+        <div>
+          <label>Background</label>
+          <input type="color" id="input-bg" value="#004d98">
+        </div>
+        <div>
+          <label>Text Color</label>
+          <input type="color" id="input-color" value="#edbb00">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Font Size</label>
+        <input type="text" id="input-size" value="6rem">
+      </div>
+      <div class="modal-buttons">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-save" onclick="saveSlide()">Save Slide</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -90,7 +177,8 @@
         currentIndex = 0;
         showSlide();
       } else {
-        textElement.textContent = "No slides found in database.";
+        slides = [];
+        textElement.textContent = "No slides added yet. Click + to add one.";
         container.style.backgroundColor = "#000000";
         textElement.style.color = "#ffffff";
       }
@@ -118,6 +206,39 @@
         currentIndex = (currentIndex + 1) % slides.length;
         showSlide();
       }, duration);
+    }
+
+    // Modal Control Functions
+    function openModal() {
+      document.getElementById('modal-overlay').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').style.display = 'none';
+    }
+
+    function saveSlide() {
+      const text = document.getElementById('input-text').value.trim();
+      const duration = parseInt(document.getElementById('input-duration').value) || 5;
+      const backgroundColor = document.getElementById('input-bg').value;
+      const textColor = document.getElementById('input-color').value;
+      const fontSize = document.getElementById('input-size').value || '6rem';
+
+      if (!text) {
+        alert("Please enter slide text!");
+        return;
+      }
+
+      const newSlide = { text, duration, backgroundColor, textColor, fontSize };
+
+      // Push new slide directly into Firebase array/collection
+      slides.push(newSlide);
+      db.ref('slides').set(slides).then(() => {
+        closeModal();
+        document.getElementById('input-text').value = '';
+      }).catch(err => {
+        alert("Error saving slide: " + err.message);
+      });
     }
 
     function toggleFullscreen() {
