@@ -145,7 +145,7 @@
 </head>
 <body>
 
-  <div id="modal-screen-selector" class="modal-overlay" style="display: flex;">
+  <div id="modal-screen-selector" class="modal-overlay">
     <div class="modal-box" style="width: 400px;">
       <h3>📺 Connect to a Screen</h3>
       <p class="subtitle">Where is this billboard located?</p>
@@ -161,11 +161,11 @@
 
       <div class="form-group">
         <label>Create New Screen</label>
-        <input type="text" id="new-screen-input" placeholder="e.g. Madrid, Barcelona, Spawn Screen 1">
+        <input type="text" id="new-screen-input" placeholder="e.g. Madrid, Barcelona">
       </div>
 
       <div class="modal-buttons">
-        <button class="btn-primary" onclick="initScreen()">Connect Display</button>
+        <button class="btn-primary" onclick="submitScreenSelection()">Connect Display</button>
       </div>
     </div>
   </div>
@@ -181,7 +181,7 @@
   </div>
 
   <div id="slide-container">
-    <div id="slide-text" class="trans-fade">Waiting for screen connection...</div>
+    <div id="slide-text" class="trans-fade">Connecting to billboard...</div>
   </div>
 
   <div id="indicators"></div>
@@ -260,42 +260,57 @@
     const progressBar = document.getElementById('progress-bar');
     const indicatorsBox = document.getElementById('indicators');
 
-    // 1. Fetch available screens on load to populate the dropdown
-    db.ref('screens').once('value', (snapshot) => {
-      const dropdown = document.getElementById('screen-dropdown');
-      dropdown.innerHTML = '<option value="">-- Choose a Screen --</option>';
-      const data = snapshot.val();
-      if (data) {
-        Object.keys(data).forEach(screenName => {
-          dropdown.innerHTML += `<option value="${screenName}">${screenName}</option>`;
-        });
-      }
-    });
+    // Automatically check URL parameters on load (e.g., index.html?screen=Barcelona)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlScreen = urlParams.get('screen');
 
-    // 2. Lock in the screen chosen by the user
-    function initScreen() {
+    if (urlScreen) {
+      // If the link already has the screen name, lock it in instantly without showing the modal!
+      lockScreen(urlScreen);
+    } else {
+      // Otherwise, show the modal and fetch available screens for the dropdown
+      db.ref('screens').once('value', (snapshot) => {
+        const dropdown = document.getElementById('screen-dropdown');
+        dropdown.innerHTML = '<option value="">-- Choose a Screen --</option>';
+        const data = snapshot.val();
+        if (data) {
+          Object.keys(data).forEach(screenName => {
+            dropdown.innerHTML += `<option value="${screenName}">${screenName}</option>`;
+          });
+        }
+        document.getElementById('modal-screen-selector').style.display = 'flex';
+      });
+    }
+
+    function submitScreenSelection() {
       const dropdownVal = document.getElementById('screen-dropdown').value;
       const newVal = document.getElementById('new-screen-input').value.trim();
+      let chosen = newVal || dropdownVal;
       
-      currentScreenID = newVal || dropdownVal;
-      
-      if (!currentScreenID) {
+      if (!chosen) {
         alert("Bro, you gotta pick or type a screen name first!");
         return;
       }
+      
+      // Automatically add it to the URL so it NEVER asks again if it reloads!
+      window.location.search = `?screen=${encodeURIComponent(chosen)}`;
+    }
 
-      // Format string to be database safe (no crazy characters)
-      currentScreenID = currentScreenID.replace(/[\.\#\$\[\]]/g, '');
+    function lockScreen(screenName) {
+      currentScreenID = screenName.replace(/[\.\#\$\[\]]/g, '');
 
-      document.getElementById('modal-screen-selector').style.display = 'none';
+      // Force-save metadata so Firebase keeps the folder alive
+      db.ref(`screens/${currentScreenID}/info`).update({
+        name: currentScreenID,
+        lastActive: new Date().toISOString()
+      });
+
       document.getElementById('current-screen-badge').textContent = '📺 ' + currentScreenID;
       document.getElementById('manage-title').textContent = `Manage: ${currentScreenID}`;
 
-      // 3. Start listening only to THIS screen's data path
       listenToScreenSlides();
     }
 
-    // 4. Firebase Listener specific to the selected screen
     function listenToScreenSlides() {
       db.ref(`screens/${currentScreenID}/slides`).on('value', (snapshot) => {
         const data = snapshot.val();
@@ -382,7 +397,7 @@
 
     // Modal Control
     function openAddModal() {
-      if(!currentScreenID) return alert("Select a screen first on load!");
+      if(!currentScreenID) return;
       editingIndex = null;
       document.getElementById('form-title').textContent = "Create New Slide";
       document.getElementById('input-duration').value = 5;
@@ -426,7 +441,6 @@
       builder.appendChild(row);
     }
 
-    // Save Data specifically to currentScreenID path
     function saveSlide() {
       const duration = parseInt(document.getElementById('input-duration').value) || 5;
       const transition = document.getElementById('input-transition').value;
@@ -453,13 +467,11 @@
       if (editingIndex !== null) slides[editingIndex] = slideData;
       else slides.push(slideData);
 
-      // Saves to the nested screen path
       db.ref(`screens/${currentScreenID}/slides`).set(slides).then(() => {
         closeModal('modal-form');
       });
     }
 
-    // Manage List System
     function renderManageList() {
       const list = document.getElementById('manage-list');
       list.innerHTML = '';
@@ -519,7 +531,6 @@
       }
     }
 
-    // Fullscreen Support
     function toggleFullscreen() {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(err => console.log(err));
