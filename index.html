@@ -3,39 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pro Billboard System</title>
+  <title>Pro Billboard System - Multi-Screen</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body, html {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      font-family: 'Arial Black', Impact, sans-serif;
-      background-color: #000;
+      width: 100%; height: 100%; overflow: hidden;
+      font-family: 'Arial Black', Impact, sans-serif; background-color: #000;
     }
     
     /* Main Screen Display */
     #slide-container {
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 40px;
-      transition: background-color 0.8s ease;
-      position: relative;
+      width: 100vw; height: 100vh; display: flex; align-items: center;
+      justify-content: center; text-align: center; padding: 40px;
+      transition: background-color 0.8s ease; position: relative;
     }
     #slide-text {
-      line-height: 1.2;
-      word-wrap: break-word;
-      max-width: 90vw;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: baseline;
-      gap: 0.3em;
-      z-index: 2;
+      line-height: 1.2; word-wrap: break-word; max-width: 90vw;
+      display: flex; flex-wrap: wrap; justify-content: center;
+      align-items: baseline; gap: 0.3em; z-index: 2;
     }
 
     /* Word Animations */
@@ -61,61 +46,42 @@
 
     /* Floating Controls UI */
     .controls-panel {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      z-index: 9999;
-      display: flex;
-      gap: 12px;
-      opacity: 0.3;
-      transition: opacity 0.3s;
+      position: fixed; top: 20px; left: 20px; z-index: 9999;
+      display: flex; gap: 12px; opacity: 0.3; transition: opacity 0.3s;
     }
     .controls-panel:hover { opacity: 1; }
     
     .ctrl-btn {
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(5px);
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 50%;
-      width: 45px;
-      height: 45px;
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
+      background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%;
+      width: 45px; height: 45px; font-size: 20px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
     }
     .ctrl-btn:hover { background: #007bff; border-color: #007bff; transform: scale(1.1); }
     
-    #fullscreen-btn { position: fixed; top: 20px; right: 20px; border-radius: 8px; width: auto; padding: 0 15px; font-size: 14px; font-family: Arial, sans-serif; opacity: 0.3; z-index: 9999;}
-    #fullscreen-btn:hover { opacity: 1; }
+    .top-right-panel {
+      position: fixed; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 9999; opacity: 0.3; transition: opacity 0.3s;
+    }
+    .top-right-panel:hover { opacity: 1; }
+    .screen-badge {
+      background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px;
+      padding: 0 15px; font-size: 14px; font-family: Arial, sans-serif; font-weight: bold;
+      display: flex; align-items: center; justify-content: center; text-transform: uppercase;
+    }
+    #fullscreen-btn { border-radius: 8px; width: auto; padding: 0 15px; font-size: 14px; font-family: Arial, sans-serif; }
 
     /* Progress & Indicators UI */
-    #progress-container {
-      position: fixed;
-      bottom: 0; left: 0; width: 100%; height: 6px;
-      background: rgba(0,0,0,0.3); z-index: 10;
-    }
-    #progress-bar {
-      height: 100%; width: 0%; background: #ffffff;
-      transition: width linear;
-    }
-    #indicators {
-      position: fixed; bottom: 20px; left: 0; width: 100%;
-      display: flex; justify-content: center; gap: 10px; z-index: 10;
-    }
-    .dot {
-      width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.3);
-      cursor: pointer; transition: 0.3s;
-    }
+    #progress-container { position: fixed; bottom: 0; left: 0; width: 100%; height: 6px; background: rgba(0,0,0,0.3); z-index: 10; }
+    #progress-bar { height: 100%; width: 0%; background: #ffffff; transition: width linear; }
+    #indicators { position: fixed; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: center; gap: 10px; z-index: 10; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: 0.3s; }
     .dot.active { background: #ffffff; transform: scale(1.3); }
 
     /* Modals (Glassmorphism style) */
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
+      background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px);
       z-index: 10000; align-items: center; justify-content: center; font-family: Arial, sans-serif;
     }
     .modal-box {
@@ -124,9 +90,10 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
     .modal-box h3 { margin-bottom: 20px; font-size: 22px; text-align: center; border-bottom: 1px solid #444; padding-bottom: 10px; }
+    .modal-box p.subtitle { text-align: center; color: #aaa; margin-bottom: 20px; font-size: 14px; }
     
     .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; font-size: 13px; margin-bottom: 5px; color: #ccc; }
+    .form-group label { display: block; font-size: 13px; margin-bottom: 5px; color: #ccc; font-weight: bold; }
     .form-group input, .form-group select {
       width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #555;
       background: rgba(0,0,0,0.4); color: #fff; font-size: 14px;
@@ -165,6 +132,7 @@
     .modal-buttons button { flex: 1; padding: 12px; border-radius: 8px; font-size: 16px; color: #fff; }
     .btn-save { background: #28a745; } .btn-save:hover { background: #218838; }
     .btn-cancel { background: #6c757d; } .btn-cancel:hover { background: #5a6268; }
+    .btn-primary { background: #007bff; } .btn-primary:hover { background: #0056b3; }
     
     /* Scrollbar */
     ::-webkit-scrollbar { width: 6px; }
@@ -177,14 +145,43 @@
 </head>
 <body>
 
+  <div id="modal-screen-selector" class="modal-overlay" style="display: flex;">
+    <div class="modal-box" style="width: 400px;">
+      <h3>📺 Connect to a Screen</h3>
+      <p class="subtitle">Where is this billboard located?</p>
+      
+      <div class="form-group">
+        <label>Select Existing Screen</label>
+        <select id="screen-dropdown">
+          <option value="">Loading screens...</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="text-align: center; color: #777;">— OR —</div>
+
+      <div class="form-group">
+        <label>Create New Screen</label>
+        <input type="text" id="new-screen-input" placeholder="e.g. Madrid, Barcelona, Spawn Screen 1">
+      </div>
+
+      <div class="modal-buttons">
+        <button class="btn-primary" onclick="initScreen()">Connect Display</button>
+      </div>
+    </div>
+  </div>
+
   <div class="controls-panel">
     <div class="ctrl-btn" onclick="openAddModal()" title="Add New Slide">➕</div>
-    <div class="ctrl-btn" onclick="openManageModal()" title="Manage Slides (1, 2, 3...)">⚙️</div>
+    <div class="ctrl-btn" onclick="openManageModal()" title="Manage Slides">⚙️</div>
   </div>
-  <button id="fullscreen-btn" class="ctrl-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+  
+  <div class="top-right-panel">
+    <div id="current-screen-badge" class="screen-badge">NO SCREEN</div>
+    <button id="fullscreen-btn" class="ctrl-btn" onclick="toggleFullscreen()">⛶</button>
+  </div>
 
   <div id="slide-container">
-    <div id="slide-text" class="trans-fade">Loading Database...</div>
+    <div id="slide-text" class="trans-fade">Waiting for screen connection...</div>
   </div>
 
   <div id="indicators"></div>
@@ -211,7 +208,7 @@
 
       <div class="form-group">
         <label>Background Color</label>
-        <input type="color" id="input-bg" value="#111111" style="height: 45px; cursor:pointer;">
+        <input type="color" id="input-bg" value="#050505" style="height: 45px; cursor:pointer;">
       </div>
 
       <div class="form-group">
@@ -229,9 +226,8 @@
 
   <div id="modal-manage" class="modal-overlay">
     <div class="modal-box">
-      <h3>Manage Slides (⚙️)</h3>
-      <div id="manage-list">
-        </div>
+      <h3 id="manage-title">Manage Slides</h3>
+      <div id="manage-list"></div>
       <div class="modal-buttons">
         <button class="btn-cancel" onclick="closeModal('modal-manage')">Close</button>
       </div>
@@ -253,6 +249,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    let currentScreenID = null;
     let slides = [];
     let currentIndex = 0;
     let slideTimer = null;
@@ -263,21 +260,58 @@
     const progressBar = document.getElementById('progress-bar');
     const indicatorsBox = document.getElementById('indicators');
 
-    // Fetch Database
-    db.ref('slides').on('value', (snapshot) => {
+    // 1. Fetch available screens on load to populate the dropdown
+    db.ref('screens').once('value', (snapshot) => {
+      const dropdown = document.getElementById('screen-dropdown');
+      dropdown.innerHTML = '<option value="">-- Choose a Screen --</option>';
       const data = snapshot.val();
       if (data) {
-        slides = Array.isArray(data) ? data : Object.values(data);
-        if (currentIndex >= slides.length) currentIndex = 0;
-        playSlide(currentIndex);
-      } else {
-        slides = [];
-        textElement.innerHTML = "No slides found. Click ➕ to create one.";
-        container.style.backgroundColor = "#050505";
-        stopProgress();
+        Object.keys(data).forEach(screenName => {
+          dropdown.innerHTML += `<option value="${screenName}">${screenName}</option>`;
+        });
       }
-      buildIndicators();
     });
+
+    // 2. Lock in the screen chosen by the user
+    function initScreen() {
+      const dropdownVal = document.getElementById('screen-dropdown').value;
+      const newVal = document.getElementById('new-screen-input').value.trim();
+      
+      currentScreenID = newVal || dropdownVal;
+      
+      if (!currentScreenID) {
+        alert("Bro, you gotta pick or type a screen name first!");
+        return;
+      }
+
+      // Format string to be database safe (no crazy characters)
+      currentScreenID = currentScreenID.replace(/[\.\#\$\[\]]/g, '');
+
+      document.getElementById('modal-screen-selector').style.display = 'none';
+      document.getElementById('current-screen-badge').textContent = '📺 ' + currentScreenID;
+      document.getElementById('manage-title').textContent = `Manage: ${currentScreenID}`;
+
+      // 3. Start listening only to THIS screen's data path
+      listenToScreenSlides();
+    }
+
+    // 4. Firebase Listener specific to the selected screen
+    function listenToScreenSlides() {
+      db.ref(`screens/${currentScreenID}/slides`).on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          slides = Array.isArray(data) ? data : Object.values(data);
+          if (currentIndex >= slides.length) currentIndex = 0;
+          playSlide(currentIndex);
+        } else {
+          slides = [];
+          textElement.innerHTML = `No slides for ${currentScreenID} yet. Click ➕ to create one.`;
+          container.style.backgroundColor = "#050505";
+          stopProgress();
+        }
+        buildIndicators();
+      });
+    }
 
     // Play Engine
     function playSlide(index) {
@@ -288,12 +322,10 @@
       const slide = slides[currentIndex];
       const transitionClass = slide.transition || 'trans-fade';
 
-      // Update UI Dots
       document.querySelectorAll('.dot').forEach((d, i) => {
         d.className = i === currentIndex ? 'dot active' : 'dot';
       });
 
-      // Hide text for transition
       textElement.className = transitionClass;
       stopProgress();
 
@@ -317,12 +349,11 @@
         const duration = (slide.duration || 5);
         startProgress(duration);
 
-        // Next Slide Timer
         slideTimer = setTimeout(() => {
           playSlide((currentIndex + 1) % slides.length);
         }, duration * 1000);
 
-      }, 400); // Wait for fade out
+      }, 400); 
     }
 
     // Visual Progress Bar
@@ -339,7 +370,6 @@
       progressBar.style.width = '0%';
     }
 
-    // Build Bottom Dots
     function buildIndicators() {
       indicatorsBox.innerHTML = '';
       slides.forEach((_, i) => {
@@ -352,6 +382,7 @@
 
     // Modal Control
     function openAddModal() {
+      if(!currentScreenID) return alert("Select a screen first on load!");
       editingIndex = null;
       document.getElementById('form-title').textContent = "Create New Slide";
       document.getElementById('input-duration').value = 5;
@@ -364,6 +395,7 @@
     }
 
     function openManageModal() {
+      if(!currentScreenID) return;
       renderManageList();
       document.getElementById('modal-manage').style.display = 'flex';
     }
@@ -394,7 +426,7 @@
       builder.appendChild(row);
     }
 
-    // Save Data
+    // Save Data specifically to currentScreenID path
     function saveSlide() {
       const duration = parseInt(document.getElementById('input-duration').value) || 5;
       const transition = document.getElementById('input-transition').value;
@@ -421,7 +453,8 @@
       if (editingIndex !== null) slides[editingIndex] = slideData;
       else slides.push(slideData);
 
-      db.ref('slides').set(slides).then(() => {
+      // Saves to the nested screen path
+      db.ref(`screens/${currentScreenID}/slides`).set(slides).then(() => {
         closeModal('modal-form');
       });
     }
@@ -432,7 +465,7 @@
       list.innerHTML = '';
 
       if (slides.length === 0) {
-        list.innerHTML = '<div style="color:#aaa; text-align:center;">No slides saved yet.</div>';
+        list.innerHTML = '<div style="color:#aaa; text-align:center;">No slides saved for this screen.</div>';
         return;
       }
 
@@ -479,9 +512,9 @@
     }
 
     function deleteSlide(index) {
-      if (confirm("Delete Slide " + (index + 1) + "?")) {
+      if (confirm("Delete Slide " + (index + 1) + " from " + currentScreenID + "?")) {
         slides.splice(index, 1);
-        db.ref('slides').set(slides);
+        db.ref(`screens/${currentScreenID}/slides`).set(slides);
         renderManageList();
       }
     }
